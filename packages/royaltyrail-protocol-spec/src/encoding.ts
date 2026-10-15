@@ -100,6 +100,12 @@ function u64(value: bigint, field: string): Uint8Array {
   return encodeUnsignedLe(value, 8, field);
 }
 
+function assertEnumValue(value: number, allowed: readonly number[], field: string): void {
+  if (!Number.isInteger(value) || !allowed.includes(value)) {
+    throw new Error(`${field} is not a supported v1 enum value`);
+  }
+}
+
 function concat(parts: readonly Uint8Array[]): Uint8Array {
   const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
   const out = new Uint8Array(totalLength);
@@ -152,6 +158,25 @@ function sha256(preimage: Uint8Array): Uint8Array {
 export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
   validateCanonicalAuthorities(input.participants);
 
+  if (!Number.isInteger(input.version) || input.version <= 0) {
+    throw new Error("agreement version must be a positive integer");
+  }
+
+  assertEnumValue(
+    input.poolKind,
+    [RevenuePoolKind.MasterReceipts, RevenuePoolKind.CompositionReceipts, RevenuePoolKind.Custom],
+    "pool kind",
+  );
+  assertEnumValue(
+    input.settlementBasis,
+    [
+      SettlementBasis.OwnershipSplit,
+      SettlementBasis.RevenueParticipation,
+      SettlementBasis.PaymentDirection,
+    ],
+    "settlement basis",
+  );
+
   let totalBps = 0;
   const participantParts: Uint8Array[] = [];
 
@@ -196,6 +221,11 @@ export function agreementHashV1(input: AgreementHashInputV1): Uint8Array {
 export function payoutPreimageV1(input: PayoutCommitmentInputV1): Uint8Array {
   validateCanonicalAuthorities(input.payouts);
 
+  assertEnumValue(input.mode, [SettlementMode.Direct, SettlementMode.Inbox], "settlement mode");
+
+  if (input.settlementSequence <= 0n) {
+    throw new Error("settlement sequence must be positive");
+  }
   if (input.grossAmount <= 0n) throw new Error("gross amount must be positive");
 
   let payoutTotal = 0n;
