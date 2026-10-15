@@ -94,6 +94,46 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     ).toThrow(/10_000|10000/);
   });
 
+  it("rejects agreement version zero", () => {
+    expect(() => agreementHashV1({ ...agreementVector, version: 0 })).toThrow(/positive integer/);
+  });
+
+  it("rejects an unsupported runtime pool enum value", () => {
+    expect(() =>
+      agreementHashV1({
+        ...agreementVector,
+        poolKind: 99 as RevenuePoolKind,
+      }),
+    ).toThrow(/supported v1 enum/);
+  });
+
+  it("rejects an unsupported runtime settlement basis", () => {
+    expect(() =>
+      agreementHashV1({
+        ...agreementVector,
+        settlementBasis: 99 as SettlementBasis,
+      }),
+    ).toThrow(/supported v1 enum/);
+  });
+
+  it("rejects payout sequence zero", () => {
+    expect(() =>
+      payoutCommitmentV1({
+        ...payoutVector,
+        settlementSequence: 0n,
+      }),
+    ).toThrow(/sequence must be positive/);
+  });
+
+  it("rejects an unsupported runtime settlement mode", () => {
+    expect(() =>
+      payoutCommitmentV1({
+        ...payoutVector,
+        mode: 99 as SettlementMode,
+      }),
+    ).toThrow(/supported v1 enum/);
+  });
+
   it("rejects a payout commitment that does not conserve gross", () => {
     expect(() =>
       payoutCommitmentV1({
