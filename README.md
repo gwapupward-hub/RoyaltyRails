@@ -8,7 +8,11 @@ RoyaltyRail turns approved revenue-sharing agreements into deterministic payment
 
 ## Status
 
-**Pre-mainnet / Phase 1 — Reference Accounting Engine**
+**Pre-mainnet / Phase 2 — Protocol Specification**
+
+Phase 1 is merged: the blockchain-independent TypeScript reference accounting engine is the canonical economic source of truth.
+
+Phase 2 freezes the Solana protocol surface before Anchor implementation: accounts, PDAs, agreement lifecycle, approvals, USDC settlement, Royalty Inbox behavior, canonical hashing, authority boundaries, events, replay protection, pause behavior and security invariants.
 
 RoyaltyRail is not yet production-ready and must not be used to custody or settle real royalties.
 
@@ -23,13 +27,21 @@ RoyaltyRail is not yet production-ready and must not be used to custody or settl
 - Direct atomic settlement
 - Permissionless Royalty Inbox settlement
 - Deterministic cumulative rounding
+- Canonical agreement and payout commitments
 - No admin withdrawal path for participant funds
 - 0% protocol settlement fee during initial rollout
 
+## Specification
+
+- [`docs/ACCOUNTING_V1.md`](docs/ACCOUNTING_V1.md) — canonical economic behavior
+- [`docs/PROTOCOL_V1.md`](docs/PROTOCOL_V1.md) — Solana account/instruction/settlement specification
+- [`docs/STATE_MACHINE_V1.md`](docs/STATE_MACHINE_V1.md) — agreement and version lifecycle
+- [`docs/SECURITY_V1.md`](docs/SECURITY_V1.md) — trust boundaries, threat model and mainnet gate
+
 ## Engineering sequence
 
-1. Reference Accounting Engine
-2. Protocol specification
+1. ✅ Reference Accounting Engine
+2. **Protocol specification — in progress**
 3. Anchor implementation
 4. SDK + indexer
 5. RoyaltyRail Studio
