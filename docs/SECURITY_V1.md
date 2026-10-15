@@ -5,44 +5,47 @@ Date: 2026-10-15
 
 ## 1. Security objective
 
-Once a valid agreement version is approved and activated:
+Once an agreement version is validly approved and activated:
 
-> Revenue allocated to that version can only become claimable according to the exact approved economic terms, and claimable revenue can only be delivered to payout routing controlled by the corresponding participant authority.
+> Revenue can only be economically allocated according to the exact approved terms, and a participant's claimable revenue can only be delivered using payout routing controlled by that participant authority.
 
-RoyaltyRail does not guarantee that the legal/business terms entered by users are correct. It guarantees deterministic execution of the approved configuration.
+RoyaltyRail does not determine whether the human-entered legal/business terms are correct. It guarantees deterministic execution of the approved configuration.
 
-## 2. Trusted for v1 correctness
+## 2. Trusted boundary
 
-- Solana runtime transaction atomicity/account locking;
+Trusted for protocol correctness:
+
+- Solana runtime atomicity and account locking;
 - deployed RoyaltyRail bytecode;
 - original SPL Token Program;
 - configured native USDC mint;
 - PDA derivation;
-- canonical TypeScript/Rust allocation algorithm parity;
-- participant signatures for proposed economic terms and predecessor supersession consent.
+- Rust implementation matching canonical TypeScript allocation/hash vectors;
+- participant signatures for economic approval and predecessor supersession consent.
 
-## 3. Explicitly not trusted
+Not trusted:
 
-- RoyaltyRail Studio/API/indexer;
+- RoyaltyRail Studio/API/indexer/keepers;
 - RPC providers;
-- agreement proposer or manager;
-- direct payer;
-- allocation triggerer;
-- claim triggerer;
+- manager/proposer;
+- payer;
+- allocation/claim triggerer;
 - guardian/governance authority;
-- external metadata storage;
-- email/SMS invite infrastructure;
-- caller-supplied account ordering/labels;
-- payment references as proof of uniqueness.
+- external metadata hosts;
+- invite infrastructure;
+- caller account labels/order;
+- reconciliation references as uniqueness proofs.
 
-Security-critical facts must be re-derived or verified on-chain.
+Security-critical relationships are re-derived or constrained on-chain.
 
-## 4. Primary economic invariants
+## 3. Economic invariants
 
-### S-001 Share conservation
+### S-001 Shares
 
 ```text
+participant_count in 1..=16
 sum(shares) == 10_000 BPS
+all shares > 0
 ```
 
 ### S-002 Allocation conservation
@@ -54,171 +57,196 @@ sum(current allocations) == newly allocated amount
 ### S-003 Lifetime allocation conservation
 
 ```text
-sum(participant.cumulative_allocated) == agreement.cumulative_gross
+sum(cumulative_allocated) == cumulative_gross
 ```
 
 ### S-004 Claim bounds
 
-For every participant:
-
 ```text
-0 <= cumulative_claimed <= cumulative_allocated
+0 <= cumulative_claimed_i <= cumulative_allocated_i
 ```
 
-### S-005 Vault solvency
+### S-005 Inbox solvency
 
 ```text
 allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
 inbox_balance >= allocated_unclaimed
 ```
 
-### S-006 No negative economic delta
+### S-006 No negative allocation
 
-The allocation algorithm never requires a participant clawback.
+Canonical math never requires clawback allocation.
 
-### S-007 Bounded proportional error
+### S-007 Bounded rounding error
 
-Each participant's lifetime allocation deviation remains strictly below one settlement-asset base unit.
+Every participant's lifetime proportional allocation deviation stays strictly below one settlement-asset base unit.
+
+## 4. Pure allocation boundary
+
+The TypeScript/Rust allocation engine contains only economic math:
+
+```text
+agreement shares
+cumulative gross/allocation state
+new amount
+```
+
+It does not contain:
+
+- direct funding nonce;
+- wallets/token accounts;
+- claims;
+- Solana CPI logic;
+- payment references.
+
+This is critical because `fund_and_allocate` and `allocate_inbox` must invoke identical percentage math while having different replay semantics.
+
+Direct nonce is checked/incremented only by the direct funding protocol instruction. Inbox allocation never consumes it.
 
 ## 5. Replacement-consent invariant
 
-A manager must never be able to remove or reduce an existing participant simply by omitting them from a replacement proposal.
+A manager cannot remove/reduce an existing participant by omitting them from the proposed replacement.
 
-For replacement activation:
+Replacement activation requires:
 
-- all participants in the new proposal approve the new agreement; and
-- all participants in the current Active predecessor approve supersession by that exact new agreement hash.
-
-This remains true even when a predecessor participant is absent from the replacement.
+- unanimous approval by proposed participants; and
+- unanimous supersession consent from current predecessor participants to the exact new agreement hash.
 
 Required adversarial test:
 
 ```text
 v1 = Alice 60 / Bob 40
-manager proposes v2 = Alice 100
-Alice approves v2
-activation MUST fail until Bob explicitly consents to supersession
+proposed v2 = Alice 100
+Alice approves proposed v2
+activation MUST fail until Bob approves supersession
 ```
 
-## 6. Economic terms vs payout routing
+A one-recipient successor is valid once all required old/new consent exists.
 
-Participant authority, BPS share, and role are economic agreement fields.
+## 6. Economic identity vs payout routing
 
-Payout wallet is participant-controlled operational routing and is excluded from agreement hash.
+Economic hash binds:
 
-Only the participant authority may update that participant's payout wallet.
+```text
+participant authority
+share BPS
+role code
+```
 
-A manager, guardian, governance authority, claim triggerer, or another participant cannot redirect it.
+It does not bind current payout wallet.
+
+Only participant authority may rotate that participant's payout wallet. Manager, governance, guardian, claim triggerer, payer and other participants cannot redirect it.
 
 Required test:
 
 ```text
-participant B signs update_payout_wallet(B2)
-B share remains identical
-agreement hash remains identical
-A payout wallet remains identical
-future B claims use canonical ATA(B2)
+B rotates payout wallet B1 -> B2
+agreement hash unchanged
+B share unchanged
+A routing unchanged
+future B claim uses ATA(B2, USDC)
 ```
 
-## 7. Pull-claim liveness model
+## 7. Pull-claim liveness
 
-V1 deliberately separates allocation from token delivery.
+Allocation and claims are separate.
 
-One unhealthy recipient destination must not block another participant from receiving funds.
+A missing/frozen/unusable recipient destination must not block another participant.
 
-A claim transaction references one participant index and one canonical destination ATA. A failure for that claim rolls back only that transaction.
+Each claim references one participant and one canonical current payout ATA. Failed claim transaction changes no state.
 
-This protects against:
+Studio/third-party keepers may automatically submit claims, but correctness/liveness does not require RoyaltyRail's keeper.
 
-- missing recipient ATA;
-- frozen recipient token account;
-- malformed recipient account input;
-- recipient wallet rotation;
-- one recipient being temporarily operationally unavailable.
+## 8. Claim amount width proof
 
-Studio/keepers may automatically push claims so users do not need to manually withdraw.
+SPL token-account amount is `u64`.
 
-## 8. USDC freeze-authority limitation
+From solvency:
 
-The original SPL Token Program supports token-account freezing when the mint retains freeze authority. A frozen token account cannot receive or transfer tokens until thawed.
+```text
+sum(all current claimable) <= inbox_balance <= u64::MAX
+```
 
-RoyaltyRail mitigates recipient freeze risk by allowing participant-controlled payout-wallet rotation and per-participant claims.
+Therefore:
 
-RoyaltyRail cannot cryptographically eliminate issuer-level controls over native USDC itself. A frozen Royalty Inbox would be a settlement-asset/issuer-level failure outside RoyaltyRail's authority.
+```text
+claimable_i <= u64::MAX
+```
 
-This trust dependency must be disclosed in production risk documentation.
+for every participant in every valid solvent state.
 
-## 9. Asset boundary
+Lifetime cumulative values remain `u128`, but a current claim cannot exceed the token transfer amount type. No claim chunking is required.
 
-V1 accepts exactly one configured settlement mint and original SPL Token Program per deployment.
+Phase 3 must include an invariant test proving this relationship rather than relying only on prose.
+
+## 9. USDC issuer controls
+
+An original SPL Token account can be frozen when its mint retains freeze authority. A frozen account cannot receive, transfer or burn until thawed.
+
+RoyaltyRail mitigates recipient-account freeze by independent claims + participant payout rotation.
+
+RoyaltyRail cannot eliminate issuer-level controls over native USDC. If the Royalty Inbox itself is frozen by the issuer, RoyaltyRail cannot transfer those tokens. This is an external settlement-asset trust dependency and must be disclosed.
+
+## 10. Asset boundary
+
+One configured settlement mint and original SPL Token Program per deployment.
 
 Reject:
 
 - lookalike USDC;
 - arbitrary caller mints;
 - Token-2022 accounts;
-- source/destination token accounts for another mint;
-- token program IDs other than configured original SPL Token Program.
+- wrong-mint source/destination accounts;
+- wrong Token Program;
+- uninitialized mint;
+- unexpected decimals for configured USDC deployment.
 
-TransferChecked or equivalent decimal-verified transfer semantics should be preferred in implementation.
+Implementation should use checked transfer semantics with explicit mint decimals.
 
-## 10. Direct payer source accounts
+## 11. Direct payer source
 
-Direct funding source does not need to be an ATA.
+Direct funding source need not be ATA.
 
-Required checks:
+Must verify:
 
-- source account owned by configured Token Program;
-- source account mint equals configured settlement mint;
-- source token authority equals payer signer propagated into RoyaltyRail;
-- amount positive and sufficient;
-- delegated authority is not supported unless separately specified/tested.
+- owned by configured Token Program;
+- mint equals configured settlement mint;
+- token authority equals propagated payer signer;
+- positive sufficient amount.
 
-This allows treasuries/smart-wallets/programmatic integrations without weakening token-authority validation.
+Delegated SPL token authority/multisig source support is not v1 unless separately specified and tested.
 
-## 11. Royalty Inbox authority
+This still allows many smart-wallet/programmatic flows when their PDA authority is propagated as signer via CPI.
 
-Vault authority PDA:
+## 12. Royalty Inbox authority
+
+Vault PDA:
 
 ```text
 [b"vault", agreement_version]
 ```
 
-Royalty Inbox must equal canonical ATA for vault authority + configured mint + configured Token Program.
+Royalty Inbox is exact canonical ATA for vault PDA + configured USDC mint + configured Token Program.
 
-No v1 instruction equivalent to these may exist:
+No v1 equivalent of:
 
 ```text
 admin_withdraw
 rescue_to_arbitrary_destination
 override_claim_destination
 force_custom_allocation
-edit_participant_share
+edit_share
 ```
 
-Program CPI inventory must be audited to prove this, not merely rely on documentation.
+may exist.
 
-## 12. Inbox accounting attacks
+Audit must inspect actual instruction/CPI inventory, not merely documentation.
 
-External parties may send configured USDC to the public Royalty Inbox at any time.
+## 13. External deposit / dust / concurrency attacks
 
-Attack attempts include:
+Anyone can send configured USDC to a public Royalty Inbox.
 
-- dust deposits;
-- front-running allocation with a deposit;
-- racing a claim and allocation;
-- repeated micro-deposits;
-- depositing during direct funding.
-
-The vault-solvency equation makes these safe:
-
-```text
-unallocated = inbox_balance - allocated_unclaimed
-```
-
-Claims decrease both terms equally. External deposits only increase balance. `allocate_inbox` allocates only the positive difference.
-
-Concurrency tests must fuzz arbitrary sequences of:
+Test arbitrary sequences of:
 
 ```text
 external_deposit
@@ -227,9 +255,29 @@ allocate_inbox
 claim_participant
 ```
 
-while preserving the solvency invariant.
+including dust/micro-deposits and races.
 
-## 13. Agreement-hash security
+The invariant:
+
+```text
+unallocated = inbox_balance - allocated_unclaimed
+```
+
+must hold after every successful transition.
+
+Micro-deposit partitioning may affect which participant gets an indivisible micro-USDC unit at an intermediate point, but lifetime deviation remains bounded below one base unit.
+
+## 14. Wrong raw deposit risk
+
+Raw address-only deposits are irreversible at the protocol layer once allocated.
+
+RoyaltyRail deliberately does not add an admin refund/backdoor because that authority could become a custody/seizure primitive.
+
+Studio/API must provide strong network/mint/version/address confirmation and recommend a test transfer for unfamiliar large payers.
+
+Direct `fund_and_allocate` is preferred for programmable integrations because intent/reference/nonce are explicit.
+
+## 15. Agreement-hash security
 
 Agreement hash binds:
 
@@ -242,28 +290,35 @@ Agreement hash binds:
 - terms hash;
 - canonical participant authority/share/role vector.
 
-It intentionally excludes payout routing/accounting state.
+Payout routing/accounting state is excluded intentionally.
 
-Encoding rules:
+Encoding:
 
 - versioned domain separator;
-- fixed-width binary fields;
+- fixed-width binary values;
 - little-endian integers;
 - canonical participant order;
 - SHA-256;
-- no JSON/map serialization for the on-chain economic hash.
+- no JSON/map serialization for on-chain economic hash.
 
-Rust and TypeScript must pass identical fixed vectors.
+Rust/TypeScript fixed vectors must match exactly.
 
-## 14. Deployment-domain separation
+## 16. Human-readable terms integrity
 
-`deployment_id` is non-zero, immutable, and included in agreement/allocation commitments.
+`terms_hash` anchors the Agreement Manifest.
 
-This prevents ambiguous commitments across independent deployments or clusters reusing similar identifiers/test data.
+Studio/SDK must:
 
-Initialization must reject an all-zero deployment ID.
+1. validate manifest schema;
+2. canonicalize using the specified manifest canonicalization;
+3. compute `terms_hash`;
+4. verify manifest economic participant data against proposed on-chain fields;
+5. compute/verify agreement hash;
+6. only then request participant signature.
 
-## 15. Allocation-commitment security
+A compromised hosted frontend must not be able to show one deal while approving another without a conforming independent client detecting the mismatch.
+
+## 17. Allocation-commitment security
 
 Allocation commitment binds:
 
@@ -272,296 +327,214 @@ Allocation commitment binds:
 - post-increment allocation sequence;
 - allocation mode;
 - gross amount;
-- 32-byte reconciliation reference;
+- reconciliation reference;
 - canonical participant authority/allocation vector.
 
-It does not bind payout wallet because allocation and delivery are separate security domains.
+Payout wallet is excluded because delivery may legitimately rotate after economic allocation.
 
-## 16. Payout-claim security
+## 18. Claim security
 
-`claim_participant(index)` must validate:
+`claim_participant(index)` verifies:
 
 - exact AgreementVersion PDA;
 - valid status;
-- claims not paused;
-- index in bounds;
-- claimable amount > 0;
-- canonical Royalty Inbox;
-- exact canonical ATA of participant's **current** payout wallet;
+- claims unpaused;
+- valid index;
+- positive claimable balance;
+- exact Royalty Inbox;
+- exact canonical ATA of participant's current payout wallet;
 - configured mint/token program;
-- claimable amount fits u64;
-- inbox token balance sufficient.
+- inbox has sufficient balance.
 
-Only program-derived vault authority signs outgoing transfer.
+Claim caller supplies neither destination economics nor arbitrary payout amount.
 
-Claim triggerer never chooses destination or amount.
+Vault PDA signs transfer.
 
-## 17. Payout-wallet rotation security
+## 19. Payout rotation security
 
-`update_payout_wallet` requires exact participant authority signer.
+Requires exact participant authority signer.
 
-Must reject:
+Reject:
 
-- default/zero wallet;
+- default address;
 - no-op update;
-- cancelled agreement;
-- caller controlling another participant's index.
+- Cancelled agreement;
+- attempt to mutate another participant.
 
-Each successful update increments `payout_revision` and emits previous/new routing metadata sufficient for audit indexing.
+Every success increments `payout_revision` and emits auditable event.
 
-For high-value users, Studio should recommend approval authorities backed by smart-wallet/multisig/social-recovery controls rather than a single hot key.
+High-value users should use recoverable/multisig/smart-wallet participant authorities rather than hot-key-only identities.
 
-## 18. Participant-key loss tradeoff
+## 20. Lost/compromised authority tradeoff
 
-If a participant loses the authority needed to approve future amendments, RoyaltyRail must prefer protecting their existing economics over allowing a manager to bypass them.
+If a participant loses the authority required for amendments, RoyaltyRail prefers preserving that participant's current economics over giving manager/admin a bypass.
 
-Therefore v1 does not include a manager-controlled participant-recovery primitive.
+V1 has no manager-controlled participant recovery.
 
-Users requiring recoverability should use an approval authority with appropriate key-recovery/multisig policy.
+Future recovery/assignment policy must be explicitly agreed in advance and separately threat-modeled.
 
-Any future participant-authority recovery system requires a separate economic-consent threat model.
+If participant authority itself is compromised, attacker may use powers that authority legitimately has (e.g. payout rotation/consent). RoyaltyRail cannot distinguish attacker from key holder.
 
-## 19. Manager-authority boundary
+## 21. Manager boundary
 
-Manager controls descriptive metadata and proposal creation only.
+Manager may manage metadata/proposals within allowed flows.
 
 Manager cannot:
 
-- activate without participant consent;
+- activate around approvals;
 - bypass predecessor consent;
-- redirect payout wallets;
-- claim participant funds elsewhere;
+- change payout wallets;
 - withdraw inbox funds;
-- alter existing allocation state.
+- rewrite allocations/claims.
 
-Work/Pool manager transfer should use two-step propose/accept to reduce mistaken-address handoff.
+Management transfer is two-step propose/accept.
 
-## 20. Guardian/governance separation
+## 22. Guardian / governance boundary
 
-Production authority model:
+Guardian may only set pause domains false -> true.
 
-### Guardian
+Governance may pause/unpause and rotate guardian.
 
-May only set pause domains from false -> true.
+Neither moves funds or changes participant economics.
 
-### Governance
+Compromised guardian can cause temporary DoS; this operational trust must be disclosed and monitored.
 
-May pause/unpause and rotate guardian within v1-configured controls.
+## 23. Upgrade-authority threat
 
-Neither may move funds or alter participant economics.
-
-Production governance should be hardened multisig/governance rather than a hot key.
-
-## 21. Upgrade-authority threat
-
-An upgradeable program can replace application code and bypass application-level invariants.
+Upgradeable program authority can replace bytecode and bypass application-level guarantees.
 
 Before meaningful mainnet value:
 
-- upgrade authority must not be one hot wallet;
-- use hardened multisig/governance;
-- define normal upgrade delay/timelock policy;
-- publish/monitor ProgramData changes;
-- use verifiable builds;
-- document emergency upgrade process;
-- define long-term criterion for making a mature audited deployment immutable.
+- no single hot-wallet upgrade authority;
+- hardened multisig/governance;
+- normal upgrade delay/timelock policy;
+- ProgramData monitoring;
+- reproducible/verifiable builds;
+- emergency process;
+- long-term immutability criterion.
 
-The product must never market application-level no-custody guarantees without also disclosing upgradeability status.
+Do not market “non-custodial/no admin withdrawal” without disclosing current upgradeability status.
 
-## 22. Account substitution checks
+## 24. Account substitution checks
 
-Every caller-supplied account must be constrained.
+Every caller-provided account is constrained.
 
-### Config
-- exact config PDA;
-- RoyaltyRail-owned;
-- expected schema.
+- Config: exact config PDA/schema.
+- Work/Pool/Agreement: exact PDA + parent relationships + schema/status.
+- Vault: exact PDA.
+- Inbox: exact ATA(vault, mint, token program).
+- Payer source: configured mint/program + signer authority.
+- Claim destination: exact ATA(current payout wallet, mint, token program).
 
-### Work/Pool/Agreement
-- exact PDA seeds;
-- expected stored parent relationship;
-- expected schema/status.
+Never trust array position or caller label alone.
 
-### Royalty Inbox
-- exact ATA for derived vault authority + configured mint/token program.
+## 25. Arithmetic
 
-### Direct payer source
-- configured mint;
-- configured token program;
-- token authority == payer signer.
-
-### Claim destination
-- exact ATA for stored current payout wallet + configured mint/token program.
-
-No account is trusted because of array position alone.
-
-## 23. Arithmetic security
-
-- integer-only math;
-- no unchecked add/sub/mul/div;
-- no unchecked narrowing;
-- allocation input u64;
-- cumulative gross/allocation/claim state u128;
-- actual SPL transfers checked to u64;
-- conservation and residual bounds asserted;
+- no floats;
+- checked add/sub/mul/div;
+- checked narrowing;
+- current SPL amounts `u64`;
+- lifetime accounting `u128`;
+- no wrapping sequence/version/revision/nonces;
 - invariant failure aborts transaction.
 
-Rust implementation must match TypeScript vectors and randomized property tests.
+Rust must match canonical TypeScript allocation vectors/property tests.
 
-## 24. Replay/idempotency
+## 26. Replay / idempotency
 
-### Approval
+### Proposed approval
 Already-approved bit fails.
 
-### Supersession consent
+### Supersession approval
 Already-approved predecessor bit fails.
 
 ### Direct funding
-Expected agreement-wide nonce is consumed exactly once.
+Expected direct nonce consumed exactly once. Global per-agreement nonce is intentionally conservative and may serialize concurrent direct funders. SDK must refresh/retry nonce conflicts safely.
 
-This is conservative and can create contention among concurrent direct funders. SDK must automatically refresh/retry nonce-conflict transactions.
-
-`payment_reference` is reconciliation metadata, **not** replay protection.
-
-Payer-scoped nonce/idempotency receipts are deferred pending scale benchmarks.
+### Inbox allocation
+Does not use/consume direct nonce. Its amount is derived from current vault state.
 
 ### Claims
-A successful full claim updates cumulative claimed. Immediate repeat against zero claimable fails.
+Full current claim updates cumulative claimed; immediate repeat with zero claimable fails.
 
-## 25. Sequence overflow
+### Business payment idempotency
+`payment_reference` is reconciliation metadata, not an on-chain duplicate set. SDK/API must resolve uncertain transaction status before using a new nonce. Future optional receipt PDA may address enterprise demand.
 
-All version, revision, nonce, and sequence increments are checked.
+## 27. 16-participant bitmap edge
 
-Overflow causes failure. No wrapping allowed.
-
-## 26. 16-participant approval-mask edge case
-
-For 16 participants:
+For participant count 16:
 
 ```text
 required_mask = u16::MAX
 ```
 
-Do not evaluate `1u16 << 16`.
+Never evaluate `1u16 << 16`.
 
-Dedicated tests required for both proposed approval and predecessor supersession masks.
+Test both proposed approval and predecessor supersession masks.
 
-## 27. Pause threat model
+## 28. Privacy
 
-Pause domains:
+V1 is public-chain infrastructure.
 
-```text
-agreements
-allocations
-claims
-```
+Never place sensitive PII on-chain.
 
-Pauses stop execution; they do not transfer custody or modify balances/economics.
+Percentages, participant authorities, allocation/claim state and token flows are publicly observable. Dedicated wallets reduce casual linkage only; they are not cryptographic privacy.
 
-A compromised guardian can cause temporary DoS until governance rotates guardian/unpauses. This operational trust must be documented.
+Confidential splits require a different future architecture.
 
-Consider an operational maximum emergency-pause policy/timelock before mainnet, even if enforcement remains governance-layer rather than program-layer.
+## 29. Negative statements / chargebacks
 
-## 28. Denial-of-service scenarios
+V1 never creates negative allocation and never confiscates already-claimed tokens.
 
-Test:
+External royalty corrections, returns and chargebacks must be netted before new distributable funds enter RoyaltyRail or resolved commercially outside v1.
 
-- frozen recipient ATA;
-- closed/missing recipient ATA;
-- payout rotation to fresh wallet;
-- malformed claim destination;
-- Royalty Inbox frozen by issuer (documented external dependency);
-- max 16 participants;
-- claim amount > u64 due cumulative state (must split/handle design before impossible state is reachable);
-- compute limit exhaustion;
-- transaction format compatibility;
-- manager key loss;
-- participant key loss;
-- guardian pause;
-- RPC/indexer outage;
-- RoyaltyRail backend outage.
+Do not misrepresent v1 as a full royalty accounting/recoupment engine.
 
-The protocol must remain directly callable without RoyaltyRail infrastructure.
+## 30. Rights disputes / incomplete shares
 
-## 29. Transaction-format/compute compatibility
+V1 only activates resolved executable payment instructions totaling 10,000 BPS.
 
-Do not require the newest transaction format unless benchmark evidence shows it is necessary.
+It does not decide disputed, under-claimed, over-claimed or unknown music rights.
 
-Phase 3 must benchmark legacy/v0/v1 construction where relevant and max-participant account/compute usage.
+A future suspense/dispute layer may support these conditions; adding admin discretion to v1 is not an acceptable shortcut.
 
-If v1-format transactions are used, SDK must explicitly configure required resource limits because v1 transaction resource defaults differ from legacy/v0 behavior.
+## 31. Transaction/compute compatibility
 
-## 30. Data privacy
+Benchmark maximum participant paths before Anchor merge.
 
-On-chain V1 data is public.
+Do not require newest transaction format unless needed.
 
-Do not store:
+If Solana v1 transactions are used, SDK must explicitly configure v1 message resources because their resource configuration differs from legacy/v0 transactions.
 
-- tax IDs;
-- government IDs;
-- bank accounts;
-- home addresses;
-- private contract text;
-- private email/phone data.
+## 32. Data availability
 
-Percentages and participant authorities remain publicly visible. Dedicated wallets are not cryptographic privacy.
+Hash integrity is not content availability.
 
-Private/confidential splits require a future distinct design.
+Before beta, exact Agreement Manifest/evidence package must be exportable and retrievable without dependence on a single hosted RoyaltyRail database.
 
-## 31. Human-readable approval risk
+## 33. Pre-mainnet gate
 
-A cryptographic hash is not sufficient UX by itself.
-
-Studio must show a deterministic human-readable agreement summary before signature and retain/export an evidence package linking that representation to the approved hash.
-
-Do not label protocol approval as a universally legally sufficient signature without jurisdiction-specific legal review.
-
-## 32. Terms-manifest availability
-
-Before beta, define a versioned Agreement Manifest schema and redundant/content-addressed retention strategy so users can independently recover the human-readable terms corresponding to `terms_hash` even if RoyaltyRail's hosted frontend/indexer disappears.
-
-## 33. Dependency/CPI policy
-
-Expected external programs only:
-
-- System Program when needed for state creation;
-- Associated Token Program for canonical inbox/recipient ATA creation helpers;
-- original SPL Token Program for USDC transfers.
-
-No caller-selected arbitrary CPI targets.
-
-Original SPL Token Program avoids Token-2022 transfer-hook callback surfaces in v1.
-
-## 34. Reserved account bytes
-
-Reserved padding must initialize to zero and remain inaccessible to ordinary v1 instructions.
-
-A future schema may interpret it only through reviewed migration/version logic.
-
-Reserved bytes cannot become a backdoor for changing existing economics.
-
-## 35. Pre-mainnet gate
-
-Production royalties remain forbidden until all are complete:
+Production royalties remain forbidden until:
 
 - Anchor unit/integration tests;
 - local-validator adversarial suite;
-- randomized state-machine/fuzz tests;
+- randomized state-machine/interleaving tests;
 - TypeScript/Rust allocation parity;
-- agreement/allocation hash parity;
+- agreement/allocation commitment parity;
+- 1–16 participant tests;
 - predecessor-consent tests;
 - payout-rotation tests;
-- claim-isolation tests;
-- inbox solvency/interleaving tests;
-- max-participant compute/transaction benchmarks;
+- inbox solvency + claim-isolation tests;
+- direct-vs-inbox nonce-separation tests;
+- account substitution tests;
+- max-size/compute/transaction benchmarks;
 - dependency/toolchain pinning;
 - reproducible/verifiable builds;
-- production governance/guardian/upgrade policy;
-- monitoring/alerting;
-- incident-response runbook;
+- hardened governance/guardian/upgrade policy;
+- monitoring + incident runbook;
 - independent smart-contract audit;
 - payments/fintech legal architecture review;
 - entertainment/royalty workflow legal review;
-- explicit mainnet checklist/sign-off.
+- explicit mainnet sign-off.
 
 Green CI is not mainnet readiness.
