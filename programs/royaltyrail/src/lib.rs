@@ -1,13 +1,16 @@
 use anchor_lang::prelude::*;
 
+pub mod agreement_ix;
 pub mod error;
 pub mod events;
 pub mod lifecycle;
 pub mod pda;
 pub mod state;
 
+use agreement_ix::*;
 use error::RoyaltyRailError;
 use events::*;
+use lifecycle::AgreementParticipantInput;
 use pda::{CONFIG_SEED, POOL_SEED, WORK_SEED};
 use state::{
     ProtocolConfigState, RevenuePoolKind, RevenuePoolState, SettlementBasis, WorkState,
@@ -434,6 +437,59 @@ pub mod royaltyrail {
             new_manager: authority,
         });
         Ok(())
+    }
+
+    pub fn propose_agreement(
+        ctx: Context<ProposeAgreement>,
+        version: u32,
+        terms_hash: [u8; 32],
+        participants: Vec<AgreementParticipantInput>,
+    ) -> Result<()> {
+        agreement_ix::process_propose_agreement(ctx, version, terms_hash, participants)
+    }
+
+    pub fn approve_agreement(
+        ctx: Context<ApproveAgreement>,
+        expected_agreement_hash: [u8; 32],
+        payout_wallet: Pubkey,
+    ) -> Result<()> {
+        agreement_ix::process_approve_agreement(ctx, expected_agreement_hash, payout_wallet)
+    }
+
+    pub fn approve_supersession(
+        ctx: Context<ApproveSupersession>,
+        expected_new_hash: [u8; 32],
+    ) -> Result<()> {
+        agreement_ix::process_approve_supersession(ctx, expected_new_hash)
+    }
+
+    pub fn reject_agreement(ctx: Context<RejectAgreement>) -> Result<()> {
+        agreement_ix::process_reject_agreement(ctx)
+    }
+
+    pub fn reject_replacement(ctx: Context<RejectReplacement>) -> Result<()> {
+        agreement_ix::process_reject_replacement(ctx)
+    }
+
+    pub fn cancel_agreement(ctx: Context<CancelAgreement>) -> Result<()> {
+        agreement_ix::process_cancel_agreement(ctx)
+    }
+
+    pub fn activate_initial_agreement(ctx: Context<ActivateInitialAgreement>) -> Result<()> {
+        agreement_ix::process_activate_initial(ctx)
+    }
+
+    pub fn activate_replacement_agreement(
+        ctx: Context<ActivateReplacementAgreement>,
+    ) -> Result<()> {
+        agreement_ix::process_activate_replacement(ctx)
+    }
+
+    pub fn update_payout_wallet(
+        ctx: Context<UpdatePayoutWallet>,
+        new_wallet: Pubkey,
+    ) -> Result<()> {
+        agreement_ix::process_update_payout_wallet(ctx, new_wallet)
     }
 }
 
