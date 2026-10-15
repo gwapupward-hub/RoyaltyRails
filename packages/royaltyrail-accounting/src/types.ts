@@ -8,7 +8,7 @@ export type SettlementBasis =
   | "PAYMENT_DIRECTION";
 
 export interface Participant {
-  /** Stable identifier inside an agreement version. */
+  /** Stable economic participant identifier inside an agreement version. */
   id: string;
   /** Integer basis points. 10_000 = 100%. */
   shareBps: number;
@@ -20,27 +20,27 @@ export interface Agreement {
   settlementBasis: SettlementBasis;
   /**
    * Order is canonical and therefore part of the agreement semantics.
-   * It is used only as a deterministic tie-break when rounding scores are equal.
+   * It is used only as a deterministic tie-break when allocation scores are equal.
    */
   participants: readonly Participant[];
 }
 
 export interface CumulativeState {
-  /** Total base units successfully settled under this agreement version. */
+  /** Total settlement-asset base units allocated under this agreement version. */
   gross: bigint;
-  /** Lifetime amount paid to each participant. */
-  paid: Readonly<Record<string, bigint>>;
-  /** Expected nonce for the next direct settlement. */
-  nextSettlementNonce: bigint;
+  /** Lifetime economic allocation to each participant. Token claims are tracked separately on-chain. */
+  allocated: Readonly<Record<string, bigint>>;
+  /** Expected nonce for the next direct funding + allocation operation. */
+  nextDirectNonce: bigint;
 }
 
-export interface SettlementInput {
-  /** Positive native token base-unit amount, e.g. USDC has 6 decimals. */
+export interface AllocationInput {
+  /** Positive settlement-asset base-unit amount, e.g. native USDC has 6 decimals. */
   amount: bigint;
   expectedNonce: bigint;
 }
 
-export interface SettlementResult {
-  payouts: Readonly<Record<string, bigint>>;
+export interface AllocationResult {
+  allocations: Readonly<Record<string, bigint>>;
   nextState: CumulativeState;
 }
