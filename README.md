@@ -21,7 +21,7 @@ RoyaltyRail is not production-ready and must not be used to custody or settle re
 - Solana
 - Native USDC settlement
 - Percentage-based revenue pools
-- 10,000-BPS accounting
+- 100,000,000-share-unit accounting
 - 1–16 participants
 - Unanimous participant approval
 - Replacement versions require consent from both old and new participant sets

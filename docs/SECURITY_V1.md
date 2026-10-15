@@ -42,7 +42,7 @@ Security-critical relationships are re-derived or constrained on-chain.
 
 ```text
 participant_count in 1..=16
-sum(shares) == 10_000 BPS
+sum(shares) == 10_000 share units
 all shares > 0
 sum(current allocations) == newly allocated amount
 sum(cumulative_allocated) == cumulative_gross
@@ -93,7 +93,7 @@ Core on-chain economic identity binds:
 
 ```text
 participant authority
-share BPS
+share units
 ```
 
 Detailed music roles/credits are deliberately **not** independent on-chain economic fields. They may be multi-valued and evolve with industry vocabularies, so they live in the deterministic Agreement Manifest and are cryptographically anchored by `terms_hash`.
@@ -356,7 +356,7 @@ External royalty corrections, returns and chargebacks must be netted before new 
 
 ## 30. Rights disputes / incomplete shares
 
-V1 only activates resolved executable payment instructions totaling 10,000 BPS. It does not decide disputed, under-claimed, over-claimed or unknown music rights.
+V1 only activates resolved executable payment instructions totaling 100,000,000 share units. It does not decide disputed, under-claimed, over-claimed or unknown music rights.
 
 A future suspense/dispute layer may support these conditions; adding admin discretion to v1 is not an acceptable shortcut.
 

@@ -46,7 +46,7 @@ Core economic agreement binds:
 
 ```text
 participant authority
-share BPS
+share units
 ```
 
 Payout wallet is participant-controlled routing state and is excluded from agreement hash.
@@ -193,7 +193,7 @@ Direct replay protection exists only in the Solana protocol wrapper.
 
 The original 2-recipient minimum blocked legitimate cases such as full assignments, catalog/entity consolidation, estates, or a collaborator's unanimously consented exit.
 
-V1 now supports 1–16 participants. One participant must hold 10,000 BPS.
+V1 now supports 1–16 participants. One participant must hold 100,000,000 share units.
 
 ## A-018 — Creative role coupling — RESOLVED
 
@@ -227,7 +227,7 @@ External corrections/returns/chargebacks are netted before new distributable dep
 
 ## A-021 — Unresolved/disputed rights — EXPLICIT V1 BOUNDARY
 
-RoyaltyRail v1 executes resolved 10,000-BPS payment instructions. It does not adjudicate ownership disputes or manufacture missing shares.
+RoyaltyRail v1 executes resolved 100,000,000-share-unit payment instructions. It does not adjudicate ownership disputes or manufacture missing shares.
 
 Future suspense/dispute infrastructure may isolate unresolved revenue without adding administrator discretion to v1.
 

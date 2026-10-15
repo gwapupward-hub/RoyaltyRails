@@ -33,8 +33,8 @@ Economic terms are immutable per agreement version. A participant may rotate onl
 - mainnet deployment uses the intended native Circle-issued Solana USDC mint;
 - original SPL Token Program only;
 - 1–16 participants per agreement version;
-- integer BPS only;
-- active shares total exactly 10,000 BPS;
+- integer share units only (100,000,000 units = 100%);
+- active shares total exactly 100,000,000 share units;
 - canonical unique participant authorities;
 - unanimous proposed-participant approval;
 - replacement versions also require unanimous predecessor supersession consent;
@@ -97,7 +97,7 @@ Canonical ordering stabilizes agreement hashing, approval indices, supersession-
 
 Duplicate payout wallets are allowed.
 
-A one-participant agreement is valid only when that participant has exactly 10,000 BPS. This supports buyouts, full assignments, estates/entities, and a collaborator's consented exit from a prior version.
+A one-participant agreement is valid only when that participant has exactly 100,000,000 share units. This supports buyouts, full assignments, estates/entities, and a collaborator's consented exit from a prior version.
 
 ## 5. ProtocolConfig
 
@@ -198,7 +198,7 @@ Embedded in AgreementVersion:
 ```text
 participant_authority: Pubkey
 payout_wallet: Pubkey
-share_bps: u16
+share_units: u32
 payout_revision: u32
 cumulative_allocated: u128
 cumulative_claimed: u128
@@ -208,7 +208,7 @@ Immutable economic fields:
 
 ```text
 participant_authority
-share_bps
+share_units
 ```
 
 Mutable participant/settlement fields:
@@ -370,7 +370,7 @@ terms_hash
 participant_count_u8
 for each canonical participant:
     participant_authority
-    share_bps_u16_le
+    share_units_u32_le
 ```
 
 Payout wallet and creative-role metadata are intentionally excluded from the core economic serialization. Roles remain cryptographically anchored through `terms_hash`.
@@ -588,7 +588,7 @@ Studio/API must clearly warn payers to verify network, native USDC mint, Agreeme
 
 V1 never creates negative allocations and never claws back claimed tokens. Corrected royalty statements/returns/negative adjustments must be netted before new distributable USDC is deposited or resolved commercially outside v1.
 
-V1 executes resolved 10,000-BPS payment instructions. It does not adjudicate under-claims, over-claims, contested rights, or unknown shares. Future suspense/dispute/offset modules require separate specifications.
+V1 executes resolved 100,000,000-share-unit payment instructions. It does not adjudicate under-claims, over-claims, contested rights, or unknown shares. Future suspense/dispute/offset modules require separate specifications.
 
 ## 27. Management authority transfer
 

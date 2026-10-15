@@ -238,7 +238,7 @@ token_program
 terms_hash
 agreement_hash
 participant_authority
-share_bps
+share_units
 ```
 
 Creative roles/credits are represented in the hashed Agreement Manifest, not as mutable or singular on-chain participant fields.

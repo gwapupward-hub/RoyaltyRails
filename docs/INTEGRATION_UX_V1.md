@@ -299,7 +299,7 @@ RoyaltyRail v1 is a settlement protocol for **resolved payment instructions**.
 
 It is not a rights-conflict adjudicator.
 
-If shares are unknown, disputed, under-claimed or over-claimed, Studio should not manufacture a 100% executable split. The agreement should remain off-chain/draft until the parties define a valid 10,000-BPS settlement configuration.
+If shares are unknown, disputed, under-claimed or over-claimed, Studio should not manufacture a 100% executable split. The agreement should remain off-chain/draft until the parties define a valid 100,000,000-share-unit settlement configuration.
 
 A future suspense/dispute module may isolate disputed revenue without weakening deterministic v1 agreements.
 

@@ -26,7 +26,7 @@ Requirements:
 - deterministic JCS property ordering;
 - no application-specific whitespace dependence;
 - money/base-unit values that could exceed safe JSON-number precision use decimal strings;
-- BPS values use ordinary integers;
+- share-unit values use ordinary integers;
 - no NaN/Infinity/-0 semantics;
 - array order is meaningful and MUST NOT be reordered by canonicalization.
 
@@ -50,7 +50,7 @@ Changing manifest content changes `terms_hash`, therefore changes the agreement 
 
 ## 4. V1 manifest shape
 
-Illustrative **valid 10,000-BPS** example:
+Illustrative **valid 100,000,000-share-unit** example:
 
 ```json
 {
@@ -86,13 +86,13 @@ Illustrative **valid 10,000-BPS** example:
       "participantAuthority": "<artist-solana-pubkey>",
       "displayName": "Artist",
       "roles": ["PRIMARY_ARTIST", "SONGWRITER"],
-      "shareBps": 9500
+      "shareUnits": 95000000
     },
     {
       "participantAuthority": "<producer-solana-pubkey>",
       "displayName": "Producer A",
       "roles": ["PRODUCER", "SONGWRITER"],
-      "shareBps": 500
+      "shareUnits": 5000000
     }
   ],
   "terms": {
@@ -122,10 +122,10 @@ Every participant entry must correspond one-to-one with an on-chain economic par
 
 ```text
 participantAuthority
-shareBps
+shareUnits
 ```
 
-Studio MUST compare those economic fields against the proposed on-chain agreement before signature and MUST reject a manifest whose shares do not total exactly 10,000 BPS.
+Studio MUST compare those economic fields against the proposed on-chain agreement before signature and MUST reject a manifest whose shares do not total exactly 100,000,000 share units.
 
 Creative roles/credits are **manifest metadata**, not duplicate on-chain economic fields. The manifest may assign multiple roles to one participant. Because roles are inside the canonical manifest, they remain cryptographically protected by `terms_hash` without forcing the core Solana account layout to maintain a music-industry role taxonomy.
 
@@ -157,7 +157,7 @@ MANAGER
 OTHER:<namespace>:<value>
 ```
 
-Role labels do **not** determine payment math. The approved `shareBps` does.
+Role labels do **not** determine payment math. The approved `shareUnits` does.
 
 Future DDEX adapters should map these manifest roles to applicable DDEX party/role vocabulary without requiring a protocol migration.
 
