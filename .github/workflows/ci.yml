@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  accounting:
-    name: Accounting engine
+  reference-specs:
+    name: TypeScript reference specs
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
