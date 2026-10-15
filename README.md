@@ -22,7 +22,7 @@ RoyaltyRail is not production-ready and must not be used to custody or settle re
 - Native USDC settlement
 - Percentage-based revenue pools
 - 10,000-BPS accounting
-- 2–16 participants
+- 1–16 participants
 - Unanimous participant approval
 - Replacement versions require consent from both old and new participant sets
 - Immutable economic terms per version
@@ -32,6 +32,7 @@ RoyaltyRail is not production-ready and must not be used to custody or settle re
 - Permissionless per-participant claims
 - One broken/frozen recipient cannot block other recipients
 - Canonical deployment-scoped agreement/allocation commitments
+- Deterministic human-readable Agreement Manifest
 - No admin withdrawal or payout override path
 - Governance/guardian pause separation
 - 0% protocol settlement fee during initial rollout
@@ -58,26 +59,20 @@ RoyaltyRail Studio/keepers can push claims automatically, preserving the normal 
 
 Economic terms and payout routing are intentionally separate.
 
-A participant's:
-
-- authority
-- percentage
-- role
-
-are part of the immutable agreement economics.
-
-That participant's payout wallet is their own routing state. They may rotate it without changing the split or requesting signatures from everyone else.
+A participant's authority, percentage and role are part of immutable agreement economics. The payout wallet is that participant's own routing state and may be rotated without group approval.
 
 A manager cannot remove an existing participant in a replacement agreement without that participant consenting to supersession.
 
 ## Specification
 
-- [`docs/ACCOUNTING_V1.md`](docs/ACCOUNTING_V1.md) — canonical allocation math
-- [`docs/PROTOCOL_V1.md`](docs/PROTOCOL_V1.md) — Solana account/instruction/allocation/claim specification
+- [`docs/ACCOUNTING_V1.md`](docs/ACCOUNTING_V1.md) — pure canonical allocation math
+- [`docs/PROTOCOL_V1.md`](docs/PROTOCOL_V1.md) — Solana accounts/instructions/allocation/claim specification
 - [`docs/STATE_MACHINE_V1.md`](docs/STATE_MACHINE_V1.md) — agreement, supersession, allocation and claim lifecycle
 - [`docs/SECURITY_V1.md`](docs/SECURITY_V1.md) — trust boundaries, threat model and mainnet gate
 - [`docs/ACCOUNT_LAYOUT_V1.md`](docs/ACCOUNT_LAYOUT_V1.md) — serialization and size bounds
-- [`docs/PREMERGE_AUDIT_V1.md`](docs/PREMERGE_AUDIT_V1.md) — architecture/security findings that hardened v1
+- [`docs/AGREEMENT_MANIFEST_V1.md`](docs/AGREEMENT_MANIFEST_V1.md) — deterministic human-readable agreement representation
+- [`docs/INTEGRATION_UX_V1.md`](docs/INTEGRATION_UX_V1.md) — adoption, SDK, fee sponsorship, keepers and operational UX
+- [`docs/PREMERGE_AUDIT_V1.md`](docs/PREMERGE_AUDIT_V1.md) — findings that hardened the v1 design
 
 ## Engineering sequence
 
@@ -98,9 +93,10 @@ The product name is **RoyaltyRail** (singular). This repository currently retain
 
 RoyaltyRail should be useful without requiring integrators to trust RoyaltyRail's hosted backend.
 
-The protocol/SDK should provide deterministic helpers for:
+Canonical SDK helpers should cover:
 
 - address derivation
+- Agreement Manifest canonicalization/hashing
 - agreement hashing
 - approval/supersession flows
 - direct funding
@@ -110,15 +106,21 @@ The protocol/SDK should provide deterministic helpers for:
 - allocation commitment verification
 - reconciliation references
 
+A third party should be able to independently verify every economic result from public protocol state and the published reference implementation.
+
+## Music-industry interoperability
+
+RoyaltyRail is being designed so richer music metadata and future DDEX adapters live above the small settlement core. The protocol handles approved executable payment instructions; it does not pretend to adjudicate unresolved rights claims.
+
 ## Privacy
 
-V1 is public-chain infrastructure. Participant authorities, percentages, allocations, claims, and token flows are publicly observable.
+V1 is public-chain infrastructure. Participant authorities, percentages, allocations, claims and token flows are publicly observable.
 
 RoyaltyRail does not claim confidential royalty splits in v1.
 
 ## Safety
 
-No contract, address, API, or economic output in this repository should be treated as production settlement infrastructure until explicit security, legal, deployment, and mainnet-readiness gates are complete.
+No contract, address, API or economic output in this repository should be treated as production settlement infrastructure until explicit security, legal, deployment and mainnet-readiness gates are complete.
 
 ## License
 
