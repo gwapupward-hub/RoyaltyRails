@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { initialState, settle, type Agreement } from "../src/index.js";
+import { allocate, initialState, type Agreement } from "../src/index.js";
 
 interface VectorFile {
   schemaVersion: number;
@@ -10,8 +10,8 @@ interface VectorFile {
     name: string;
     sharesBps: number[];
     deposits: string[];
-    expectedPayouts: string[][];
-    expectedFinalPaid: string[];
+    expectedAllocations: string[][];
+    expectedFinalAllocated: string[];
   }>;
 }
 
@@ -28,7 +28,7 @@ function agreement(sharesBps: number[]): Agreement {
   };
 }
 
-describe("canonical settlement vectors", () => {
+describe("canonical allocation vectors", () => {
   it("uses the expected schema", () => {
     expect(vectors.schemaVersion).toBe(1);
     expect(vectors.denominatorBps).toBe(10_000);
@@ -39,19 +39,23 @@ describe("canonical settlement vectors", () => {
       const a = agreement(vector.sharesBps);
       let state = initialState(a);
 
-      vector.deposits.forEach((rawDeposit, settlementIndex) => {
-        const result = settle(a, state, {
+      vector.deposits.forEach((rawDeposit, allocationIndex) => {
+        const result = allocate(a, state, {
           amount: BigInt(rawDeposit),
-          expectedNonce: state.nextSettlementNonce,
+          expectedNonce: state.nextDirectNonce,
         });
 
-        const actual = a.participants.map(({ id }) => (result.payouts[id] ?? 0n).toString());
-        expect(actual).toEqual(vector.expectedPayouts[settlementIndex]);
+        const actual = a.participants.map(({ id }) =>
+          (result.allocations[id] ?? 0n).toString(),
+        );
+        expect(actual).toEqual(vector.expectedAllocations[allocationIndex]);
         state = result.nextState;
       });
 
-      const finalPaid = a.participants.map(({ id }) => (state.paid[id] ?? 0n).toString());
-      expect(finalPaid).toEqual(vector.expectedFinalPaid);
+      const finalAllocated = a.participants.map(({ id }) =>
+        (state.allocated[id] ?? 0n).toString(),
+      );
+      expect(finalAllocated).toEqual(vector.expectedFinalAllocated);
     });
   }
 });
