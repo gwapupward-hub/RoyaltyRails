@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   reference-specs:
@@ -16,27 +16,34 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Generate reproducible lockfile candidate
+      - name: Generate reproducible lockfile
         run: npm install --package-lock-only --ignore-scripts
 
-      - name: Upload lockfile candidate
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-lock-candidate
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit lockfile on same-repository PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet -- package-lock.json && git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            echo "package-lock.json already committed and unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "build: lock Node dependencies"
+          git push origin HEAD:${GITHUB_HEAD_REF}
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies deterministically
+        run: npm ci
 
       - name: Typecheck, spec consistency, and tests
         run: npm run check
