@@ -1,10 +1,16 @@
 use anchor_lang::prelude::*;
 
+pub const SCHEMA_VERSION_V1: u16 = 1;
 pub const ANCHOR_DISCRIMINATOR_BYTES: usize = 8;
 pub const PARTICIPANT_STATE_BYTES: usize = 104;
 pub const PROTOCOL_CONFIG_PAYLOAD_BYTES: usize = 238;
+pub const PROTOCOL_CONFIG_ACCOUNT_BYTES: usize =
+    ANCHOR_DISCRIMINATOR_BYTES + PROTOCOL_CONFIG_PAYLOAD_BYTES;
 pub const WORK_PAYLOAD_BYTES: usize = 247;
+pub const WORK_ACCOUNT_BYTES: usize = ANCHOR_DISCRIMINATOR_BYTES + WORK_PAYLOAD_BYTES;
 pub const REVENUE_POOL_PAYLOAD_BYTES: usize = 249;
+pub const REVENUE_POOL_ACCOUNT_BYTES: usize =
+    ANCHOR_DISCRIMINATOR_BYTES + REVENUE_POOL_PAYLOAD_BYTES;
 pub const AGREEMENT_VERSION_MAX_PAYLOAD_BYTES: usize = 2_028;
 pub const AGREEMENT_VERSION_MAX_ACCOUNT_BYTES: usize =
     ANCHOR_DISCRIMINATOR_BYTES + AGREEMENT_VERSION_MAX_PAYLOAD_BYTES;
@@ -41,7 +47,8 @@ pub struct ParticipantState {
     pub cumulative_claimed: u128,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
+#[account]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ProtocolConfigState {
     pub schema_version: u16,
     pub bump: u8,
@@ -57,7 +64,8 @@ pub struct ProtocolConfigState {
     pub reserved: [u8; 64],
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
+#[account]
+#[derive(Debug, PartialEq, Eq)]
 pub struct WorkState {
     pub schema_version: u16,
     pub bump: u8,
@@ -72,7 +80,8 @@ pub struct WorkState {
     pub reserved: [u8; 64],
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
+#[account]
+#[derive(Debug, PartialEq, Eq)]
 pub struct RevenuePoolState {
     pub schema_version: u16,
     pub bump: u8,
@@ -90,7 +99,8 @@ pub struct RevenuePoolState {
     pub reserved: [u8; 64],
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
+#[account]
+#[derive(Debug, PartialEq, Eq)]
 pub struct AgreementVersionState {
     pub schema_version: u16,
     pub bump: u8,
@@ -124,6 +134,14 @@ mod tests {
         bytes.len()
     }
 
+    fn account_serialized_len<T: AccountSerialize>(value: &T) -> usize {
+        let mut bytes = Vec::new();
+        value
+            .try_serialize(&mut bytes)
+            .expect("serialize account state");
+        bytes.len()
+    }
+
     fn participant(index: u8) -> ParticipantState {
         ParticipantState {
             participant_authority: Pubkey::new_from_array([index; 32]),
@@ -154,6 +172,10 @@ mod tests {
             reserved: [0; 64],
         };
         assert_eq!(serialized_len(&config), PROTOCOL_CONFIG_PAYLOAD_BYTES);
+        assert_eq!(
+            account_serialized_len(&config),
+            PROTOCOL_CONFIG_ACCOUNT_BYTES
+        );
 
         let work = WorkState {
             schema_version: 1,
@@ -169,6 +191,7 @@ mod tests {
             reserved: [0; 64],
         };
         assert_eq!(serialized_len(&work), WORK_PAYLOAD_BYTES);
+        assert_eq!(account_serialized_len(&work), WORK_ACCOUNT_BYTES);
 
         let pool = RevenuePoolState {
             schema_version: 1,
@@ -187,6 +210,7 @@ mod tests {
             reserved: [0; 64],
         };
         assert_eq!(serialized_len(&pool), REVENUE_POOL_PAYLOAD_BYTES);
+        assert_eq!(account_serialized_len(&pool), REVENUE_POOL_ACCOUNT_BYTES);
 
         let agreement = AgreementVersionState {
             schema_version: 1,
@@ -214,6 +238,10 @@ mod tests {
         assert_eq!(
             serialized_len(&agreement),
             AGREEMENT_VERSION_MAX_PAYLOAD_BYTES
+        );
+        assert_eq!(
+            account_serialized_len(&agreement),
+            AGREEMENT_VERSION_MAX_ACCOUNT_BYTES
         );
         assert_eq!(AGREEMENT_VERSION_MAX_ACCOUNT_BYTES, 2_036);
     }
