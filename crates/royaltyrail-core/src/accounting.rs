@@ -81,10 +81,7 @@ pub fn validate_participants(participants: &[Participant]) -> CoreResult<()> {
 ///
 /// Let gross = qD + t, 0 <= t < D:
 /// floor(gross*share/D) = q*share + floor(t*share/D).
-pub fn proportional_entitlement_parts(
-    gross: u128,
-    share_units: u32,
-) -> CoreResult<(u128, u128)> {
+pub fn proportional_entitlement_parts(gross: u128, share_units: u32) -> CoreResult<(u128, u128)> {
     if share_units == 0 || share_units > TOTAL_SHARE_UNITS {
         return Err(CoreError::InvalidShare);
     }
@@ -110,11 +107,7 @@ pub fn proportional_entitlement_parts(
 ///
 /// A valid bounded-error state can only be at floor(exact entitlement) or
 /// exactly one settlement-asset base unit above that floor.
-pub fn rounding_residual(
-    gross: u128,
-    allocated: u128,
-    share_units: u32,
-) -> CoreResult<i128> {
+pub fn rounding_residual(gross: u128, allocated: u128, share_units: u32) -> CoreResult<i128> {
     let (floor, remainder) = proportional_entitlement_parts(gross, share_units)?;
     let remainder = i128::try_from(remainder).map_err(|_| CoreError::ArithmeticOverflow)?;
     let denominator = i128::from(TOTAL_SHARE_UNITS);
@@ -130,10 +123,7 @@ pub fn rounding_residual(
     Err(CoreError::ResidualOutOfBounds)
 }
 
-pub fn validate_state(
-    participants: &[Participant],
-    state: &CumulativeState,
-) -> CoreResult<()> {
+pub fn validate_state(participants: &[Participant], state: &CumulativeState) -> CoreResult<()> {
     validate_participants(participants)?;
 
     if state.allocated.len() != participants.len() {
@@ -203,10 +193,7 @@ pub fn allocate(
     let mut scored = Vec::with_capacity(participants.len());
 
     for (index, participant) in participants.iter().enumerate() {
-        let prior_allocated = *state
-            .allocated
-            .get(index)
-            .ok_or(CoreError::StateLength)?;
+        let prior_allocated = *state.allocated.get(index).ok_or(CoreError::StateLength)?;
 
         let residual_before =
             rounding_residual(state.gross, prior_allocated, participant.share_units)?;
@@ -266,8 +253,7 @@ pub fn allocate(
             .then_with(|| left.index.cmp(&right.index))
     });
 
-    let extra_count =
-        usize::try_from(remaining).map_err(|_| CoreError::ArithmeticOverflow)?;
+    let extra_count = usize::try_from(remaining).map_err(|_| CoreError::ArithmeticOverflow)?;
     let mut extra = vec![false; participants.len()];
 
     for entry in ranked.iter().take(extra_count) {
@@ -617,8 +603,7 @@ mod tests {
                 gross: 0,
                 allocated: vec![0; shares.len()],
             };
-            let digest =
-                vector_digest(&shares, &initial_state, &deposits, &vectors.digest_domain);
+            let digest = vector_digest(&shares, &initial_state, &deposits, &vectors.digest_domain);
 
             let digest_bytes = (0..digest.len())
                 .step_by(2)

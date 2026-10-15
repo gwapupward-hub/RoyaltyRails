@@ -1,8 +1,7 @@
 use sha2::{Digest, Sha256};
 
 use crate::{
-    validate_participants, CoreError, CoreResult, Participant, MAX_PARTICIPANTS,
-    MIN_PARTICIPANTS,
+    validate_participants, CoreError, CoreResult, Participant, MAX_PARTICIPANTS, MIN_PARTICIPANTS,
 };
 
 pub const AGREEMENT_DOMAIN_V1: &str = "ROYALTYRAIL_AGREEMENT_V1";
@@ -92,8 +91,7 @@ pub fn agreement_preimage_v1(input: &AgreementHashInputV1<'_>) -> CoreResult<Vec
     nonzero(&input.token_program)?;
 
     let mut out = Vec::with_capacity(
-        AGREEMENT_DOMAIN_V1.len() + 32 * 7 + 4 + 4 + 1 + 1 + 1
-            + input.participants.len() * 36,
+        AGREEMENT_DOMAIN_V1.len() + 32 * 7 + 4 + 4 + 1 + 1 + 1 + input.participants.len() * 36,
     );
 
     out.extend_from_slice(AGREEMENT_DOMAIN_V1.as_bytes());
@@ -122,9 +120,7 @@ pub fn agreement_hash_v1(input: &AgreementHashInputV1<'_>) -> CoreResult<[u8; 32
     Ok(hash(&agreement_preimage_v1(input)?))
 }
 
-pub fn allocation_preimage_v1(
-    input: &AllocationCommitmentInputV1<'_>,
-) -> CoreResult<Vec<u8>> {
+pub fn allocation_preimage_v1(input: &AllocationCommitmentInputV1<'_>) -> CoreResult<Vec<u8>> {
     if input.allocation_sequence == 0 {
         return Err(CoreError::InvalidAllocationSequence);
     }
@@ -135,9 +131,7 @@ pub fn allocation_preimage_v1(
     nonzero(&input.deployment_id)?;
     nonzero(&input.agreement)?;
 
-    if input.allocations.len() < MIN_PARTICIPANTS
-        || input.allocations.len() > MAX_PARTICIPANTS
-    {
+    if input.allocations.len() < MIN_PARTICIPANTS || input.allocations.len() > MAX_PARTICIPANTS {
         return Err(CoreError::ParticipantCount);
     }
 
@@ -163,8 +157,7 @@ pub fn allocation_preimage_v1(
     }
 
     let mut out = Vec::with_capacity(
-        ALLOCATION_DOMAIN_V1.len() + 32 + 32 + 8 + 1 + 8 + 32 + 1
-            + input.allocations.len() * 40,
+        ALLOCATION_DOMAIN_V1.len() + 32 + 32 + 8 + 1 + 8 + 32 + 1 + input.allocations.len() * 40,
     );
 
     out.extend_from_slice(ALLOCATION_DOMAIN_V1.as_bytes());
@@ -184,9 +177,7 @@ pub fn allocation_preimage_v1(
     Ok(out)
 }
 
-pub fn allocation_commitment_v1(
-    input: &AllocationCommitmentInputV1<'_>,
-) -> CoreResult<[u8; 32]> {
+pub fn allocation_commitment_v1(input: &AllocationCommitmentInputV1<'_>) -> CoreResult<[u8; 32]> {
     Ok(hash(&allocation_preimage_v1(input)?))
 }
 
