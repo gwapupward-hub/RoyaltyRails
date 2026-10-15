@@ -1,17 +1,18 @@
 {
-  "schemaVersion": 1,
-  "denominatorBps": 10000,
+  "schemaVersion": 2,
+  "totalShareUnits": 100000000,
+  "percentageDecimalPlaces": 6,
   "vectors": [
     {
       "name": "exact-70-20-10",
-      "sharesBps": [7000, 2000, 1000],
+      "shares": [70000000, 20000000, 10000000],
       "deposits": ["1000000"],
       "expectedAllocations": [["700000", "200000", "100000"]],
       "expectedFinalAllocated": ["700000", "200000", "100000"]
     },
     {
-      "name": "thirds-micro-payments",
-      "sharesBps": [3333, 3333, 3334],
+      "name": "six-decimal-thirds-micro-payments",
+      "shares": [33333333, 33333333, 33333334],
       "deposits": ["1", "1", "1", "1", "1"],
       "expectedAllocations": [
         ["0", "0", "1"],
@@ -24,17 +25,17 @@
     },
     {
       "name": "regression-fixed-remainder-negative-delta",
-      "sharesBps": [1, 4999, 5000],
-      "deposits": ["5001", "1"],
+      "shares": [1, 49999999, 50000000],
+      "deposits": ["50000001", "1"],
       "expectedAllocations": [
-        ["1", "2500", "2500"],
+        ["1", "25000000", "25000000"],
         ["0", "0", "1"]
       ],
-      "expectedFinalAllocated": ["1", "2500", "2501"]
+      "expectedFinalAllocated": ["1", "25000000", "25000001"]
     },
     {
       "name": "equal-halves-single-units",
-      "sharesBps": [5000, 5000],
+      "shares": [50000000, 50000000],
       "deposits": ["1", "1", "1"],
       "expectedAllocations": [
         ["1", "0"],
@@ -42,6 +43,13 @@
         ["1", "0"]
       ],
       "expectedFinalAllocated": ["2", "1"]
+    },
+    {
+      "name": "single-recipient",
+      "shares": [100000000],
+      "deposits": ["123456789"],
+      "expectedAllocations": [["123456789"]],
+      "expectedFinalAllocated": ["123456789"]
     }
   ]
 }
