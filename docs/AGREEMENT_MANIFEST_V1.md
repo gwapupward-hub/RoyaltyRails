@@ -50,7 +50,7 @@ Changing manifest content changes `terms_hash` and therefore changes the agreeme
 
 ## 4. V1 manifest shape
 
-Illustrative schema:
+Illustrative **valid 10,000-BPS** example:
 
 ```json
 {
@@ -83,9 +83,16 @@ Illustrative schema:
   },
   "participants": [
     {
-      "participantAuthority": "<solana-pubkey>",
-      "displayName": "Producer A",
+      "participantAuthority": "<artist-solana-pubkey>",
+      "displayName": "Artist",
       "roleCode": 1,
+      "roleLabel": "Primary Artist",
+      "shareBps": 9500
+    },
+    {
+      "participantAuthority": "<producer-solana-pubkey>",
+      "displayName": "Producer A",
+      "roleCode": 2,
       "roleLabel": "Producer",
       "shareBps": 500
     }
@@ -111,7 +118,7 @@ The formal JSON Schema should be added before Studio beta. This document freezes
 
 ## 5. Participant representation
 
-Manifest participant order SHOULD match canonical on-chain participant-authority byte order.
+Manifest participant order MUST match canonical on-chain participant-authority byte order when the manifest is presented as the exact approval artifact.
 
 Every participant entry must correspond one-to-one with an on-chain economic participant:
 
@@ -121,9 +128,9 @@ shareBps
 roleCode
 ```
 
-Studio MUST compare these fields against the proposed on-chain agreement before signature.
+Studio MUST compare these fields against the proposed on-chain agreement before signature and MUST reject a manifest whose shares do not total exactly 10,000 BPS.
 
-`displayName` and `roleLabel` are human-readable metadata. They are not substitutes for the authority/share/role values bound on-chain.
+`displayName` and `roleLabel` are human-readable metadata. They are not substitutes for authority/share/role values bound on-chain.
 
 Do not place tax IDs, government IDs, home addresses, bank details, private emails, or other sensitive PII in the public manifest.
 
