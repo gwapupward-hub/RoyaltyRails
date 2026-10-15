@@ -56,7 +56,6 @@ export function initialState(agreement: Agreement): CumulativeState {
   return {
     gross: 0n,
     allocated: Object.fromEntries(agreement.participants.map(({ id }) => [id, 0n])),
-    nextDirectNonce: 0n,
   };
 }
 
@@ -68,7 +67,6 @@ export function validateState(agreement: Agreement, state: CumulativeState): voi
   validateAgreement(agreement);
 
   if (state.gross < 0n) throw new AccountingError("gross cannot be negative");
-  if (state.nextDirectNonce < 0n) throw new AccountingError("nonce cannot be negative");
 
   let totalAllocated = 0n;
   let residualTotal = 0n;
@@ -107,10 +105,9 @@ export function validateState(agreement: Agreement, state: CumulativeState): voi
 /**
  * Deterministic bounded-error revenue allocation.
  *
- * Each participant carries an implicit signed rounding residual derived from
- * cumulative gross, BPS, and cumulative allocation. New revenue is allocated
- * without performing token delivery. Claim state is intentionally outside this
- * economic reference engine so payout routing cannot alter percentage math.
+ * This engine is deliberately pure economic math. It knows nothing about
+ * funding-path nonces, token accounts, claims, wallets, or Solana execution.
+ * Those controls belong to the protocol layer and wrap the same canonical math.
  *
  * Guarantees:
  * - allocations are never negative;
@@ -126,9 +123,6 @@ export function allocate(
   validateState(agreement, state);
 
   if (input.amount <= 0n) throw new AccountingError("allocation amount must be positive");
-  if (input.expectedNonce !== state.nextDirectNonce) {
-    throw new AccountingError("direct allocation nonce mismatch");
-  }
 
   const scored = agreement.participants.map((participant, index) => {
     const priorAllocated = state.allocated[participant.id];
@@ -143,8 +137,6 @@ export function allocate(
     );
     const accruedNumerator = residualBefore + input.amount * BigInt(participant.shareBps);
 
-    // BigInt division truncates toward zero. For non-positive accrued entitlement,
-    // the participant receives zero rather than a negative/clawback allocation.
     const baseAllocation = accruedNumerator <= 0n ? 0n : accruedNumerator / DENOMINATOR;
     const score = accruedNumerator - baseAllocation * DENOMINATOR;
 
@@ -199,7 +191,6 @@ export function allocate(
   const nextState: CumulativeState = {
     gross: state.gross + input.amount,
     allocated: nextAllocated,
-    nextDirectNonce: state.nextDirectNonce + 1n,
   };
 
   validateState(agreement, nextState);
