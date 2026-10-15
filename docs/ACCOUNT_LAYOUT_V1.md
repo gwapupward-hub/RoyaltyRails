@@ -37,11 +37,7 @@ The implementation must include test-time serialized-size assertions before depl
 | `created_slot: u64` | 8 |
 | `reserved: [u8; 64]` | 64 |
 
-Maximum serialized size:
-
-```text
-246 bytes
-```
+Maximum serialized size: **246 bytes**.
 
 ## 3. Work
 
@@ -60,11 +56,7 @@ Maximum serialized size:
 | `updated_slot: u64` | 8 |
 | `reserved: [u8; 64]` | 64 |
 
-Maximum serialized size:
-
-```text
-255 bytes
-```
+Maximum serialized size: **255 bytes**.
 
 `origin_authority` is immutable because it participates in Work PDA derivation. `manager_authority` may rotate through the two-step manager-transfer flow without changing the PDA.
 
@@ -88,11 +80,7 @@ Maximum serialized size:
 | `created_slot: u64` | 8 |
 | `reserved: [u8; 64]` | 64 |
 
-Maximum serialized size:
-
-```text
-257 bytes
-```
+Maximum serialized size: **257 bytes**.
 
 ## 5. Participant
 
@@ -102,7 +90,7 @@ Maximum serialized size:
 |---|---:|
 | `participant_authority: Pubkey` | 32 |
 | `payout_wallet: Pubkey` | 32 |
-| `share_bps: u16` | 2 |
+| `share_units: u32` | 4 |
 | `payout_revision: u32` | 4 |
 | `cumulative_allocated: u128` | 16 |
 | `cumulative_claimed: u128` | 16 |
@@ -110,25 +98,30 @@ Maximum serialized size:
 Serialized size:
 
 ```text
-102 bytes
+104 bytes
 ```
 
 Maximum participant vector:
 
 ```text
-4-byte Vec prefix + (16 × 102) = 1,636 bytes
+4-byte Vec prefix + (16 × 104) = 1,668 bytes
+```
+
+`share_units` uses the canonical scale:
+
+```text
+100,000,000 = 100%
+1 = 0.000001%
 ```
 
 Economic hashing uses only:
 
 ```text
 participant_authority
-share_bps
+share_units
 ```
 
-Detailed creative roles/credits are not protocol-economic fields. They live in the deterministic Agreement Manifest anchored by `terms_hash`, where a participant may have multiple evolving role labels without forcing the Solana program to maintain a music-industry role taxonomy.
-
-Payout and accounting fields are mutable state and excluded from the agreement hash.
+Detailed creative roles/credits are manifest metadata anchored by `terms_hash`.
 
 ## 6. AgreementVersion
 
@@ -145,7 +138,7 @@ Payout and accounting fields are mutable state and excluded from the agreement h
 | `token_program: Pubkey` | 32 |
 | `terms_hash: [u8; 32]` | 32 |
 | `agreement_hash: [u8; 32]` | 32 |
-| `participants: Vec<Participant>` | 1,636 |
+| `participants: Vec<Participant>` | 1,668 |
 | `approval_bitmap: u16` | 2 |
 | `supersession_approval_bitmap: u16` | 2 |
 | `cumulative_gross: u128` | 16 |
@@ -159,18 +152,14 @@ Payout and accounting fields are mutable state and excluded from the agreement h
 Maximum serialized size with 16 participants:
 
 ```text
-2,004 bytes
+2,036 bytes
 ```
 
-Agreement account is allocated once at proposal time. V1 should prefer fixed max-size allocation unless rent benchmarking provides a compelling reason to use participant-count-specific sizing.
+Agreement account is allocated once at proposal time. V1 should prefer fixed max-size allocation unless rent benchmarking provides a compelling reason for participant-count-specific sizing.
 
 No v1 instruction may change participant vector length.
 
 ## 7. Approval bitmap edge case
-
-A 16-participant mask uses every bit of `u16`.
-
-Safe conceptual logic:
 
 ```text
 if participant_count == 16:
@@ -179,17 +168,11 @@ else:
     required_mask = (1u16 << participant_count) - 1
 ```
 
-Dedicated tests are required for:
-
-- new-participant `approval_bitmap`;
-- predecessor `supersession_approval_bitmap`;
-- one-participant mask `0b1`.
+Dedicated tests are required for new-participant approval, predecessor supersession approval, and one-participant mask `0b1`.
 
 ## 8. Cumulative accounting width
 
-Actual SPL token transfer amounts are `u64`.
-
-Lifetime values use `u128`:
+Actual SPL token transfer amounts are `u64`. Lifetime values use `u128`:
 
 ```text
 cumulative_gross
@@ -197,31 +180,15 @@ participant.cumulative_allocated
 participant.cumulative_claimed
 ```
 
-Every narrowing conversion to u64 must be checked.
+Every narrowing conversion to `u64` must be checked.
+
+The `u32` share field and `u64` allocation amount product fit safely inside checked `u128` arithmetic under v1 bounds.
 
 ## 9. Claimability arithmetic
 
-Per participant:
-
 ```text
 claimable = cumulative_allocated - cumulative_claimed
-```
-
-Must satisfy:
-
-```text
-cumulative_claimed <= cumulative_allocated
-```
-
-Agreement-level:
-
-```text
 sum(cumulative_allocated) == cumulative_gross
-```
-
-Royalty Inbox solvency:
-
-```text
 allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
 inbox_balance >= allocated_unclaimed
 ```
@@ -230,19 +197,11 @@ Because `inbox_balance` is an SPL-token `u64`, every individual current claimabl
 
 ## 10. Reserved storage policy
 
-Reserved bytes initialize to zero.
-
-Ordinary v1 instructions must leave them unchanged.
-
-Future schema versions may interpret reserved bytes only through explicit reviewed migration/version logic.
-
-Existing economic terms must never be changed by reinterpreting reserved space.
+Reserved bytes initialize to zero. Ordinary v1 instructions leave them unchanged. Future schema versions may interpret them only through explicit reviewed migration/version logic and never to rewrite existing economics.
 
 ## 11. Royalty Inbox storage
 
-Royalty Inbox is not an Anchor-owned state account.
-
-It is an original SPL Token ATA for configured USDC, owned by agreement-version vault PDA:
+Royalty Inbox is not an Anchor-owned state account. It is an original SPL Token ATA for configured USDC, owned by agreement-version vault PDA:
 
 ```text
 [b"vault", agreement_version]
@@ -252,15 +211,11 @@ No separate rent-bearing VaultAuthority account is allocated.
 
 ## 12. Account closure policy
 
-RoyaltyRail-owned Work, RevenuePool, and AgreementVersion accounts are not closed in v1.
-
-Royalty Inbox is not closed through v1 instructions.
-
-This preserves historical integrity and avoids creating rent-recovery paths that might accidentally become custody/withdrawal primitives.
+RoyaltyRail-owned Work, RevenuePool, AgreementVersion, and Royalty Inbox accounts are not closed through v1 instructions. This preserves historical integrity and avoids introducing rent-recovery paths that could become custody/withdrawal primitives.
 
 ## 13. Size verification gate
 
-Before Anchor implementation PR can merge, CI must serialize maximum-size accounts and assert allocation space for:
+Before Anchor implementation PR can merge, CI must serialize and assert maximum sizes for:
 
 ```text
 ProtocolConfig
@@ -269,4 +224,4 @@ RevenuePool
 AgreementVersion (16 participants)
 ```
 
-The test must fail if a struct changes without corresponding account-size/spec update.
+The test must fail if a struct changes without corresponding account-size/spec updates.
