@@ -31,12 +31,10 @@ const agreementVector: AgreementHashInputV1 = {
     {
       participantAuthority: repeatedByte(0x10),
       shareBps: 7_000,
-      roleCode: 1,
     },
     {
       participantAuthority: repeatedByte(0x11),
       shareBps: 3_000,
-      roleCode: 2,
     },
   ],
 };
@@ -63,7 +61,7 @@ const allocationVector: AllocationCommitmentInputV1 = {
 describe("RoyaltyRail canonical protocol encoding", () => {
   it("matches the canonical agreement hash vector", () => {
     expect(bytesToHex(agreementHashV1(agreementVector))).toBe(
-      "6b025b0137b4bef4cb856f9c1e6955c8aa9daf0509a87996e25013972cefbd40",
+      "994bdd5637ab09fdeb4526da561b077db1bc59d0a226994ad3126a9aa891a069",
     );
   });
 
@@ -81,7 +79,6 @@ describe("RoyaltyRail canonical protocol encoding", () => {
           {
             participantAuthority: repeatedByte(0x10),
             shareBps: 10_000,
-            roleCode: 1,
           },
         ],
       }),
