@@ -28,14 +28,8 @@ const agreementVector: AgreementHashInputV1 = {
   poolMetadataHash: repeatedByte(0x05),
   termsHash: repeatedByte(0x06),
   participants: [
-    {
-      participantAuthority: repeatedByte(0x10),
-      shareUnits: 70_000_000,
-    },
-    {
-      participantAuthority: repeatedByte(0x11),
-      shareUnits: 30_000_000,
-    },
+    { participantAuthority: repeatedByte(0x10), shareUnits: 70_000_000 },
+    { participantAuthority: repeatedByte(0x11), shareUnits: 30_000_000 },
   ],
 };
 
@@ -47,14 +41,8 @@ const allocationVector: AllocationCommitmentInputV1 = {
   grossAmount: 1_000_001n,
   paymentReference: repeatedByte(0x44),
   allocations: [
-    {
-      participantAuthority: repeatedByte(0x10),
-      allocationAmount: 700_001n,
-    },
-    {
-      participantAuthority: repeatedByte(0x11),
-      allocationAmount: 300_000n,
-    },
+    { participantAuthority: repeatedByte(0x10), allocationAmount: 700_001n },
+    { participantAuthority: repeatedByte(0x11), allocationAmount: 300_000n },
   ],
 };
 
@@ -75,35 +63,20 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     expect(() =>
       agreementHashV1({
         ...agreementVector,
-        participants: [
-          {
-            participantAuthority: repeatedByte(0x10),
-            shareUnits: 100_000_000,
-          },
-        ],
+        participants: [{ participantAuthority: repeatedByte(0x10), shareUnits: 100_000_000 }],
       }),
     ).not.toThrow();
+  });
 
+  it("accepts the maximum u32 agreement version", () => {
     expect(() =>
-      allocationCommitmentV1({
-        ...allocationVector,
-        grossAmount: 123n,
-        allocations: [
-          {
-            participantAuthority: repeatedByte(0x10),
-            allocationAmount: 123n,
-          },
-        ],
-      }),
+      agreementHashV1({ ...agreementVector, version: 0xffff_ffff, predecessorVersion: 0xffff_fffe }),
     ).not.toThrow();
   });
 
   it("rejects a non-canonical participant order", () => {
     expect(() =>
-      agreementHashV1({
-        ...agreementVector,
-        participants: [...agreementVector.participants].reverse(),
-      }),
+      agreementHashV1({ ...agreementVector, participants: [...agreementVector.participants].reverse() }),
     ).toThrow(/strictly sorted/);
   });
 
@@ -119,8 +92,24 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     ).toThrow(/100000000/);
   });
 
-  it("rejects agreement version zero", () => {
-    expect(() => agreementHashV1({ ...agreementVector, version: 0 })).toThrow(/positive integer/);
+  it("rejects agreement versions outside the u32 domain", () => {
+    expect(() => agreementHashV1({ ...agreementVector, version: 0 })).toThrow(/positive u32/);
+    expect(() => agreementHashV1({ ...agreementVector, version: 0x1_0000_0000 })).toThrow(/positive u32/);
+  });
+
+  it("rejects unsafe Number values before BigInt conversion", () => {
+    expect(() =>
+      agreementHashV1({ ...agreementVector, version: Number.MAX_SAFE_INTEGER + 1 }),
+    ).toThrow(/positive u32|safe integer/);
+
+    expect(() =>
+      agreementHashV1({
+        ...agreementVector,
+        participants: [
+          { participantAuthority: repeatedByte(0x10), shareUnits: Number.MAX_SAFE_INTEGER + 1 },
+        ],
+      }),
+    ).toThrow(/safe integer|share domain/);
   });
 
   it("rejects an invalid predecessor version", () => {
@@ -130,45 +119,39 @@ describe("RoyaltyRail canonical protocol encoding", () => {
   });
 
   it("rejects an all-zero deployment id", () => {
-    expect(() =>
-      agreementHashV1({ ...agreementVector, deploymentId: new Uint8Array(32) }),
-    ).toThrow(/deployment id cannot be all-zero/);
+    expect(() => agreementHashV1({ ...agreementVector, deploymentId: new Uint8Array(32) })).toThrow(
+      /deployment id cannot be all-zero/,
+    );
   });
 
-  it("rejects an unsupported runtime pool enum value", () => {
+  it("rejects unsupported runtime enums", () => {
+    expect(() => agreementHashV1({ ...agreementVector, poolKind: 99 as RevenuePoolKind })).toThrow(
+      /supported v1 enum/,
+    );
     expect(() =>
-      agreementHashV1({
-        ...agreementVector,
-        poolKind: 99 as RevenuePoolKind,
-      }),
+      agreementHashV1({ ...agreementVector, settlementBasis: 99 as SettlementBasis }),
     ).toThrow(/supported v1 enum/);
-  });
-
-  it("rejects an unsupported runtime settlement basis", () => {
     expect(() =>
-      agreementHashV1({
-        ...agreementVector,
-        settlementBasis: 99 as SettlementBasis,
-      }),
+      allocationCommitmentV1({ ...allocationVector, mode: 99 as AllocationMode }),
     ).toThrow(/supported v1 enum/);
   });
 
   it("rejects allocation sequence zero", () => {
-    expect(() =>
-      allocationCommitmentV1({
-        ...allocationVector,
-        allocationSequence: 0n,
-      }),
-    ).toThrow(/sequence must be positive/);
+    expect(() => allocationCommitmentV1({ ...allocationVector, allocationSequence: 0n })).toThrow(
+      /sequence must be positive/,
+    );
   });
 
-  it("rejects an unsupported runtime allocation mode", () => {
+  it("rejects allocation amounts outside u64", () => {
     expect(() =>
       allocationCommitmentV1({
         ...allocationVector,
-        mode: 99 as AllocationMode,
+        grossAmount: 1n << 64n,
+        allocations: [
+          { participantAuthority: repeatedByte(0x10), allocationAmount: 1n << 64n },
+        ],
       }),
-    ).toThrow(/supported v1 enum/);
+    ).toThrow(/8 bytes/);
   });
 
   it("rejects an allocation commitment that does not conserve gross", () => {
