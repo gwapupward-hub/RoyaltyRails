@@ -19,6 +19,15 @@ pub struct AgreementParticipantInput {
     pub share_units: u32,
 }
 
+pub struct InitializeProposalParams<'a> {
+    pub program_id: Pubkey,
+    pub version: u32,
+    pub terms_hash: [u8; 32],
+    pub participant_inputs: &'a [AgreementParticipantInput],
+    pub bump: u8,
+    pub created_slot: u64,
+}
+
 fn protocol_error(error: CoreError) -> Error {
     match error {
         CoreError::ParticipantCount => error!(RoyaltyRailError::InvalidParticipantCount),
@@ -137,13 +146,17 @@ pub fn initialize_proposal(
     revenue_pool_key: Pubkey,
     pool: &mut RevenuePoolState,
     agreement: &mut AgreementVersionState,
-    program_id: Pubkey,
-    version: u32,
-    terms_hash: [u8; 32],
-    participant_inputs: &[AgreementParticipantInput],
-    bump: u8,
-    created_slot: u64,
+    params: InitializeProposalParams<'_>,
 ) -> Result<[u8; 32]> {
+    let InitializeProposalParams {
+        program_id,
+        version,
+        terms_hash,
+        participant_inputs,
+        bump,
+        created_slot,
+    } = params;
+
     require_schema_version(config.schema_version)?;
     require_schema_version(pool.schema_version)?;
     require!(
@@ -586,12 +599,14 @@ mod tests {
             key(20),
             &mut pool,
             &mut proposal,
-            key(6),
-            1,
-            [7; 32],
-            &inputs,
-            250,
-            99,
+            InitializeProposalParams {
+                program_id: key(6),
+                version: 1,
+                terms_hash: [7; 32],
+                participant_inputs: &inputs,
+                bump: 250,
+                created_slot: 99,
+            },
         )
         .expect("proposal");
 
