@@ -8,13 +8,14 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run build && npm test"
+    "check:spec": "node scripts/check-spec-consistency.mjs",
+    "check": "npm run check:spec && npm run build && npm test"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "fast-check": "^3.23.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "@types/node": "22.10.0",
+    "fast-check": "3.23.2",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
   },
   "engines": {
     "node": ">=20"

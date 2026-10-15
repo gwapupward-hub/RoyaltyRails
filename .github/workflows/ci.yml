@@ -10,10 +10,10 @@ permissions:
   contents: read
 
 jobs:
-  accounting:
-    name: Accounting engine
+  reference-specs:
+    name: TypeScript reference specs
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -23,9 +23,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies deterministically
+        run: npm ci
 
-      - name: Typecheck and test
+      - name: Typecheck, spec consistency, and tests
         run: npm run check

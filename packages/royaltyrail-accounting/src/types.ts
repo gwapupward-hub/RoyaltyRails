@@ -1,6 +1,8 @@
-export const TOTAL_BPS = 10_000;
-export const MIN_RECIPIENTS = 2;
+export const TOTAL_SHARE_UNITS = 100_000_000;
+export const MIN_RECIPIENTS = 1;
 export const MAX_RECIPIENTS = 16;
+export const U64_MAX = (1n << 64n) - 1n;
+export const U128_MAX = (1n << 128n) - 1n;
 
 export type SettlementBasis =
   | "OWNERSHIP_SPLIT"
@@ -8,39 +10,47 @@ export type SettlementBasis =
   | "PAYMENT_DIRECTION";
 
 export interface Participant {
-  /** Stable identifier inside an agreement version. */
-  id: string;
-  /** Integer basis points. 10_000 = 100%. */
-  shareBps: number;
+  /** Raw 32-byte economic authority. Canonical order is raw-byte ascending. */
+  authority: Uint8Array;
+  /**
+   * Fixed-point percentage units. 100_000_000 = 100% and 1 unit = 0.000001%.
+   */
+  shareUnits: number;
 }
 
 export interface Agreement {
   id: string;
+  /** Mirrors the on-chain u32 agreement version domain. */
   version: number;
   settlementBasis: SettlementBasis;
   /**
-   * Order is canonical and therefore part of the agreement semantics.
-   * It is used only as a deterministic tie-break when rounding scores are equal.
+   * Participants MUST already be in canonical raw-authority byte order.
+   * The accounting engine validates this because order is the deterministic
+   * tie-break for indivisible settlement-asset base units.
    */
   participants: readonly Participant[];
 }
 
 export interface CumulativeState {
-  /** Total base units successfully settled under this agreement version. */
+  /** Total settlement-asset base units economically allocated under this agreement version. */
   gross: bigint;
-  /** Lifetime amount paid to each participant. */
-  paid: Readonly<Record<string, bigint>>;
-  /** Expected nonce for the next direct settlement. */
-  nextSettlementNonce: bigint;
+  /**
+   * Lifetime economic allocation by canonical participant index.
+   * Token claims are tracked separately on-chain.
+   */
+  allocated: readonly bigint[];
 }
 
-export interface SettlementInput {
-  /** Positive native token base-unit amount, e.g. USDC has 6 decimals. */
+export interface AllocationInput {
+  /**
+   * Positive settlement-asset base-unit amount.
+   * V1 allocation inputs are bounded to u64 because they originate from SPL token amounts.
+   */
   amount: bigint;
-  expectedNonce: bigint;
 }
 
-export interface SettlementResult {
-  payouts: Readonly<Record<string, bigint>>;
+export interface AllocationResult {
+  /** Newly allocated settlement-asset base units by canonical participant index. */
+  allocations: readonly bigint[];
   nextState: CumulativeState;
 }
