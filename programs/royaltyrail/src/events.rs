@@ -76,3 +76,70 @@ pub struct PoolManagerTransferred {
     pub previous_manager: Pubkey,
     pub new_manager: Pubkey,
 }
+
+#[event]
+pub struct AgreementProposed {
+    pub revenue_pool: Pubkey,
+    pub agreement: Pubkey,
+    pub version: u32,
+    pub predecessor_version: u32,
+    pub agreement_hash: [u8; 32],
+    pub participant_count: u8,
+}
+
+#[event]
+pub struct ParticipantApproved {
+    pub agreement: Pubkey,
+    pub participant_authority: Pubkey,
+    pub participant_index: u8,
+    pub payout_wallet: Pubkey,
+    pub approval_bitmap: u16,
+}
+
+#[event]
+pub struct SupersessionApproved {
+    pub successor: Pubkey,
+    pub predecessor: Pubkey,
+    pub participant_authority: Pubkey,
+    pub predecessor_participant_index: u8,
+    pub supersession_approval_bitmap: u16,
+}
+
+#[event]
+pub struct AgreementRejected {
+    pub agreement: Pubkey,
+    pub rejected_by: Pubkey,
+    pub predecessor_participant: bool,
+}
+
+#[event]
+pub struct AgreementCancelled {
+    pub agreement: Pubkey,
+    pub manager_authority: Pubkey,
+}
+
+#[event]
+pub struct AgreementActivated {
+    pub agreement: Pubkey,
+    pub revenue_pool: Pubkey,
+    pub version: u32,
+    pub predecessor_version: u32,
+}
+
+#[event]
+pub struct AgreementSuperseded {
+    pub agreement: Pubkey,
+    pub revenue_pool: Pubkey,
+    pub version: u32,
+    pub successor_version: u32,
+}
+
+#[event]
+pub struct PayoutWalletUpdated {
+    pub agreement: Pubkey,
+    pub participant_authority: Pubkey,
+    pub participant_index: u8,
+    pub previous_wallet: Pubkey,
+    pub new_wallet: Pubkey,
+    pub payout_revision: u32,
+}
