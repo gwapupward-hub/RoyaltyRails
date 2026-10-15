@@ -26,7 +26,6 @@ export enum AllocationMode {
 export interface AgreementHashParticipantV1 {
   participantAuthority: Uint8Array;
   shareBps: number;
-  roleCode: number;
 }
 
 export interface AgreementHashInputV1 {
@@ -205,7 +204,6 @@ export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
     participantParts.push(
       nonZeroBytes32(participant.participantAuthority, "participant authority"),
       u16(participant.shareBps, "share BPS"),
-      u16(participant.roleCode, "role code"),
     );
   }
 
