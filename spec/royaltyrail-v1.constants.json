@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "totalShareUnits": 100000000,
+  "percentageDecimalPlaces": 6,
+  "minParticipants": 1,
+  "maxParticipants": 16,
+  "settlementAssetDecimals": 6,
+  "lifetimeCounterBits": 128,
+  "splTransferBits": 64
+}
