@@ -271,7 +271,7 @@ Invariants:
 - initial version has `predecessor_version == 0`;
 - replacement snapshots current active version as predecessor;
 - participant count 1..=16;
-- shares positive and total 10,000;
+- shares positive and total 100,000,000 share units;
 - authorities canonical/unique;
 - all proposed participants select a non-default payout wallet before activation;
 - Active and Superseded versions may allocate historical revenue and pay outstanding claims;
