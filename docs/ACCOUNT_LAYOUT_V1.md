@@ -1,7 +1,7 @@
 # RoyaltyRail Account Layout v1
 
-Status: Phase 2 specification freeze candidate  
-Date: 2026-10-14
+Status: Phase 2 hardened freeze candidate  
+Date: 2026-10-15
 
 This document fixes serialization assumptions and maximum account sizes for the future Anchor implementation.
 
@@ -11,59 +11,64 @@ V1 uses:
 
 - Anchor default 8-byte account discriminator;
 - Borsh-compatible fixed-width primitive encoding;
-- `Vec<T>` with a 4-byte length prefix;
-- one-byte enum discriminants for the v1 enums;
-- no optional dynamically growing participant arrays after initialization;
-- maximum 16 participants per agreement version.
+- `Vec<T>` with 4-byte length prefix;
+- one-byte enum discriminants;
+- maximum 16 participants per agreement version;
+- no participant-vector length changes after agreement creation;
+- zeroed reserved bytes for schema evolution.
 
-The Anchor implementation must include compile-time or test-time assertions that serialized maximum lengths match the values below before deployment.
+The implementation must include test-time serialized-size assertions before deployment.
 
-If the selected Anchor release changes a serialization assumption, these sizes must be recalculated and the spec updated before implementation proceeds.
-
-## 2. `ProtocolConfig`
-
-Fields excluding discriminator:
-
-| Field | Bytes |
-|---|---:|
-| `schema_version: u16` | 2 |
-| `bump: u8` | 1 |
-| `admin_authority: Pubkey` | 32 |
-| `settlement_mint: Pubkey` | 32 |
-| `token_program: Pubkey` | 32 |
-| `agreements_paused: bool` | 1 |
-| `settlements_paused: bool` | 1 |
-| `created_slot: u64` | 8 |
-
-Maximum serialized account size including discriminator:
-
-```text
-117 bytes
-```
-
-## 3. `Work`
+## 2. ProtocolConfig
 
 | Field | Bytes |
 |---|---:|
 | discriminator | 8 |
 | `schema_version: u16` | 2 |
 | `bump: u8` | 1 |
-| `authority: Pubkey` | 32 |
+| `deployment_id: [u8; 32]` | 32 |
+| `governance_authority: Pubkey` | 32 |
+| `guardian_authority: Pubkey` | 32 |
+| `settlement_mint: Pubkey` | 32 |
+| `token_program: Pubkey` | 32 |
+| `agreements_paused: bool` | 1 |
+| `allocations_paused: bool` | 1 |
+| `claims_paused: bool` | 1 |
+| `created_slot: u64` | 8 |
+| `reserved: [u8; 64]` | 64 |
+
+Maximum serialized size:
+
+```text
+246 bytes
+```
+
+## 3. Work
+
+| Field | Bytes |
+|---|---:|
+| discriminator | 8 |
+| `schema_version: u16` | 2 |
+| `bump: u8` | 1 |
+| `origin_authority: Pubkey` | 32 |
+| `manager_authority: Pubkey` | 32 |
+| `pending_manager_authority: Pubkey` | 32 |
 | `work_id: [u8; 32]` | 32 |
 | `metadata_hash: [u8; 32]` | 32 |
 | `metadata_version: u32` | 4 |
 | `created_slot: u64` | 8 |
 | `updated_slot: u64` | 8 |
+| `reserved: [u8; 64]` | 64 |
 
 Maximum serialized size:
 
 ```text
-127 bytes
+255 bytes
 ```
 
-## 4. `RevenuePool`
+`origin_authority` is immutable because it participates in Work PDA derivation. `manager_authority` may rotate through the two-step manager-transfer flow without changing the PDA.
 
-V1 enum fields are one-byte discriminants.
+## 4. RevenuePool
 
 | Field | Bytes |
 |---|---:|
@@ -71,7 +76,8 @@ V1 enum fields are one-byte discriminants.
 | `schema_version: u16` | 2 |
 | `bump: u8` | 1 |
 | `work: Pubkey` | 32 |
-| `authority: Pubkey` | 32 |
+| `manager_authority: Pubkey` | 32 |
+| `pending_manager_authority: Pubkey` | 32 |
 | `pool_id: [u8; 32]` | 32 |
 | `pool_kind` | 1 |
 | `settlement_basis` | 1 |
@@ -80,16 +86,17 @@ V1 enum fields are one-byte discriminants.
 | `active_version: u32` | 4 |
 | `pending_version: u32` | 4 |
 | `created_slot: u64` | 8 |
+| `reserved: [u8; 64]` | 64 |
 
 Maximum serialized size:
 
 ```text
-161 bytes
+257 bytes
 ```
 
-## 5. `Participant`
+## 5. Participant
 
-`Participant` is embedded inside `AgreementVersion` and has no Anchor account discriminator.
+`Participant` is embedded inside `AgreementVersion`.
 
 | Field | Bytes |
 |---|---:|
@@ -97,20 +104,33 @@ Maximum serialized size:
 | `payout_wallet: Pubkey` | 32 |
 | `share_bps: u16` | 2 |
 | `role_code: u16` | 2 |
+| `payout_revision: u32` | 4 |
+| `cumulative_allocated: u128` | 16 |
+| `cumulative_claimed: u128` | 16 |
 
 Serialized size:
 
 ```text
-68 bytes
+104 bytes
 ```
 
 Maximum participant vector:
 
 ```text
-4-byte Vec prefix + (16 × 68) = 1,092 bytes
+4-byte Vec prefix + (16 × 104) = 1,668 bytes
 ```
 
-## 6. `AgreementVersion`
+Economic hashing uses only:
+
+```text
+participant_authority
+share_bps
+role_code
+```
+
+Payout and accounting fields are mutable state and excluded from the agreement hash.
+
+## 6. AgreementVersion
 
 | Field | Max bytes |
 |---|---:|
@@ -119,36 +139,36 @@ Maximum participant vector:
 | `bump: u8` | 1 |
 | `revenue_pool: Pubkey` | 32 |
 | `version: u32` | 4 |
+| `predecessor_version: u32` | 4 |
 | `status` | 1 |
 | `settlement_mint: Pubkey` | 32 |
 | `token_program: Pubkey` | 32 |
 | `terms_hash: [u8; 32]` | 32 |
 | `agreement_hash: [u8; 32]` | 32 |
-| `participants: Vec<Participant>` | 1,092 |
+| `participants: Vec<Participant>` | 1,668 |
 | `approval_bitmap: u16` | 2 |
+| `supersession_approval_bitmap: u16` | 2 |
 | `cumulative_gross: u128` | 16 |
-| `cumulative_paid: Vec<u128>` | 260 |
-| `direct_settlement_nonce: u64` | 8 |
-| `settlement_sequence: u64` | 8 |
+| `direct_funding_nonce: u64` | 8 |
+| `allocation_sequence: u64` | 8 |
 | `created_slot: u64` | 8 |
 | `activated_slot: u64` | 8 |
 | `superseded_slot: u64` | 8 |
+| `reserved: [u8; 128]` | 128 |
 
 Maximum serialized size with 16 participants:
 
 ```text
-1,586 bytes
+2,036 bytes
 ```
 
-The account is allocated once at proposal time for its actual participant count or, preferably for simpler size invariants in v1, at the fixed maximum supported size. The final implementation choice must be benchmarked for rent and simplicity before Gate 3.
+Agreement account is allocated once at proposal time. V1 should prefer fixed max-size allocation unless rent benchmarking provides a compelling reason to use participant-count-specific sizing.
 
-No v1 instruction may increase or decrease the participants or cumulative-paid vector lengths after account creation.
+No v1 instruction may change participant vector length.
 
 ## 7. Approval bitmap edge case
 
-A 16-participant agreement uses all bits of a `u16`.
-
-The required approval mask MUST be computed without shifting a `u16` by 16.
+A 16-participant mask uses every bit of `u16`.
 
 Safe conceptual logic:
 
@@ -159,33 +179,85 @@ else:
     required_mask = (1u16 << participant_count) - 1
 ```
 
-This case requires a dedicated unit test.
+Dedicated tests are required for:
+
+- new-participant `approval_bitmap`;
+- predecessor `supersession_approval_bitmap`.
 
 ## 8. Cumulative accounting width
 
-SPL Token transfer amounts are `u64`, but lifetime cumulative totals use `u128` so an agreement is not unnecessarily bounded by the aggregate of many valid `u64` settlements.
+Actual SPL token transfer amounts are `u64`.
 
-Every conversion from `u128` to `u64` must be checked.
+Lifetime values use `u128`:
 
-The settlement engine must never truncate cumulative values.
+```text
+cumulative_gross
+participant.cumulative_allocated
+participant.cumulative_claimed
+```
 
-## 9. Account allocation policy
+Every narrowing conversion to u64 must be checked.
 
-V1 does not use subtractive reallocation.
+## 9. Claimability arithmetic
 
-No RoyaltyRail account intentionally holding program state should depend on reclaiming rent during normal operation.
+Per participant:
 
-Agreement, RevenuePool and Work accounts are not closed in v1.
+```text
+claimable = cumulative_allocated - cumulative_claimed
+```
 
-## 10. Royalty Inbox storage
+Must satisfy:
 
-The Royalty Inbox is not an Anchor-owned account. It is an SPL Token Associated Token Account for the configured settlement mint, with the agreement-version vault PDA as token authority.
+```text
+cumulative_claimed <= cumulative_allocated
+```
 
-No separate rent-bearing `VaultAuthority` state account is allocated.
+Agreement-level:
 
-## 11. Size verification gate
+```text
+sum(cumulative_allocated) == cumulative_gross
+```
 
-Before Anchor implementation PR may be merged, CI must include tests that serialize maximum-size account values and assert they fit the allocated `space` for:
+Royalty Inbox solvency:
+
+```text
+allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
+inbox_balance >= allocated_unclaimed
+```
+
+## 10. Reserved storage policy
+
+Reserved bytes initialize to zero.
+
+Ordinary v1 instructions must leave them unchanged.
+
+Future schema versions may interpret reserved bytes only through explicit reviewed migration/version logic.
+
+Existing economic terms must never be changed by reinterpreting reserved space.
+
+## 11. Royalty Inbox storage
+
+Royalty Inbox is not an Anchor-owned state account.
+
+It is an original SPL Token ATA for configured USDC, owned by agreement-version vault PDA:
+
+```text
+[b"vault", agreement_version]
+```
+
+No separate rent-bearing VaultAuthority account is allocated.
+
+## 12. Account closure policy
+
+RoyaltyRail-owned Work, RevenuePool, and AgreementVersion accounts are not closed in v1.
+
+Royalty Inbox is not closed through v1 instructions.
+
+This preserves historical integrity and avoids creating rent-recovery paths that might accidentally become custody/withdrawal primitives.
+
+## 13. Size verification gate
+
+Before Anchor implementation PR can merge, CI must serialize maximum-size accounts and assert allocation space for:
 
 ```text
 ProtocolConfig
@@ -194,4 +266,4 @@ RevenuePool
 AgreementVersion (16 participants)
 ```
 
-The test must fail if a struct changes without a corresponding allocation/spec update.
+The test must fail if a struct changes without corresponding account-size/spec update.
