@@ -22,9 +22,8 @@ declare_id!("ErqjTNhQWyLCjJZpFg9jyGAgWJS7KYLN5kFUiNf3KYdH");
 const SPL_TOKEN_MINT_BYTES: usize = 82;
 const USDC_DECIMALS: u8 = 6;
 const ORIGINAL_SPL_TOKEN_PROGRAM_BYTES: [u8; 32] = [
-    0x06, 0xdd, 0xf6, 0xe1, 0xd7, 0x65, 0xa1, 0x93, 0xd9, 0xcb, 0xe1, 0x46, 0xce, 0xeb, 0x79,
-    0xac, 0x1c, 0xb4, 0x85, 0xed, 0x5f, 0x5b, 0x37, 0x91, 0x3a, 0x8c, 0xf5, 0x85, 0x7e, 0xff,
-    0x00, 0xa9,
+    0x06, 0xdd, 0xf6, 0xe1, 0xd7, 0x65, 0xa1, 0x93, 0xd9, 0xcb, 0xe1, 0x46, 0xce, 0xeb, 0x79, 0xac,
+    0x1c, 0xb4, 0x85, 0xed, 0x5f, 0x5b, 0x37, 0x91, 0x3a, 0x8c, 0xf5, 0x85, 0x7e, 0xff, 0x00, 0xa9,
 ];
 
 fn original_spl_token_program_id() -> Pubkey {
@@ -32,7 +31,10 @@ fn original_spl_token_program_id() -> Pubkey {
 }
 
 fn require_nonzero_authority(authority: Pubkey) -> Result<()> {
-    require!(authority != Pubkey::default(), RoyaltyRailError::ZeroAuthority);
+    require!(
+        authority != Pubkey::default(),
+        RoyaltyRailError::ZeroAuthority
+    );
     Ok(())
 }
 
@@ -93,13 +95,21 @@ fn require_governance(config: &ProtocolConfigState, authority: Pubkey) -> Result
 
 fn require_work_manager(work: &WorkState, authority: Pubkey) -> Result<()> {
     require_schema_version(work.schema_version)?;
-    require_keys_eq!(authority, work.manager_authority, RoyaltyRailError::Unauthorized);
+    require_keys_eq!(
+        authority,
+        work.manager_authority,
+        RoyaltyRailError::Unauthorized
+    );
     Ok(())
 }
 
 fn require_pool_manager(pool: &RevenuePoolState, authority: Pubkey) -> Result<()> {
     require_schema_version(pool.schema_version)?;
-    require_keys_eq!(authority, pool.manager_authority, RoyaltyRailError::Unauthorized);
+    require_keys_eq!(
+        authority,
+        pool.manager_authority,
+        RoyaltyRailError::Unauthorized
+    );
     Ok(())
 }
 
@@ -112,7 +122,10 @@ pub mod royaltyrail {
         deployment_id: [u8; 32],
         guardian_authority: Pubkey,
     ) -> Result<()> {
-        require!(deployment_id != [0u8; 32], RoyaltyRailError::InvalidDeploymentId);
+        require!(
+            deployment_id != [0u8; 32],
+            RoyaltyRailError::InvalidDeploymentId
+        );
         require_nonzero_authority(guardian_authority)?;
         let governance_authority = ctx.accounts.governance_authority.key();
         require_nonzero_authority(governance_authority)?;
@@ -162,7 +175,11 @@ pub mod royaltyrail {
         let authority = ctx.accounts.authority.key();
         let config = &mut ctx.accounts.config;
         require_schema_version(config.schema_version)?;
-        require_keys_eq!(authority, config.guardian_authority, RoyaltyRailError::Unauthorized);
+        require_keys_eq!(
+            authority,
+            config.guardian_authority,
+            RoyaltyRailError::Unauthorized
+        );
 
         if pause_agreements {
             config.agreements_paused = true;
@@ -261,14 +278,14 @@ pub mod royaltyrail {
         Ok(())
     }
 
-    pub fn update_work_metadata(
-        ctx: Context<MutateWork>,
-        metadata_hash: [u8; 32],
-    ) -> Result<()> {
+    pub fn update_work_metadata(ctx: Context<MutateWork>, metadata_hash: [u8; 32]) -> Result<()> {
         let authority = ctx.accounts.authority.key();
         let work = &mut ctx.accounts.work;
         require_work_manager(work, authority)?;
-        require!(work.metadata_hash != metadata_hash, RoyaltyRailError::MetadataUnchanged);
+        require!(
+            work.metadata_hash != metadata_hash,
+            RoyaltyRailError::MetadataUnchanged
+        );
         work.metadata_version = work
             .metadata_version
             .checked_add(1)
@@ -285,15 +302,15 @@ pub mod royaltyrail {
         Ok(())
     }
 
-    pub fn propose_work_manager(
-        ctx: Context<MutateWork>,
-        new_manager: Pubkey,
-    ) -> Result<()> {
+    pub fn propose_work_manager(ctx: Context<MutateWork>, new_manager: Pubkey) -> Result<()> {
         require_nonzero_authority(new_manager)?;
         let authority = ctx.accounts.authority.key();
         let work = &mut ctx.accounts.work;
         require_work_manager(work, authority)?;
-        require!(new_manager != work.manager_authority, RoyaltyRailError::ManagerUnchanged);
+        require!(
+            new_manager != work.manager_authority,
+            RoyaltyRailError::ManagerUnchanged
+        );
         require!(
             new_manager != work.pending_manager_authority,
             RoyaltyRailError::ManagerAlreadyPending
@@ -377,7 +394,10 @@ pub mod royaltyrail {
         let authority = ctx.accounts.authority.key();
         let pool = &mut ctx.accounts.revenue_pool;
         require_pool_manager(pool, authority)?;
-        require!(new_manager != pool.manager_authority, RoyaltyRailError::ManagerUnchanged);
+        require!(
+            new_manager != pool.manager_authority,
+            RoyaltyRailError::ManagerUnchanged
+        );
         require!(
             new_manager != pool.pending_manager_authority,
             RoyaltyRailError::ManagerAlreadyPending
