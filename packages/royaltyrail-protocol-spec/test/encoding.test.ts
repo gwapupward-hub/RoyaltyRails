@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AllocationMode,
   RevenuePoolKind,
   SettlementBasis,
-  SettlementMode,
   agreementHashV1,
+  allocationCommitmentV1,
   bytesToHex,
-  payoutCommitmentV1,
   type AgreementHashInputV1,
-  type PayoutCommitmentInputV1,
+  type AllocationCommitmentInputV1,
 } from "../src/index.js";
 
 function repeatedByte(byte: number): Uint8Array {
@@ -16,9 +16,11 @@ function repeatedByte(byte: number): Uint8Array {
 }
 
 const agreementVector: AgreementHashInputV1 = {
+  deploymentId: repeatedByte(0x0a),
   programId: repeatedByte(0x01),
   revenuePool: repeatedByte(0x02),
   version: 1,
+  predecessorVersion: 0,
   settlementMint: repeatedByte(0x03),
   tokenProgram: repeatedByte(0x04),
   poolKind: RevenuePoolKind.MasterReceipts,
@@ -28,34 +30,32 @@ const agreementVector: AgreementHashInputV1 = {
   participants: [
     {
       participantAuthority: repeatedByte(0x10),
-      payoutWallet: repeatedByte(0x20),
       shareBps: 7_000,
       roleCode: 1,
     },
     {
       participantAuthority: repeatedByte(0x11),
-      payoutWallet: repeatedByte(0x21),
       shareBps: 3_000,
       roleCode: 2,
     },
   ],
 };
 
-const payoutVector: PayoutCommitmentInputV1 = {
+const allocationVector: AllocationCommitmentInputV1 = {
+  deploymentId: repeatedByte(0x0a),
   agreement: repeatedByte(0x33),
-  settlementSequence: 7n,
-  mode: SettlementMode.Direct,
+  allocationSequence: 7n,
+  mode: AllocationMode.DirectFunding,
   grossAmount: 1_000_001n,
-  payouts: [
+  paymentReference: repeatedByte(0x44),
+  allocations: [
     {
       participantAuthority: repeatedByte(0x10),
-      payoutWallet: repeatedByte(0x20),
-      payoutAmount: 700_001n,
+      allocationAmount: 700_001n,
     },
     {
       participantAuthority: repeatedByte(0x11),
-      payoutWallet: repeatedByte(0x21),
-      payoutAmount: 300_000n,
+      allocationAmount: 300_000n,
     },
   ],
 };
@@ -63,13 +63,13 @@ const payoutVector: PayoutCommitmentInputV1 = {
 describe("RoyaltyRail canonical protocol encoding", () => {
   it("matches the canonical agreement hash vector", () => {
     expect(bytesToHex(agreementHashV1(agreementVector))).toBe(
-      "eae967b78c7ab02359e1563531eb3a31bceb5c54dd3903d67db5c15bfa910419",
+      "6b025b0137b4bef4cb856f9c1e6955c8aa9daf0509a87996e25013972cefbd40",
     );
   });
 
-  it("matches the canonical payout commitment vector", () => {
-    expect(bytesToHex(payoutCommitmentV1(payoutVector))).toBe(
-      "306358ddcb17322fe1ba98aeb6500b5087715b442a4a25a809bb6f722883fe19",
+  it("matches the canonical allocation commitment vector", () => {
+    expect(bytesToHex(allocationCommitmentV1(allocationVector))).toBe(
+      "bbbb4c0ef0d9617c5427d85cf9828d5767689a59bd696324adde3e03d9316950",
     );
   });
 
@@ -98,6 +98,18 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     expect(() => agreementHashV1({ ...agreementVector, version: 0 })).toThrow(/positive integer/);
   });
 
+  it("rejects an invalid predecessor version", () => {
+    expect(() =>
+      agreementHashV1({ ...agreementVector, version: 2, predecessorVersion: 2 }),
+    ).toThrow(/predecessor version/);
+  });
+
+  it("rejects an all-zero deployment id", () => {
+    expect(() =>
+      agreementHashV1({ ...agreementVector, deploymentId: new Uint8Array(32) }),
+    ).toThrow(/deployment id cannot be all-zero/);
+  });
+
   it("rejects an unsupported runtime pool enum value", () => {
     expect(() =>
       agreementHashV1({
@@ -116,31 +128,31 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     ).toThrow(/supported v1 enum/);
   });
 
-  it("rejects payout sequence zero", () => {
+  it("rejects allocation sequence zero", () => {
     expect(() =>
-      payoutCommitmentV1({
-        ...payoutVector,
-        settlementSequence: 0n,
+      allocationCommitmentV1({
+        ...allocationVector,
+        allocationSequence: 0n,
       }),
     ).toThrow(/sequence must be positive/);
   });
 
-  it("rejects an unsupported runtime settlement mode", () => {
+  it("rejects an unsupported runtime allocation mode", () => {
     expect(() =>
-      payoutCommitmentV1({
-        ...payoutVector,
-        mode: 99 as SettlementMode,
+      allocationCommitmentV1({
+        ...allocationVector,
+        mode: 99 as AllocationMode,
       }),
     ).toThrow(/supported v1 enum/);
   });
 
-  it("rejects a payout commitment that does not conserve gross", () => {
+  it("rejects an allocation commitment that does not conserve gross", () => {
     expect(() =>
-      payoutCommitmentV1({
-        ...payoutVector,
-        payouts: [
-          payoutVector.payouts[0]!,
-          { ...payoutVector.payouts[1]!, payoutAmount: 299_999n },
+      allocationCommitmentV1({
+        ...allocationVector,
+        allocations: [
+          allocationVector.allocations[0]!,
+          { ...allocationVector.allocations[1]!, allocationAmount: 299_999n },
         ],
       }),
     ).toThrow(/exactly equal gross/);
