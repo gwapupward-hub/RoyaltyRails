@@ -18,6 +18,12 @@ no-idl = []
 no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build"]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+  'cfg(feature, values("custom-heap", "custom-panic", "anchor-debug"))',
+  'cfg(target_os, values("solana"))',
+] }
+
 [dependencies]
 anchor-lang.workspace = true
 royaltyrail-core.workspace = true
