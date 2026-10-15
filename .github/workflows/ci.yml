@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   reference-specs:
@@ -16,8 +16,10 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,3 +32,45 @@ jobs:
 
       - name: Typecheck, spec consistency, and tests
         run: npm run check
+
+  rust-parity:
+    name: Rust parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+          components: rustfmt, clippy
+
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+
+      - name: Commit Cargo.lock on same-repository PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet -- Cargo.lock && git ls-files --error-unmatch Cargo.lock >/dev/null 2>&1; then
+            echo "Cargo.lock already committed and unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.lock
+          git commit -m "build: lock Rust dependencies"
+          git push origin HEAD:${GITHUB_HEAD_REF}
+
+      - name: Rust format
+        run: cargo fmt --all -- --check
+
+      - name: Rust clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Rust tests and parity vectors
+        run: cargo test --workspace --all-targets --locked
