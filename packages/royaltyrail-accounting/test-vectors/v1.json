@@ -1,8 +1,24 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "totalShareUnits": 100000000,
   "percentageDecimalPlaces": 6,
   "authorityScheme": "sequential-u256-big-endian-from-1",
   "digestDomain": "ROYALTYRAIL_GOLDEN_ALLOC_V1",
-  "digestEncoding": "SHA-256(domain || participant_count:u8 || initial_gross:u128le || initial_allocated[i]:u128le* || for each deposit: deposit:u64le || current_allocation[i]:u64le* || final_gross:u128le || final_allocated[i]:u128le*)",
-  "vectors": 
+  "generatedCorpus": {
+    "algorithm": "xorshift32-v1",
+    "seed": 20261015,
+    "count": 100,
+    "expectedCorpusDigest": "a6b0e8b357d3a675a7fcb6c80e0a4e6926bab655ccc8691d4924e957c713674d"
+  },
+  "namedVectors": [
+    {"name":"exact-70-20-10","shares":[70000000,20000000,10000000],"initialGross":"0","initialAllocated":["0","0","0"],"deposits":["1000000"],"expectedDigest":"207a45b3defe1a2cdc468dd17626ef4fdf5e9098739382ef8bf76db77d6c1bcf"},
+    {"name":"six-decimal-thirds-micro-payments","shares":[33333333,33333333,33333334],"initialGross":"0","initialAllocated":["0","0","0"],"deposits":["1","1","1","1","1"],"expectedDigest":"a994ecfd70a8aad87804632f5b56fb14e7abb7c17b2afb08975d8b02492b4350"},
+    {"name":"regression-fixed-remainder-negative-delta","shares":[1,49999999,50000000],"initialGross":"0","initialAllocated":["0","0","0"],"deposits":["50000001","1"],"expectedDigest":"0a50562b5d76cfacb7e92ae5e9530ccb71d6197c4bd55e9b9012cc46fb75b99e"},
+    {"name":"equal-halves-single-units","shares":[50000000,50000000],"initialGross":"0","initialAllocated":["0","0"],"deposits":["1","1","1"],"expectedDigest":"54c399e42efaa61aee6a2dc1eef481b44eee2673f2a0f9785a1ea2c8363b2f44"},
+    {"name":"single-100pct-u64-max","shares":[100000000],"initialGross":"0","initialAllocated":["0"],"deposits":["18446744073709551615"],"expectedDigest":"d53258062b3acdd0c71b0ddabcd2d875cc5e1056724f3e91e3e04a6e813106cf"},
+    {"name":"sixteen-way-tie-one-unit","shares":[6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000,6250000],"initialGross":"0","initialAllocated":["0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],"deposits":["1"],"expectedDigest":"3f3add4c1dc059f4ea921ed625226659a4ceb0be3934533c14660c0fed3cf22a"},
+    {"name":"minimum-share-extreme-skew","shares":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,99999985],"initialGross":"0","initialAllocated":["0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],"deposits":["1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],"expectedDigest":"c90a1d3f8b3295bd0a9310aea05e71f182f95c40122017a0bbc970baa4ab0d07"},
+    {"name":"near-u128-halves-valid-state","shares":[50000000,50000000],"initialGross":"340282366920938463463374607431768211455","initialAllocated":["170141183460469231731687303715884105728","170141183460469231731687303715884105727"],"deposits":[],"expectedDigest":"88a705b47b7d580b3ce0dfe888e3c1361d8a79dca0024c6cc96ee6321d51e804"},
+    {"name":"residual-boundaries-valid-state","shares":[1,99999999],"initialGross":"99999999","initialAllocated":["0","99999999"],"deposits":[],"expectedDigest":"d37f8174e73cb80bca17405dd528b4811ad10cedb3adc19217589756a45e654a"}
+  ]
+}
