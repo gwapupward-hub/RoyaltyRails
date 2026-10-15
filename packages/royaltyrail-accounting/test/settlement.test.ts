@@ -53,6 +53,10 @@ describe("agreement validation", () => {
     expect(() => validateAgreement(agreement([5_000, 5_000]))).not.toThrow();
   });
 
+  it("allows a single 100% participant", () => {
+    expect(() => validateAgreement(agreement([10_000]))).not.toThrow();
+  });
+
   it("rejects duplicate participant identifiers", () => {
     const invalid: Agreement = {
       ...agreement([5_000, 5_000]),
@@ -67,6 +71,17 @@ describe("agreement validation", () => {
 });
 
 describe("allocation", () => {
+  it("allocates a single-recipient deposit at 100%", () => {
+    const a = agreement([10_000]);
+    const result = allocate(a, initialState(a), {
+      amount: 987_654n,
+      expectedNonce: 0n,
+    });
+
+    expect(result.allocations).toEqual({ p0: 987_654n });
+    expect(result.nextState.gross).toBe(987_654n);
+  });
+
   it("allocates an exact 70/20/10 deposit", () => {
     const a = agreement([7_000, 2_000, 1_000]);
     const result = allocate(a, initialState(a), {
@@ -124,7 +139,7 @@ describe("property invariants", () => {
   it("conserves every allocation and bounds cumulative rounding error", () => {
     fc.assert(
       fc.property(
-        fc.array(fc.integer({ min: 1, max: 1_000 }), { minLength: 2, maxLength: 16 }),
+        fc.array(fc.integer({ min: 1, max: 1_000 }), { minLength: 1, maxLength: 16 }),
         fc.array(fc.integer({ min: 1, max: 1_000_000 }), { minLength: 1, maxLength: 40 }),
         (weights, amounts) => {
           const a = agreement(sharesFromWeights(weights));
