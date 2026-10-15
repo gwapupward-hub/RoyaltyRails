@@ -73,6 +73,34 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     );
   });
 
+  it("accepts a single 100% economic participant", () => {
+    expect(() =>
+      agreementHashV1({
+        ...agreementVector,
+        participants: [
+          {
+            participantAuthority: repeatedByte(0x10),
+            shareBps: 10_000,
+            roleCode: 1,
+          },
+        ],
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      allocationCommitmentV1({
+        ...allocationVector,
+        grossAmount: 123n,
+        allocations: [
+          {
+            participantAuthority: repeatedByte(0x10),
+            allocationAmount: 123n,
+          },
+        ],
+      }),
+    ).not.toThrow();
+  });
+
   it("rejects a non-canonical participant order", () => {
     expect(() =>
       agreementHashV1({
