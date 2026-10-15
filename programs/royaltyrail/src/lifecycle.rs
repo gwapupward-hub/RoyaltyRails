@@ -96,7 +96,10 @@ pub fn required_mask(participant_count: usize) -> Result<u16> {
 }
 
 fn approval_bit(index: usize) -> Result<u16> {
-    require!(index < MAX_PARTICIPANTS, RoyaltyRailError::InvalidParticipantCount);
+    require!(
+        index < MAX_PARTICIPANTS,
+        RoyaltyRailError::InvalidParticipantCount
+    );
     Ok(1u16 << index)
 }
 
@@ -261,8 +264,7 @@ pub fn approve_supersession(
         RoyaltyRailError::AgreementNotActive
     );
     require!(
-        successor.predecessor_version != 0
-            && successor.predecessor_version == predecessor.version,
+        successor.predecessor_version != 0 && successor.predecessor_version == predecessor.version,
         RoyaltyRailError::InvalidPredecessor
     );
     require!(
@@ -316,8 +318,7 @@ pub fn reject_by_predecessor_participant(
     signer: Pubkey,
 ) -> Result<usize> {
     require!(
-        successor.predecessor_version != 0
-            && successor.predecessor_version == predecessor.version,
+        successor.predecessor_version != 0 && successor.predecessor_version == predecessor.version,
         RoyaltyRailError::InvalidPredecessor
     );
     require!(
@@ -379,8 +380,7 @@ pub fn activate_replacement(
         RoyaltyRailError::AgreementNotActive
     );
     require!(
-        successor.predecessor_version != 0
-            && successor.predecessor_version == predecessor.version,
+        successor.predecessor_version != 0 && successor.predecessor_version == predecessor.version,
         RoyaltyRailError::InvalidPredecessor
     );
     require!(
@@ -478,7 +478,7 @@ pub fn update_payout_wallet(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{AGREEMENT_VERSION_MAX_ACCOUNT_BYTES, RevenuePoolKind, SettlementBasis};
+    use crate::state::{RevenuePoolKind, SettlementBasis, AGREEMENT_VERSION_MAX_ACCOUNT_BYTES};
 
     fn key(value: u8) -> Pubkey {
         Pubkey::new_from_array([value; 32])
@@ -598,7 +598,10 @@ mod tests {
         assert_eq!(proposal.agreement_hash, hash);
         assert_eq!(proposal.status, AgreementStatus::Proposed);
         assert_eq!(proposal.participants.len(), 2);
-        assert!(proposal.participants.iter().all(|p| p.payout_revision == 0));
+        assert!(proposal
+            .participants
+            .iter()
+            .all(|p| p.payout_revision == 0));
         assert!(proposal
             .participants
             .iter()
