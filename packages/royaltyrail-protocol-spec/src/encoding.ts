@@ -4,7 +4,7 @@ export const AGREEMENT_DOMAIN_V1 = "ROYALTYRAIL_AGREEMENT_V1";
 export const ALLOCATION_DOMAIN_V1 = "ROYALTYRAIL_ALLOCATION_V1";
 export const MAX_PARTICIPANTS = 16;
 export const MIN_PARTICIPANTS = 1;
-export const TOTAL_BPS = 10_000;
+export const TOTAL_SHARE_UNITS = 100_000_000;
 
 export enum RevenuePoolKind {
   MasterReceipts = 0,
@@ -25,7 +25,8 @@ export enum AllocationMode {
 
 export interface AgreementHashParticipantV1 {
   participantAuthority: Uint8Array;
-  shareBps: number;
+  /** 100_000_000 = 100%; 1 unit = 0.000001%. */
+  shareUnits: number;
 }
 
 export interface AgreementHashInputV1 {
@@ -92,11 +93,6 @@ function u8(value: number, field: string): Uint8Array {
     throw new Error(`${field} must be an unsigned 8-bit integer`);
   }
   return new Uint8Array([value]);
-}
-
-function u16(value: number, field: string): Uint8Array {
-  if (!Number.isInteger(value)) throw new Error(`${field} must be an integer`);
-  return encodeUnsignedLe(BigInt(value), 2, field);
 }
 
 function u32(value: number, field: string): Uint8Array {
@@ -192,23 +188,25 @@ export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
     "settlement basis",
   );
 
-  let totalBps = 0;
+  let totalShareUnits = 0;
   const participantParts: Uint8Array[] = [];
 
   for (const participant of input.participants) {
-    if (!Number.isInteger(participant.shareBps) || participant.shareBps <= 0) {
-      throw new Error("share BPS must be a positive integer");
+    if (!Number.isInteger(participant.shareUnits) || participant.shareUnits <= 0) {
+      throw new Error("share units must be a positive integer");
     }
 
-    totalBps += participant.shareBps;
+    totalShareUnits += participant.shareUnits;
     participantParts.push(
       nonZeroBytes32(participant.participantAuthority, "participant authority"),
-      u16(participant.shareBps, "share BPS"),
+      u32(participant.shareUnits, "share units"),
     );
   }
 
-  if (totalBps !== TOTAL_BPS) {
-    throw new Error(`participant shares must total exactly ${TOTAL_BPS} BPS`);
+  if (totalShareUnits !== TOTAL_SHARE_UNITS) {
+    throw new Error(
+      `participant shares must total exactly ${TOTAL_SHARE_UNITS} share units`,
+    );
   }
 
   return concat([
