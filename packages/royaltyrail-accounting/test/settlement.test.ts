@@ -3,8 +3,8 @@ import fc from "fast-check";
 
 import {
   AccountingError,
+  allocate,
   initialState,
-  settle,
   validateAgreement,
   type Agreement,
 } from "../src/index.js";
@@ -66,59 +66,62 @@ describe("agreement validation", () => {
   });
 });
 
-describe("settlement", () => {
-  it("splits an exact 70/20/10 payment", () => {
+describe("allocation", () => {
+  it("allocates an exact 70/20/10 deposit", () => {
     const a = agreement([7_000, 2_000, 1_000]);
-    const result = settle(a, initialState(a), {
+    const result = allocate(a, initialState(a), {
       amount: 1_000_000n,
       expectedNonce: 0n,
     });
 
-    expect(result.payouts).toEqual({
+    expect(result.allocations).toEqual({
       p0: 700_000n,
       p1: 200_000n,
       p2: 100_000n,
     });
     expect(result.nextState.gross).toBe(1_000_000n);
-    expect(result.nextState.nextSettlementNonce).toBe(1n);
+    expect(result.nextState.nextDirectNonce).toBe(1n);
   });
 
-  it("rejects nonce replay", () => {
+  it("rejects direct nonce replay", () => {
     const a = agreement([5_000, 5_000]);
-    const first = settle(a, initialState(a), { amount: 100n, expectedNonce: 0n });
+    const first = allocate(a, initialState(a), { amount: 100n, expectedNonce: 0n });
 
     expect(() =>
-      settle(a, first.nextState, { amount: 100n, expectedNonce: 0n }),
-    ).toThrow("settlement nonce mismatch");
+      allocate(a, first.nextState, { amount: 100n, expectedNonce: 0n }),
+    ).toThrow("direct allocation nonce mismatch");
   });
 
   it("handles the edge case that breaks fixed cumulative-remainder assignment", () => {
     const a = agreement([1, 4_999, 5_000]);
-    const first = settle(a, initialState(a), { amount: 5_001n, expectedNonce: 0n });
-    const second = settle(a, first.nextState, { amount: 1n, expectedNonce: 1n });
+    const first = allocate(a, initialState(a), { amount: 5_001n, expectedNonce: 0n });
+    const second = allocate(a, first.nextState, { amount: 1n, expectedNonce: 1n });
 
-    expect(Object.values(second.payouts).every((value) => value >= 0n)).toBe(true);
-    expect(sum(Object.values(second.payouts))).toBe(1n);
+    expect(Object.values(second.allocations).every((value) => value >= 0n)).toBe(true);
+    expect(sum(Object.values(second.allocations))).toBe(1n);
   });
 
-  it("never accumulates more than one base unit of lifetime rounding error", () => {
+  it("never accumulates more than one base unit of lifetime allocation error", () => {
     const a = agreement([3_333, 3_333, 3_334]);
     let state = initialState(a);
 
     for (let i = 0; i < 10_001; i += 1) {
-      state = settle(a, state, { amount: 1n, expectedNonce: state.nextSettlementNonce }).nextState;
+      state = allocate(a, state, {
+        amount: 1n,
+        expectedNonce: state.nextDirectNonce,
+      }).nextState;
     }
 
     for (const participant of a.participants) {
-      const paid = state.paid[participant.id] ?? 0n;
-      const residual = state.gross * BigInt(participant.shareBps) - paid * 10_000n;
+      const allocated = state.allocated[participant.id] ?? 0n;
+      const residual = state.gross * BigInt(participant.shareBps) - allocated * 10_000n;
       expect(abs(residual)).toBeLessThan(10_000n);
     }
   });
 });
 
 describe("property invariants", () => {
-  it("conserves every settlement and bounds cumulative rounding error", () => {
+  it("conserves every allocation and bounds cumulative rounding error", () => {
     fc.assert(
       fc.property(
         fc.array(fc.integer({ min: 1, max: 1_000 }), { minLength: 2, maxLength: 16 }),
@@ -129,21 +132,21 @@ describe("property invariants", () => {
 
           for (const rawAmount of amounts) {
             const amount = BigInt(rawAmount);
-            const result = settle(a, state, {
+            const result = allocate(a, state, {
               amount,
-              expectedNonce: state.nextSettlementNonce,
+              expectedNonce: state.nextDirectNonce,
             });
 
-            expect(sum(Object.values(result.payouts))).toBe(amount);
-            expect(Object.values(result.payouts).every((value) => value >= 0n)).toBe(true);
+            expect(sum(Object.values(result.allocations))).toBe(amount);
+            expect(Object.values(result.allocations).every((value) => value >= 0n)).toBe(true);
             state = result.nextState;
           }
 
-          expect(sum(Object.values(state.paid))).toBe(state.gross);
+          expect(sum(Object.values(state.allocated))).toBe(state.gross);
 
           for (const participant of a.participants) {
-            const paid = state.paid[participant.id] ?? 0n;
-            const residual = state.gross * BigInt(participant.shareBps) - paid * 10_000n;
+            const allocated = state.allocated[participant.id] ?? 0n;
+            const residual = state.gross * BigInt(participant.shareBps) - allocated * 10_000n;
             expect(abs(residual)).toBeLessThan(10_000n);
           }
         },
