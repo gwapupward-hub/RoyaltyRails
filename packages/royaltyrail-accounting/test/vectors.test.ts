@@ -1,14 +1,15 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { allocate, initialState, type Agreement } from "../src/index.js";
+import { TOTAL_SHARE_UNITS, allocate, initialState, type Agreement } from "../src/index.js";
 
 interface VectorFile {
   schemaVersion: number;
-  denominatorBps: number;
+  totalShareUnits: number;
+  percentageDecimalPlaces: number;
   vectors: Array<{
     name: string;
-    sharesBps: number[];
+    shares: number[];
     deposits: string[];
     expectedAllocations: string[][];
     expectedFinalAllocated: string[];
@@ -19,24 +20,25 @@ const vectors = JSON.parse(
   readFileSync(new URL("../test-vectors/v1.json", import.meta.url), "utf8"),
 ) as VectorFile;
 
-function agreement(sharesBps: number[]): Agreement {
+function agreement(shares: number[]): Agreement {
   return {
     id: "RR-VECTOR",
     version: 1,
     settlementBasis: "REVENUE_PARTICIPATION",
-    participants: sharesBps.map((shareBps, index) => ({ id: `p${index}`, shareBps })),
+    participants: shares.map((shareUnits, index) => ({ id: `p${index}`, shareUnits })),
   };
 }
 
 describe("canonical allocation vectors", () => {
-  it("uses the expected schema", () => {
-    expect(vectors.schemaVersion).toBe(1);
-    expect(vectors.denominatorBps).toBe(10_000);
+  it("uses the expected schema and share precision", () => {
+    expect(vectors.schemaVersion).toBe(2);
+    expect(vectors.totalShareUnits).toBe(TOTAL_SHARE_UNITS);
+    expect(vectors.percentageDecimalPlaces).toBe(6);
   });
 
   for (const vector of vectors.vectors) {
     it(vector.name, () => {
-      const a = agreement(vector.sharesBps);
+      const a = agreement(vector.shares);
       let state = initialState(a);
 
       vector.deposits.forEach((rawDeposit, allocationIndex) => {
