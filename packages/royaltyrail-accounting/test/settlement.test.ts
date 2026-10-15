@@ -73,10 +73,7 @@ describe("agreement validation", () => {
 describe("allocation", () => {
   it("allocates a single-recipient deposit at 100%", () => {
     const a = agreement([10_000]);
-    const result = allocate(a, initialState(a), {
-      amount: 987_654n,
-      expectedNonce: 0n,
-    });
+    const result = allocate(a, initialState(a), { amount: 987_654n });
 
     expect(result.allocations).toEqual({ p0: 987_654n });
     expect(result.nextState.gross).toBe(987_654n);
@@ -84,10 +81,7 @@ describe("allocation", () => {
 
   it("allocates an exact 70/20/10 deposit", () => {
     const a = agreement([7_000, 2_000, 1_000]);
-    const result = allocate(a, initialState(a), {
-      amount: 1_000_000n,
-      expectedNonce: 0n,
-    });
+    const result = allocate(a, initialState(a), { amount: 1_000_000n });
 
     expect(result.allocations).toEqual({
       p0: 700_000n,
@@ -95,22 +89,12 @@ describe("allocation", () => {
       p2: 100_000n,
     });
     expect(result.nextState.gross).toBe(1_000_000n);
-    expect(result.nextState.nextDirectNonce).toBe(1n);
-  });
-
-  it("rejects direct nonce replay", () => {
-    const a = agreement([5_000, 5_000]);
-    const first = allocate(a, initialState(a), { amount: 100n, expectedNonce: 0n });
-
-    expect(() =>
-      allocate(a, first.nextState, { amount: 100n, expectedNonce: 0n }),
-    ).toThrow("direct allocation nonce mismatch");
   });
 
   it("handles the edge case that breaks fixed cumulative-remainder assignment", () => {
     const a = agreement([1, 4_999, 5_000]);
-    const first = allocate(a, initialState(a), { amount: 5_001n, expectedNonce: 0n });
-    const second = allocate(a, first.nextState, { amount: 1n, expectedNonce: 1n });
+    const first = allocate(a, initialState(a), { amount: 5_001n });
+    const second = allocate(a, first.nextState, { amount: 1n });
 
     expect(Object.values(second.allocations).every((value) => value >= 0n)).toBe(true);
     expect(sum(Object.values(second.allocations))).toBe(1n);
@@ -121,10 +105,7 @@ describe("allocation", () => {
     let state = initialState(a);
 
     for (let i = 0; i < 10_001; i += 1) {
-      state = allocate(a, state, {
-        amount: 1n,
-        expectedNonce: state.nextDirectNonce,
-      }).nextState;
+      state = allocate(a, state, { amount: 1n }).nextState;
     }
 
     for (const participant of a.participants) {
@@ -147,10 +128,7 @@ describe("property invariants", () => {
 
           for (const rawAmount of amounts) {
             const amount = BigInt(rawAmount);
-            const result = allocate(a, state, {
-              amount,
-              expectedNonce: state.nextDirectNonce,
-            });
+            const result = allocate(a, state, { amount });
 
             expect(sum(Object.values(result.allocations))).toBe(amount);
             expect(Object.values(result.allocations).every((value) => value >= 0n)).toBe(true);
