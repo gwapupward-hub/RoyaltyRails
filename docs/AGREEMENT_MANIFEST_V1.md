@@ -42,11 +42,11 @@ The canonical on-chain agreement hash independently binds:
 - settlement mint/token program;
 - pool kind/basis/metadata hash;
 - `terms_hash`;
-- participant authority/share/role vector.
+- participant authority/share vector.
 
-The manifest provides the human-readable context anchored by `terms_hash`.
+The manifest supplies the human-readable context—including rich creative roles/credits—anchored by `terms_hash`.
 
-Changing manifest content changes `terms_hash` and therefore changes the agreement hash and requires new approvals.
+Changing manifest content changes `terms_hash`, therefore changes the agreement hash, and requires new approvals.
 
 ## 4. V1 manifest shape
 
@@ -85,15 +85,13 @@ Illustrative **valid 10,000-BPS** example:
     {
       "participantAuthority": "<artist-solana-pubkey>",
       "displayName": "Artist",
-      "roleCode": 1,
-      "roleLabel": "Primary Artist",
+      "roles": ["PRIMARY_ARTIST", "SONGWRITER"],
       "shareBps": 9500
     },
     {
       "participantAuthority": "<producer-solana-pubkey>",
       "displayName": "Producer A",
-      "roleCode": 2,
-      "roleLabel": "Producer",
+      "roles": ["PRODUCER", "SONGWRITER"],
       "shareBps": 500
     }
   ],
@@ -120,21 +118,50 @@ The formal JSON Schema should be added before Studio beta. This document freezes
 
 Manifest participant order MUST match canonical on-chain participant-authority byte order when the manifest is presented as the exact approval artifact.
 
-Every participant entry must correspond one-to-one with an on-chain economic participant:
+Every participant entry must correspond one-to-one with an on-chain economic participant through:
 
 ```text
 participantAuthority
 shareBps
-roleCode
 ```
 
-Studio MUST compare these fields against the proposed on-chain agreement before signature and MUST reject a manifest whose shares do not total exactly 10,000 BPS.
+Studio MUST compare those economic fields against the proposed on-chain agreement before signature and MUST reject a manifest whose shares do not total exactly 10,000 BPS.
 
-`displayName` and `roleLabel` are human-readable metadata. They are not substitutes for authority/share/role values bound on-chain.
+Creative roles/credits are **manifest metadata**, not duplicate on-chain economic fields. The manifest may assign multiple roles to one participant. Because roles are inside the canonical manifest, they remain cryptographically protected by `terms_hash` without forcing the core Solana account layout to maintain a music-industry role taxonomy.
+
+`displayName` is human-readable metadata and is not a substitute for participant authority.
 
 Do not place tax IDs, government IDs, home addresses, bank details, private emails, or other sensitive PII in the public manifest.
 
-## 6. Music identifiers
+## 6. Role vocabulary
+
+V1 should publish a versioned recommended role vocabulary for Studio/API interoperability while allowing namespaced external vocabulary values where needed.
+
+Example:
+
+```text
+PRIMARY_ARTIST
+FEATURED_ARTIST
+PRODUCER
+CO_PRODUCER
+EXECUTIVE_PRODUCER
+SONGWRITER
+COMPOSER
+LYRICIST
+ENGINEER
+MIX_ENGINEER
+MASTERING_ENGINEER
+LABEL
+PUBLISHER
+MANAGER
+OTHER:<namespace>:<value>
+```
+
+Role labels do **not** determine payment math. The approved `shareBps` does.
+
+Future DDEX adapters should map these manifest roles to applicable DDEX party/role vocabulary without requiring a protocol migration.
+
+## 7. Music identifiers
 
 V1 manifest may carry common identifiers where available:
 
@@ -147,9 +174,9 @@ V1 manifest may carry common identifiers where available:
 
 Identifiers are optional because a split may be agreed before formal release identifiers exist.
 
-Identifier changes after agreement activation do not silently mutate the approved manifest. A later metadata association may be recorded separately if it does not alter economics; economic changes require a new agreement version.
+Identifier changes after agreement activation do not silently mutate the approved manifest. A later metadata association may be recorded separately if it does not alter economics; changing the approved manifest requires a new agreement version.
 
-## 7. Revenue-pool definition
+## 8. Revenue-pool definition
 
 The manifest must explain exactly what the percentage applies to.
 
@@ -166,7 +193,7 @@ negative-adjustment policy
 
 RoyaltyRail v1 does not independently validate pre-deposit deductions or external royalty statements. The amount actually allocated by the protocol is authoritative for protocol accounting.
 
-## 8. Negative adjustments and chargebacks
+## 9. Negative adjustments and chargebacks
 
 Real royalty statements can contain reversals, corrections, returns, recoupments, or negative adjustments.
 
@@ -178,11 +205,11 @@ V1 policy:
 negativeAdjustmentPolicy = NET_BEFORE_DEPOSIT
 ```
 
-The payer/integration must net corrections before depositing new distributable USDC or handle the commercial correction outside the v1 protocol.
+The payer/integration must net corrections before depositing new distributable USDC or handle the commercial correction outside v1.
 
 A future accounting version may support explicitly consented offsets/waterfalls, but it must not retroactively mutate v1 allocations.
 
-## 9. Effective periods
+## 10. Effective periods
 
 `effectiveFrom` and `effectiveUntil` are business metadata in v1, not autonomous clock-based routing rules enforced by the program.
 
@@ -190,11 +217,11 @@ A payer/API selects the AgreementVersion that should receive a particular paymen
 
 Future statement-ingestion services may use effective periods to recommend or automate version selection, but the selected on-chain version remains explicit.
 
-## 10. Document attachments
+## 11. Document attachments
 
 Attachments are referenced by cryptographic digest, not by mutable URL.
 
-Manifest example:
+Example:
 
 ```json
 {
@@ -206,7 +233,7 @@ Manifest example:
 
 Storage URLs/CIDs may be maintained in a separate resolver/index so storage location can change without changing the approved terms hash.
 
-## 11. Availability requirement
+## 12. Availability requirement
 
 A hash proves integrity but not availability.
 
@@ -216,11 +243,11 @@ Before public beta, Studio must support:
 - exportable agreement evidence package;
 - at least one content-addressed or otherwise durable storage path;
 - redundant RoyaltyRail-hosted retrieval;
-- independent hash verification in the SDK/CLI.
+- independent hash verification in SDK/CLI.
 
 The protocol must not require RoyaltyRail's hosted database to verify a manifest a user already possesses.
 
-## 12. Evidence package
+## 13. Evidence package
 
 A RoyaltyRail evidence export should include:
 
@@ -231,7 +258,8 @@ terms_hash
 agreement_hash
 AgreementVersion address
 program ID + deployment ID
-participant authorities/shares/roles
+participant authorities/shares
+human-readable roles/credits from manifest
 approval transactions
 supersession-consent transactions where applicable
 activation transaction
@@ -241,15 +269,15 @@ allocation/claim history references
 
 This is designed for auditability. Whether it satisfies a particular legal signature/record requirement is jurisdiction-dependent and requires legal review.
 
-## 13. DDEX compatibility direction
+## 14. DDEX compatibility direction
 
 RoyaltyRail should map to established music-data standards instead of inventing incompatible music ontology.
 
 Future mapping work should cover concepts represented by DDEX Musical Work Data and Rights standards, including rights claims, party/role data, work-recording links, and Letters of Direction. Full DDEX implementation is outside protocol v1 and requires the applicable DDEX implementation/licensing process.
 
-RoyaltyRail's internal schema must preserve enough stable identifiers and role/right semantics to make later DDEX adapters possible without changing on-chain percentage math.
+RoyaltyRail's manifest/indexer schema must preserve enough stable identifiers and role/right semantics to make later DDEX adapters possible without changing on-chain percentage math.
 
-## 14. Amendment-policy roadmap
+## 15. Amendment-policy roadmap
 
 V1 uses unanimous economic amendment and predecessor-supersession consent.
 
