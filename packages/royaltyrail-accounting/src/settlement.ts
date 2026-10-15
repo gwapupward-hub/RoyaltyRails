@@ -1,14 +1,14 @@
 import {
   MAX_RECIPIENTS,
   MIN_RECIPIENTS,
-  TOTAL_BPS,
+  TOTAL_SHARE_UNITS,
   type Agreement,
   type AllocationInput,
   type AllocationResult,
   type CumulativeState,
 } from "./types.js";
 
-const DENOMINATOR = BigInt(TOTAL_BPS);
+const DENOMINATOR = BigInt(TOTAL_SHARE_UNITS);
 
 export class AccountingError extends Error {
   constructor(message: string) {
@@ -31,22 +31,24 @@ export function validateAgreement(agreement: Agreement): void {
   }
 
   const ids = new Set<string>();
-  let totalBps = 0;
+  let totalShareUnits = 0;
 
   for (const participant of participants) {
     if (!participant.id.trim()) throw new AccountingError("participant id is required");
     if (ids.has(participant.id)) throw new AccountingError("duplicate participant id");
     ids.add(participant.id);
 
-    if (!Number.isInteger(participant.shareBps) || participant.shareBps <= 0) {
-      throw new AccountingError("participant share must be a positive integer number of BPS");
+    if (!Number.isInteger(participant.shareUnits) || participant.shareUnits <= 0) {
+      throw new AccountingError("participant share must be a positive integer number of share units");
     }
 
-    totalBps += participant.shareBps;
+    totalShareUnits += participant.shareUnits;
   }
 
-  if (totalBps !== TOTAL_BPS) {
-    throw new AccountingError(`participant shares must total exactly ${TOTAL_BPS} BPS`);
+  if (totalShareUnits !== TOTAL_SHARE_UNITS) {
+    throw new AccountingError(
+      `participant shares must total exactly ${TOTAL_SHARE_UNITS} share units`,
+    );
   }
 }
 
@@ -59,8 +61,8 @@ export function initialState(agreement: Agreement): CumulativeState {
   };
 }
 
-function roundingResidual(gross: bigint, allocated: bigint, shareBps: number): bigint {
-  return gross * BigInt(shareBps) - allocated * DENOMINATOR;
+function roundingResidual(gross: bigint, allocated: bigint, shareUnits: number): bigint {
+  return gross * BigInt(shareUnits) - allocated * DENOMINATOR;
 }
 
 export function validateState(agreement: Agreement, state: CumulativeState): void {
@@ -79,7 +81,7 @@ export function validateState(agreement: Agreement, state: CumulativeState): voi
     }
     if (allocated < 0n) throw new AccountingError("participant allocation cannot be negative");
 
-    const residual = roundingResidual(state.gross, allocated, participant.shareBps);
+    const residual = roundingResidual(state.gross, allocated, participant.shareUnits);
     if (residual <= -DENOMINATOR || residual >= DENOMINATOR) {
       throw new AccountingError("participant rounding residual is outside the permitted bound");
     }
@@ -133,9 +135,9 @@ export function allocate(
     const residualBefore = roundingResidual(
       state.gross,
       priorAllocated,
-      participant.shareBps,
+      participant.shareUnits,
     );
-    const accruedNumerator = residualBefore + input.amount * BigInt(participant.shareBps);
+    const accruedNumerator = residualBefore + input.amount * BigInt(participant.shareUnits);
 
     const baseAllocation = accruedNumerator <= 0n ? 0n : accruedNumerator / DENOMINATOR;
     const score = accruedNumerator - baseAllocation * DENOMINATOR;
