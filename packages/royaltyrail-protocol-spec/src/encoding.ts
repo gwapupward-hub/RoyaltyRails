@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 export const AGREEMENT_DOMAIN_V1 = "ROYALTYRAIL_AGREEMENT_V1";
 export const ALLOCATION_DOMAIN_V1 = "ROYALTYRAIL_ALLOCATION_V1";
 export const MAX_PARTICIPANTS = 16;
-export const MIN_PARTICIPANTS = 2;
+export const MIN_PARTICIPANTS = 1;
 export const TOTAL_BPS = 10_000;
 
 export enum RevenuePoolKind {
