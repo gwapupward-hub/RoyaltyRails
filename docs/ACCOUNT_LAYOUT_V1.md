@@ -182,7 +182,9 @@ participant.cumulative_claimed
 
 Every narrowing conversion to `u64` must be checked.
 
-The `u32` share field and `u64` allocation amount product fit safely inside checked `u128` arithmetic under v1 bounds.
+For one new allocation, `u64 amount × u32 share_units` fits safely inside signed/unsigned 128-bit arithmetic under v1 bounds.
+
+For cumulative proportional entitlement, implementations MUST NOT naively multiply the full `u128 cumulative_gross × u32 share_units`. They must use the quotient/remainder decomposition frozen in `ACCOUNTING_V1.md`, which reproduces exact floor/remainder semantics over the full valid `u128` state domain without a wider integer intermediate.
 
 ## 9. Claimability arithmetic
 
