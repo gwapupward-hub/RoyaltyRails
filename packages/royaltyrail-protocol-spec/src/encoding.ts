@@ -88,15 +88,21 @@ function encodeUnsignedLe(value: bigint, byteLength: number, field: string): Uin
   return out;
 }
 
+function safeInteger(value: number, field: string): number {
+  if (!Number.isSafeInteger(value)) throw new Error(`${field} must be a safe integer`);
+  return value;
+}
+
 function u8(value: number, field: string): Uint8Array {
-  if (!Number.isInteger(value) || value < 0 || value > 0xff) {
+  safeInteger(value, field);
+  if (value < 0 || value > 0xff) {
     throw new Error(`${field} must be an unsigned 8-bit integer`);
   }
   return new Uint8Array([value]);
 }
 
 function u32(value: number, field: string): Uint8Array {
-  if (!Number.isInteger(value)) throw new Error(`${field} must be an integer`);
+  safeInteger(value, field);
   return encodeUnsignedLe(BigInt(value), 4, field);
 }
 
@@ -105,7 +111,8 @@ function u64(value: bigint, field: string): Uint8Array {
 }
 
 function assertEnumValue(value: number, allowed: readonly number[], field: string): void {
-  if (!Number.isInteger(value) || !allowed.includes(value)) {
+  safeInteger(value, field);
+  if (!allowed.includes(value)) {
     throw new Error(`${field} is not a supported v1 enum value`);
   }
 }
@@ -162,12 +169,13 @@ function sha256(preimage: Uint8Array): Uint8Array {
 export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
   validateCanonicalAuthorities(input.participants);
 
-  if (!Number.isInteger(input.version) || input.version <= 0) {
-    throw new Error("agreement version must be a positive integer");
+  if (!Number.isSafeInteger(input.version) || input.version <= 0 || input.version > 0xffff_ffff) {
+    throw new Error("agreement version must be a positive u32 integer");
   }
   if (
-    !Number.isInteger(input.predecessorVersion) ||
+    !Number.isSafeInteger(input.predecessorVersion) ||
     input.predecessorVersion < 0 ||
+    input.predecessorVersion > 0xffff_ffff ||
     input.predecessorVersion >= input.version
   ) {
     throw new Error("predecessor version must be zero or lower than agreement version");
@@ -192,8 +200,12 @@ export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
   const participantParts: Uint8Array[] = [];
 
   for (const participant of input.participants) {
-    if (!Number.isInteger(participant.shareUnits) || participant.shareUnits <= 0) {
-      throw new Error("share units must be a positive integer");
+    if (
+      !Number.isSafeInteger(participant.shareUnits) ||
+      participant.shareUnits <= 0 ||
+      participant.shareUnits > TOTAL_SHARE_UNITS
+    ) {
+      throw new Error("share units must be a positive safe integer in the v1 share domain");
     }
 
     totalShareUnits += participant.shareUnits;
