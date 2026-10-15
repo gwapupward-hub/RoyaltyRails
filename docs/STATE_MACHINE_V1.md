@@ -239,8 +239,9 @@ terms_hash
 agreement_hash
 participant_authority
 share_bps
-role_code
 ```
+
+Creative roles/credits are represented in the hashed Agreement Manifest, not as mutable or singular on-chain participant fields.
 
 Mutable fields are limited to lifecycle/approval, payout routing, allocation/claim accounting, nonce/sequence counters and timestamps.
 
@@ -476,14 +477,6 @@ inbox allocation consuming direct funding nonce
 
 ## 22. Historical integrity
 
-Every version preserves independent:
-
-- agreement hash / terms hash;
-- cumulative gross allocation;
-- per-participant allocations/claims;
-- routing-revision history via events;
-- direct funding nonce;
-- allocation sequence;
-- Royalty Inbox.
+Every version preserves independent agreement/terms hashes, cumulative gross allocation, per-participant allocations/claims, routing-revision history via events, direct funding nonce, allocation sequence, and Royalty Inbox.
 
 A later version never rewrites the predecessor's history.
