@@ -18,9 +18,11 @@ export interface Agreement {
   id: string;
   version: number;
   settlementBasis: SettlementBasis;
+  /**
+   * Order is canonical and therefore part of the agreement semantics.
+   * It is used only as a deterministic tie-break when rounding scores are equal.
+   */
   participants: readonly Participant[];
-  /** Receives indivisible base-unit remainder after cumulative apportionment. */
-  remainderRecipientId: string;
 }
 
 export interface CumulativeState {
