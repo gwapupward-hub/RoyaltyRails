@@ -23,9 +23,7 @@ Both direct funding and Royalty Inbox allocation use the same economic function.
 
 ## Share precision
 
-RoyaltyRail v1 does **not** use basis points as its canonical on-chain percentage representation.
-
-Music-rights systems can require fractional percentages substantially finer than 0.01%. RoyaltyRail therefore uses a fixed share scale supporting six decimal places in percentage representation:
+RoyaltyRail v1 uses fixed integer share units rather than basis points:
 
 ```text
 TOTAL_SHARE_UNITS = 100,000,000
@@ -51,9 +49,32 @@ Properties:
 - UI may display ordinary percentages but MUST convert losslessly to/from canonical share units;
 - no floating-point arithmetic is permitted in economic calculations.
 
-This precision aligns with current music-rights data conventions that may communicate percentages with up to six digits after the decimal point.
+Share precision and settlement-asset precision are separate. A percentage may be represented to six decimal places even when a small USDC payment cannot be divided to that granularity. Fractional entitlement is carried forward by cumulative accounting.
 
-A single 100% participant is valid.
+## Canonical participant order
+
+Economic participants are identified by raw 32-byte participant authority.
+
+Canonical order is:
+
+```text
+lexicographic ascending by raw 32-byte authority bytes
+```
+
+It is **not** Base58-string order, display-name order, insertion order, or database order.
+
+The reference engine rejects duplicate, zero, malformed, or non-canonical authorities. Callers that accept unordered logical participants must first use the canonicalization helper and then preserve that order for:
+
+- share vectors;
+- cumulative allocation state;
+- current allocation output;
+- approval indexes;
+- rounding tie-breaks;
+- cross-language golden vectors.
+
+`CumulativeState.allocated[i]` belongs to `agreement.participants[i]`.
+
+This array-by-canonical-index contract removes ambiguity from map/object key order and ensures TypeScript, Rust, SDK, CLI, indexers, and third-party implementations resolve exact rounding ties identically.
 
 ## Why naive remainder assignment was rejected
 
@@ -69,27 +90,125 @@ Let:
 D = 100,000,000
 ```
 
-For participant `i`:
+Conceptually, the exact proportional residual numerator for participant `i` is:
 
 ```text
-residual_before_i = gross * share_units_i - allocated_i * D
-accrued_i         = residual_before_i + new_amount * share_units_i
+residual_i = gross * share_units_i - allocated_i * D
 ```
 
-Whole settlement-asset base units due are allocated first:
+A valid RoyaltyRail state maintains:
+
+```text
+-D < residual_i < D
+```
+
+However, the implementation MUST NOT naively evaluate `gross * share_units` when `gross` spans the full `u128` state domain, because that intermediate can exceed `u128` even though the final proportional entitlement does not.
+
+## Full-domain u128-safe entitlement decomposition
+
+For:
+
+```text
+g = cumulative_gross
+s = share_units
+D = 100,000,000
+```
+
+write:
+
+```text
+q = g / D
+t = g % D
+```
+
+Then:
+
+```text
+floor(g*s/D)
+  = q*s + floor(t*s/D)
+```
+
+and:
+
+```text
+q*s <= g <= u128::MAX
+t*s < D²
+```
+
+Therefore both terms fit in `u128` for every valid serializable `u128` cumulative gross.
+
+Define:
+
+```text
+ideal_floor = q*s + floor(t*s/D)
+remainder   = (t*s) % D
+```
+
+For a valid bounded-error cumulative state, `allocated` must be either:
+
+```text
+ideal_floor
+```
+
+or:
+
+```text
+ideal_floor + 1
+```
+
+subject to checked `u128` bounds.
+
+The signed residual is reconstructed without a wide cumulative multiplication:
+
+```text
+if allocated == ideal_floor:
+    residual = remainder
+else if allocated == ideal_floor + 1:
+    residual = remainder - D
+else:
+    reject malformed state
+```
+
+This formulation is the required Rust/TypeScript interoperability contract.
+
+JavaScript `BigInt` is only a modeling type; it does **not** expand the valid RoyaltyRail numeric state domain beyond the Rust/on-chain widths.
+
+## Current allocation step
+
+For a new positive `u64` settlement amount `A`:
+
+```text
+accrued_i = residual_before_i + A * share_units_i
+```
+
+`A * share_units_i` fits comfortably within signed `i128` because:
+
+```text
+u64::MAX * 100,000,000 < 2^91
+```
+
+Whole asset base units are assigned first:
 
 ```text
 base_i = max(0, trunc(accrued_i / D))
+score_i = accrued_i - base_i*D
 ```
 
-Any remaining indivisible asset units are assigned to participants with the highest residual score. Canonical participant order breaks exact ties.
-
-After allocation:
+Then:
 
 ```text
-residual_after_i =
-  new_gross * share_units_i - new_allocated_i * D
+remaining = A - sum(base_i)
 ```
+
+must satisfy:
+
+```text
+0 <= remaining <= participant_count
+```
+
+Each of the `remaining` indivisible asset units is assigned once to the participant with the highest score, with canonical raw-authority order breaking exact ties.
+
+Every addition to lifetime counters is checked against `u128::MAX`.
 
 ## Required allocation invariants
 
@@ -98,27 +217,33 @@ For every successful allocation:
 1. `sum(current allocations) == new_amount`
 2. every current allocation is `>= 0`
 3. `sum(cumulative_allocated) == cumulative_gross`
-4. for every participant, `abs(residual) < D`
-5. therefore lifetime proportional deviation is less than one settlement-asset base unit
-6. identical canonical economic state + amount produces identical allocation output
+4. every cumulative value is within `u128`
+5. current input amount is within positive `u64`
+6. for every participant, `abs(residual) < D`
+7. lifetime proportional deviation is therefore less than one settlement-asset base unit
+8. identical canonical economic state + amount produces identical allocation output
+9. no successful allocation requires a negative/clawback delta
 
-For native Solana USDC, one asset base unit is one millionth of one USDC.
+For native Solana USDC, one settlement-asset base unit is one millionth of one USDC.
 
-Share precision and asset precision are separate concepts: a share may be represented with six decimal places of **percentage** precision even when a particular small USDC deposit cannot be physically divided that finely. The bounded-error allocator carries that fractional entitlement forward across future allocations.
+## Numeric width contract
 
-## Numeric width
-
-Actual transfer amounts are `u64` because SPL Token balances/amounts are `u64`.
-
-Lifetime accounting uses `u128`.
-
-Allocation intermediates must use checked `u128` arithmetic. The maximum v1 share scale (`100,000,000`) multiplied by a `u64` allocation amount remains comfortably within `u128`.
+```text
+share_units              u32
+current token amount     u64
+cumulative_gross         u128
+cumulative_allocated_i   u128
+cumulative_claimed_i     u128
+allocation_sequence      u64
+```
 
 No wrapping arithmetic is allowed.
 
+A state or transition outside these widths is invalid even if a language such as JavaScript could represent the larger integer.
+
 ## Replay protection is not accounting math
 
-Direct funding requires protocol-level `direct_funding_nonce` because it both transfers tokens and allocates them.
+Direct funding requires protocol-level `direct_funding_nonce` because it transfers tokens and allocates them.
 
 Plain `allocate_inbox()` allocates funds already in the Royalty Inbox and MUST NOT consume or modify the direct-funding nonce.
 
@@ -190,22 +315,45 @@ Therefore every individual current claim also fits `u64`, even though lifetime a
 
 ## Partition behavior
 
-Different deposit partitioning can change which participant receives a single indivisible USDC base unit at an intermediate point. That is expected in discrete allocation systems.
+Different deposit partitioning can change which participant receives one indivisible USDC base unit at an intermediate point. This is expected in discrete allocation systems.
 
-RoyaltyRail guarantees bounded lifetime proportional error, not identical intermediate allocations for every possible deposit partition.
+RoyaltyRail guarantees bounded lifetime proportional error, not partition-independent intermediate allocations.
+
+## Conformance corpus
+
+The V1 economic reference includes:
+
+- explicit named boundary/regression vectors;
+- a deterministic 100-case generated golden corpus committed by aggregate SHA-256;
+- 10,000 randomized property runs in ordinary CI;
+- 1–16 participant coverage;
+- six-decimal share cases;
+- minimum-share and extreme-skew cases;
+- 16-way tie-breaking;
+- `u64::MAX` current allocation;
+- valid near-`u128::MAX` cumulative state;
+- residual-boundary validation;
+- long one-base-unit sequences.
+
+The future Rust implementation MUST reproduce the same canonical vector transcript/digests byte-for-byte and satisfy the same invariants.
+
+Nightly/fuzz workloads may be substantially larger, but they do not redefine canonical V1 semantics.
 
 ## Canonical implementation rule
 
-The TypeScript allocation engine and canonical JSON vectors are the v1 economic reference.
+The TypeScript economic reference, machine-readable constants, and immutable golden corpus define V1 accounting behavior.
 
-Rust/Anchor allocation must match:
+Rust/Anchor allocation must match exactly:
 
-- canonical vectors;
 - share scale `100,000,000`;
+- raw-authority canonical order;
+- `u64` current amount domain;
+- `u128` cumulative state domain;
+- quotient/remainder proportional-entitlement formulation;
 - conservation;
 - non-negative allocations;
 - residual bounds;
-- 1–16 participant behavior;
-- six-decimal percentage-share cases.
+- deterministic tie-breaking;
+- 1–16 participant behavior.
 
-Protocol-level replay/claim behavior is tested separately.
+Protocol-level replay, token, claim, and routing behavior is specified and tested separately.
