@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const AGREEMENT_DOMAIN_V1 = "ROYALTYRAIL_AGREEMENT_V1";
-export const PAYOUT_DOMAIN_V1 = "ROYALTYRAIL_PAYOUT_V1";
+export const ALLOCATION_DOMAIN_V1 = "ROYALTYRAIL_ALLOCATION_V1";
 export const MAX_PARTICIPANTS = 16;
 export const MIN_PARTICIPANTS = 2;
 export const TOTAL_BPS = 10_000;
@@ -18,22 +18,23 @@ export enum SettlementBasis {
   PaymentDirection = 2,
 }
 
-export enum SettlementMode {
-  Direct = 0,
+export enum AllocationMode {
+  DirectFunding = 0,
   Inbox = 1,
 }
 
 export interface AgreementHashParticipantV1 {
   participantAuthority: Uint8Array;
-  payoutWallet: Uint8Array;
   shareBps: number;
   roleCode: number;
 }
 
 export interface AgreementHashInputV1 {
+  deploymentId: Uint8Array;
   programId: Uint8Array;
   revenuePool: Uint8Array;
   version: number;
+  predecessorVersion: number;
   settlementMint: Uint8Array;
   tokenProgram: Uint8Array;
   poolKind: RevenuePoolKind;
@@ -43,22 +44,30 @@ export interface AgreementHashInputV1 {
   participants: readonly AgreementHashParticipantV1[];
 }
 
-export interface PayoutCommitmentParticipantV1 {
+export interface AllocationCommitmentParticipantV1 {
   participantAuthority: Uint8Array;
-  payoutWallet: Uint8Array;
-  payoutAmount: bigint;
+  allocationAmount: bigint;
 }
 
-export interface PayoutCommitmentInputV1 {
+export interface AllocationCommitmentInputV1 {
+  deploymentId: Uint8Array;
   agreement: Uint8Array;
-  settlementSequence: bigint;
-  mode: SettlementMode;
+  allocationSequence: bigint;
+  mode: AllocationMode;
   grossAmount: bigint;
-  payouts: readonly PayoutCommitmentParticipantV1[];
+  /** External reconciliation value. All-zero means no reference. */
+  paymentReference: Uint8Array;
+  allocations: readonly AllocationCommitmentParticipantV1[];
 }
 
 function bytes32(value: Uint8Array, field: string): Uint8Array {
   if (value.length !== 32) throw new Error(`${field} must be exactly 32 bytes`);
+  return value;
+}
+
+function nonZeroBytes32(value: Uint8Array, field: string): Uint8Array {
+  bytes32(value, field);
+  if (value.every((byte) => byte === 0)) throw new Error(`${field} cannot be all-zero`);
   return value;
 }
 
@@ -143,7 +152,7 @@ function validateCanonicalAuthorities<T extends { participantAuthority: Uint8Arr
   let previous: Uint8Array | undefined;
 
   for (const participant of participants) {
-    const authority = bytes32(participant.participantAuthority, "participant authority");
+    const authority = nonZeroBytes32(participant.participantAuthority, "participant authority");
     if (previous !== undefined && compareBytes(previous, authority) >= 0) {
       throw new Error("participant authorities must be strictly sorted and unique");
     }
@@ -160,6 +169,13 @@ export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
 
   if (!Number.isInteger(input.version) || input.version <= 0) {
     throw new Error("agreement version must be a positive integer");
+  }
+  if (
+    !Number.isInteger(input.predecessorVersion) ||
+    input.predecessorVersion < 0 ||
+    input.predecessorVersion >= input.version
+  ) {
+    throw new Error("predecessor version must be zero or lower than agreement version");
   }
 
   assertEnumValue(
@@ -187,8 +203,7 @@ export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
 
     totalBps += participant.shareBps;
     participantParts.push(
-      bytes32(participant.participantAuthority, "participant authority"),
-      bytes32(participant.payoutWallet, "payout wallet"),
+      nonZeroBytes32(participant.participantAuthority, "participant authority"),
       u16(participant.shareBps, "share BPS"),
       u16(participant.roleCode, "role code"),
     );
@@ -200,11 +215,13 @@ export function agreementPreimageV1(input: AgreementHashInputV1): Uint8Array {
 
   return concat([
     new TextEncoder().encode(AGREEMENT_DOMAIN_V1),
-    bytes32(input.programId, "program id"),
-    bytes32(input.revenuePool, "revenue pool"),
+    nonZeroBytes32(input.deploymentId, "deployment id"),
+    nonZeroBytes32(input.programId, "program id"),
+    nonZeroBytes32(input.revenuePool, "revenue pool"),
     u32(input.version, "version"),
-    bytes32(input.settlementMint, "settlement mint"),
-    bytes32(input.tokenProgram, "token program"),
+    u32(input.predecessorVersion, "predecessor version"),
+    nonZeroBytes32(input.settlementMint, "settlement mint"),
+    nonZeroBytes32(input.tokenProgram, "token program"),
     u8(input.poolKind, "pool kind"),
     u8(input.settlementBasis, "settlement basis"),
     bytes32(input.poolMetadataHash, "pool metadata hash"),
@@ -218,46 +235,47 @@ export function agreementHashV1(input: AgreementHashInputV1): Uint8Array {
   return sha256(agreementPreimageV1(input));
 }
 
-export function payoutPreimageV1(input: PayoutCommitmentInputV1): Uint8Array {
-  validateCanonicalAuthorities(input.payouts);
+export function allocationPreimageV1(input: AllocationCommitmentInputV1): Uint8Array {
+  validateCanonicalAuthorities(input.allocations);
 
-  assertEnumValue(input.mode, [SettlementMode.Direct, SettlementMode.Inbox], "settlement mode");
+  assertEnumValue(input.mode, [AllocationMode.DirectFunding, AllocationMode.Inbox], "allocation mode");
 
-  if (input.settlementSequence <= 0n) {
-    throw new Error("settlement sequence must be positive");
+  if (input.allocationSequence <= 0n) {
+    throw new Error("allocation sequence must be positive");
   }
   if (input.grossAmount <= 0n) throw new Error("gross amount must be positive");
 
-  let payoutTotal = 0n;
-  const payoutParts: Uint8Array[] = [];
+  let allocationTotal = 0n;
+  const allocationParts: Uint8Array[] = [];
 
-  for (const payout of input.payouts) {
-    if (payout.payoutAmount < 0n) throw new Error("payout amount cannot be negative");
-    payoutTotal += payout.payoutAmount;
-    payoutParts.push(
-      bytes32(payout.participantAuthority, "participant authority"),
-      bytes32(payout.payoutWallet, "payout wallet"),
-      u64(payout.payoutAmount, "payout amount"),
+  for (const allocation of input.allocations) {
+    if (allocation.allocationAmount < 0n) throw new Error("allocation amount cannot be negative");
+    allocationTotal += allocation.allocationAmount;
+    allocationParts.push(
+      nonZeroBytes32(allocation.participantAuthority, "participant authority"),
+      u64(allocation.allocationAmount, "allocation amount"),
     );
   }
 
-  if (payoutTotal !== input.grossAmount) {
-    throw new Error("payout amounts must exactly equal gross amount");
+  if (allocationTotal !== input.grossAmount) {
+    throw new Error("allocation amounts must exactly equal gross amount");
   }
 
   return concat([
-    new TextEncoder().encode(PAYOUT_DOMAIN_V1),
-    bytes32(input.agreement, "agreement"),
-    u64(input.settlementSequence, "settlement sequence"),
-    u8(input.mode, "settlement mode"),
+    new TextEncoder().encode(ALLOCATION_DOMAIN_V1),
+    nonZeroBytes32(input.deploymentId, "deployment id"),
+    nonZeroBytes32(input.agreement, "agreement"),
+    u64(input.allocationSequence, "allocation sequence"),
+    u8(input.mode, "allocation mode"),
     u64(input.grossAmount, "gross amount"),
-    u8(input.payouts.length, "participant count"),
-    ...payoutParts,
+    bytes32(input.paymentReference, "payment reference"),
+    u8(input.allocations.length, "participant count"),
+    ...allocationParts,
   ]);
 }
 
-export function payoutCommitmentV1(input: PayoutCommitmentInputV1): Uint8Array {
-  return sha256(payoutPreimageV1(input));
+export function allocationCommitmentV1(input: AllocationCommitmentInputV1): Uint8Array {
+  return sha256(allocationPreimageV1(input));
 }
 
 export function bytesToHex(value: Uint8Array): string {
