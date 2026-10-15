@@ -37,6 +37,7 @@ RoyaltyRail is not yet production-ready and must not be used to custody or settl
 - [`docs/PROTOCOL_V1.md`](docs/PROTOCOL_V1.md) — Solana account/instruction/settlement specification
 - [`docs/STATE_MACHINE_V1.md`](docs/STATE_MACHINE_V1.md) — agreement and version lifecycle
 - [`docs/SECURITY_V1.md`](docs/SECURITY_V1.md) — trust boundaries, threat model and mainnet gate
+- [`docs/ACCOUNT_LAYOUT_V1.md`](docs/ACCOUNT_LAYOUT_V1.md) — fixed serialization assumptions and account-size bounds
 
 ## Engineering sequence
 
