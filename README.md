@@ -1,10 +1,14 @@
-# RoyaltyRail
+<p align="center">
+  <img src="docs/brand/assets/royaltyrails-banner.svg" alt="RoyaltyRails — automated royalty and revenue splits" width="100%" />
+</p>
+
+# RoyaltyRails
 
 **Programmable rights and royalty settlement on Solana.**
 
 > Agree once. Get paid automatically.
 
-RoyaltyRail turns approved revenue-sharing agreements into deterministic revenue allocations and independently claimable USDC payouts. It is designed for music royalties first, with a generic settlement core that can later support other creator and revenue-sharing workflows.
+RoyaltyRails turns approved revenue-sharing agreements into deterministic revenue allocations and independently claimable USDC payouts. It is designed for music royalties first, with a generic settlement core that can later support other creator and revenue-sharing workflows.
 
 ## Status
 
@@ -14,7 +18,7 @@ Phase 1 is merged: the blockchain-independent TypeScript allocation engine is th
 
 Phase 2 is undergoing a pre-merge security/architecture audit before Anchor implementation begins.
 
-RoyaltyRail is not production-ready and must not be used to custody or settle real royalties.
+RoyaltyRails is not production-ready and must not be used to custody or settle real royalties.
 
 ## Hardened V1 direction
 
@@ -41,7 +45,7 @@ RoyaltyRail is not production-ready and must not be used to custody or settle re
 
 A push-only multi-recipient transaction creates a shared failure domain: one missing or frozen recipient token account can make the whole transaction fail.
 
-RoyaltyRail instead performs:
+RoyaltyRails instead performs:
 
 ```text
 USDC arrives
@@ -53,7 +57,7 @@ Each participant has independent claimable USDC
 Anyone may trigger that participant's claim
 ```
 
-RoyaltyRail Studio/keepers can push claims automatically, preserving the normal user experience while keeping protocol liveness isolated per recipient.
+RoyaltyRails Studio/keepers can push claims automatically, preserving the normal user experience while keeping protocol liveness isolated per recipient.
 
 ## Participant security model
 
@@ -74,24 +78,36 @@ A manager cannot remove an existing participant in a replacement agreement witho
 - [`docs/INTEGRATION_UX_V1.md`](docs/INTEGRATION_UX_V1.md) — adoption, SDK, fee sponsorship, keepers and operational UX
 - [`docs/PREMERGE_AUDIT_V1.md`](docs/PREMERGE_AUDIT_V1.md) — findings that hardened the v1 design
 
+## Brand system
+
+The official RoyaltyRails visual identity, logo usage rules, repository-safe display assets, and implementation tokens live in [`docs/brand/`](docs/brand/README.md).
+
+Canonical colors:
+
+- Royalty Red — `#DD1313`
+- Royal Gold — `#D4AF37`
+- Accent Orange — `#F08A24`
+- Background Black — `#000000`
+- Surface Charcoal — `#0D0D0D`
+
 ## Engineering sequence
 
 1. ✅ Reference Accounting / Allocation Engine
 2. **Protocol specification hardening — current**
 3. Anchor implementation
 4. SDK + indexer
-5. RoyaltyRail Studio
+5. RoyaltyRails Studio
 6. Devnet adversarial testing
 7. Independent security + legal architecture review
 8. Controlled mainnet beta
 
-## Repository naming
+## Brand vs protocol naming
 
-The product name is **RoyaltyRail** (singular). This repository currently retains the `RoyaltyRails` GitHub slug; source packages, documentation, protocol identifiers, and branding use the singular product name.
+The public-facing product brand is **RoyaltyRails**. Existing v1 package names, protocol identifiers, and technical references that use the singular **RoyaltyRail** remain unchanged during protocol hardening to avoid unnecessary compatibility churn. A dedicated naming migration can be performed later if those identifiers should also become plural.
 
 ## Integration philosophy
 
-RoyaltyRail should be useful without requiring integrators to trust RoyaltyRail's hosted backend.
+RoyaltyRails should be useful without requiring integrators to trust RoyaltyRails' hosted backend.
 
 Canonical SDK helpers should cover:
 
@@ -110,13 +126,13 @@ A third party should be able to independently verify every economic result from 
 
 ## Music-industry interoperability
 
-RoyaltyRail is being designed so richer music metadata and future DDEX adapters live above the small settlement core. The protocol handles approved executable payment instructions; it does not pretend to adjudicate unresolved rights claims.
+RoyaltyRails is being designed so richer music metadata and future DDEX adapters live above the small settlement core. The protocol handles approved executable payment instructions; it does not pretend to adjudicate unresolved rights claims.
 
 ## Privacy
 
 V1 is public-chain infrastructure. Participant authorities, percentages, allocations, claims and token flows are publicly observable.
 
-RoyaltyRail does not claim confidential royalty splits in v1.
+RoyaltyRails does not claim confidential royalty splits in v1.
 
 ## Safety
 

@@ -1,0 +1,18 @@
+{
+  "brand": "RoyaltyRails",
+  "version": "1.0",
+  "colors": {
+    "primaryRed": "#DD1313",
+    "royalGold": "#D4AF37",
+    "accentOrange": "#F08A24",
+    "backgroundBlack": "#000000",
+    "surfaceCharcoal": "#0D0D0D",
+    "primaryLight": "#FFFFFF",
+    "secondaryMuted": "#B8B8B8"
+  },
+  "typography": {
+    "display": "Playfair Display",
+    "ui": "Inter"
+  },
+  "tagline": "Automated royalty and revenue splits"
+}

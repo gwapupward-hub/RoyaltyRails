@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" role="img" aria-labelledby="title">
+  <title id="title">RoyaltyRails wordmark</title>
+  <defs>
+    <linearGradient id="r" x1="0" x2="1"><stop stop-color="#FF2B24"/><stop offset="1" stop-color="#DD1313"/></linearGradient>
+    <linearGradient id="g" x1="0" x2="1"><stop stop-color="#FFE07A"/><stop offset="1" stop-color="#D4AF37"/></linearGradient>
+  </defs>
+  <text x="38" y="184" font-family="Georgia, Times New Roman, serif" font-size="188" font-weight="700" letter-spacing="-8" fill="url(#r)">Royalty</text>
+  <text x="682" y="184" font-family="Georgia, Times New Roman, serif" font-size="188" font-weight="700" letter-spacing="-8" fill="url(#g)">Rails</text>
+</svg>
