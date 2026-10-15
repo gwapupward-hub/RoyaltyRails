@@ -40,10 +40,7 @@ describe("canonical allocation vectors", () => {
       let state = initialState(a);
 
       vector.deposits.forEach((rawDeposit, allocationIndex) => {
-        const result = allocate(a, state, {
-          amount: BigInt(rawDeposit),
-          expectedNonce: state.nextDirectNonce,
-        });
+        const result = allocate(a, state, { amount: BigInt(rawDeposit) });
 
         const actual = a.participants.map(({ id }) =>
           (result.allocations[id] ?? 0n).toString(),
