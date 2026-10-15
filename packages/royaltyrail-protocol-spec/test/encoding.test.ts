@@ -30,11 +30,11 @@ const agreementVector: AgreementHashInputV1 = {
   participants: [
     {
       participantAuthority: repeatedByte(0x10),
-      shareBps: 7_000,
+      shareUnits: 70_000_000,
     },
     {
       participantAuthority: repeatedByte(0x11),
-      shareBps: 3_000,
+      shareUnits: 30_000_000,
     },
   ],
 };
@@ -59,9 +59,9 @@ const allocationVector: AllocationCommitmentInputV1 = {
 };
 
 describe("RoyaltyRail canonical protocol encoding", () => {
-  it("matches the canonical agreement hash vector", () => {
+  it("matches the canonical six-decimal agreement hash vector", () => {
     expect(bytesToHex(agreementHashV1(agreementVector))).toBe(
-      "994bdd5637ab09fdeb4526da561b077db1bc59d0a226994ad3126a9aa891a069",
+      "7c3864a1ad4ed61713d694523cd2737bc69ad81bd1428c72f5bd3dcba76b2032",
     );
   });
 
@@ -78,7 +78,7 @@ describe("RoyaltyRail canonical protocol encoding", () => {
         participants: [
           {
             participantAuthority: repeatedByte(0x10),
-            shareBps: 10_000,
+            shareUnits: 100_000_000,
           },
         ],
       }),
@@ -107,16 +107,16 @@ describe("RoyaltyRail canonical protocol encoding", () => {
     ).toThrow(/strictly sorted/);
   });
 
-  it("rejects an agreement that does not total 10,000 BPS", () => {
+  it("rejects an agreement that does not total 100,000,000 share units", () => {
     expect(() =>
       agreementHashV1({
         ...agreementVector,
         participants: [
           agreementVector.participants[0]!,
-          { ...agreementVector.participants[1]!, shareBps: 2_999 },
+          { ...agreementVector.participants[1]!, shareUnits: 29_999_999 },
         ],
       }),
-    ).toThrow(/10_000|10000/);
+    ).toThrow(/100000000/);
   });
 
   it("rejects agreement version zero", () => {
