@@ -3,9 +3,9 @@ import {
   MIN_RECIPIENTS,
   TOTAL_BPS,
   type Agreement,
+  type AllocationInput,
+  type AllocationResult,
   type CumulativeState,
-  type SettlementInput,
-  type SettlementResult,
 } from "./types.js";
 
 const DENOMINATOR = BigInt(TOTAL_BPS);
@@ -55,47 +55,49 @@ export function initialState(agreement: Agreement): CumulativeState {
 
   return {
     gross: 0n,
-    paid: Object.fromEntries(agreement.participants.map(({ id }) => [id, 0n])),
-    nextSettlementNonce: 0n,
+    allocated: Object.fromEntries(agreement.participants.map(({ id }) => [id, 0n])),
+    nextDirectNonce: 0n,
   };
 }
 
-function roundingResidual(gross: bigint, paid: bigint, shareBps: number): bigint {
-  return gross * BigInt(shareBps) - paid * DENOMINATOR;
+function roundingResidual(gross: bigint, allocated: bigint, shareBps: number): bigint {
+  return gross * BigInt(shareBps) - allocated * DENOMINATOR;
 }
 
 export function validateState(agreement: Agreement, state: CumulativeState): void {
   validateAgreement(agreement);
 
   if (state.gross < 0n) throw new AccountingError("gross cannot be negative");
-  if (state.nextSettlementNonce < 0n) throw new AccountingError("nonce cannot be negative");
+  if (state.nextDirectNonce < 0n) throw new AccountingError("nonce cannot be negative");
 
-  let totalPaid = 0n;
+  let totalAllocated = 0n;
   let residualTotal = 0n;
   const participantIds = new Set(agreement.participants.map(({ id }) => id));
 
   for (const participant of agreement.participants) {
-    const paid = state.paid[participant.id];
-    if (paid === undefined) throw new AccountingError("state is missing participant payout data");
-    if (paid < 0n) throw new AccountingError("participant paid amount cannot be negative");
+    const allocated = state.allocated[participant.id];
+    if (allocated === undefined) {
+      throw new AccountingError("state is missing participant allocation data");
+    }
+    if (allocated < 0n) throw new AccountingError("participant allocation cannot be negative");
 
-    const residual = roundingResidual(state.gross, paid, participant.shareBps);
+    const residual = roundingResidual(state.gross, allocated, participant.shareBps);
     if (residual <= -DENOMINATOR || residual >= DENOMINATOR) {
       throw new AccountingError("participant rounding residual is outside the permitted bound");
     }
 
-    totalPaid += paid;
+    totalAllocated += allocated;
     residualTotal += residual;
   }
 
-  for (const stateId of Object.keys(state.paid)) {
+  for (const stateId of Object.keys(state.allocated)) {
     if (!participantIds.has(stateId)) {
-      throw new AccountingError("state contains unknown participant payout data");
+      throw new AccountingError("state contains unknown participant allocation data");
     }
   }
 
-  if (totalPaid !== state.gross) {
-    throw new AccountingError("cumulative paid amount must equal cumulative gross");
+  if (totalAllocated !== state.gross) {
+    throw new AccountingError("cumulative allocated amount must equal cumulative gross");
   }
   if (residualTotal !== 0n) {
     throw new AccountingError("rounding residuals must net to zero");
@@ -103,55 +105,59 @@ export function validateState(agreement: Agreement, state: CumulativeState): voi
 }
 
 /**
- * Deterministic bounded-error apportionment.
+ * Deterministic bounded-error revenue allocation.
  *
  * Each participant carries an implicit signed rounding residual derived from
- * cumulative gross, BPS, and cumulative amount paid. A settlement first pays
- * every whole base unit currently due, then allocates the remaining indivisible
- * units to the highest residual scores. Canonical participant order breaks ties.
+ * cumulative gross, BPS, and cumulative allocation. New revenue is allocated
+ * without performing token delivery. Claim state is intentionally outside this
+ * economic reference engine so payout routing cannot alter percentage math.
  *
  * Guarantees:
- * - payouts are never negative;
- * - payouts exactly conserve the settlement amount;
- * - each participant's lifetime rounding error stays below one base unit;
- * - no fixed recipient accumulates every rounding remainder.
+ * - allocations are never negative;
+ * - allocations exactly conserve the input amount;
+ * - each participant's lifetime proportional error stays below one base unit;
+ * - no fixed participant accumulates every rounding remainder.
  */
-export function settle(
+export function allocate(
   agreement: Agreement,
   state: CumulativeState,
-  input: SettlementInput,
-): SettlementResult {
+  input: AllocationInput,
+): AllocationResult {
   validateState(agreement, state);
 
-  if (input.amount <= 0n) throw new AccountingError("settlement amount must be positive");
-  if (input.expectedNonce !== state.nextSettlementNonce) {
-    throw new AccountingError("settlement nonce mismatch");
+  if (input.amount <= 0n) throw new AccountingError("allocation amount must be positive");
+  if (input.expectedNonce !== state.nextDirectNonce) {
+    throw new AccountingError("direct allocation nonce mismatch");
   }
 
   const scored = agreement.participants.map((participant, index) => {
-    const priorPaid = state.paid[participant.id];
-    if (priorPaid === undefined) {
+    const priorAllocated = state.allocated[participant.id];
+    if (priorAllocated === undefined) {
       throw new AccountingError("internal participant accounting mismatch");
     }
 
-    const residualBefore = roundingResidual(state.gross, priorPaid, participant.shareBps);
+    const residualBefore = roundingResidual(
+      state.gross,
+      priorAllocated,
+      participant.shareBps,
+    );
     const accruedNumerator = residualBefore + input.amount * BigInt(participant.shareBps);
 
     // BigInt division truncates toward zero. For non-positive accrued entitlement,
-    // the participant receives zero rather than a negative/clawback payment.
-    const basePayout = accruedNumerator <= 0n ? 0n : accruedNumerator / DENOMINATOR;
-    const score = accruedNumerator - basePayout * DENOMINATOR;
+    // the participant receives zero rather than a negative/clawback allocation.
+    const baseAllocation = accruedNumerator <= 0n ? 0n : accruedNumerator / DENOMINATOR;
+    const score = accruedNumerator - baseAllocation * DENOMINATOR;
 
     return {
       id: participant.id,
       index,
-      priorPaid,
-      basePayout,
+      priorAllocated,
+      baseAllocation,
       score,
     };
   });
 
-  const baseTotal = scored.reduce((sum, entry) => sum + entry.basePayout, 0n);
+  const baseTotal = scored.reduce((sum, entry) => sum + entry.baseAllocation, 0n);
   const remaining = input.amount - baseTotal;
 
   if (remaining < 0n || remaining > BigInt(scored.length)) {
@@ -175,28 +181,28 @@ export function settle(
     extraRecipients.add(entry.id);
   }
 
-  const payouts: Record<string, bigint> = {};
-  const nextPaid: Record<string, bigint> = {};
-  let payoutTotal = 0n;
+  const allocations: Record<string, bigint> = {};
+  const nextAllocated: Record<string, bigint> = {};
+  let allocationTotal = 0n;
 
   for (const entry of scored) {
-    const payout = entry.basePayout + (extraRecipients.has(entry.id) ? 1n : 0n);
-    payouts[entry.id] = payout;
-    nextPaid[entry.id] = entry.priorPaid + payout;
-    payoutTotal += payout;
+    const allocation = entry.baseAllocation + (extraRecipients.has(entry.id) ? 1n : 0n);
+    allocations[entry.id] = allocation;
+    nextAllocated[entry.id] = entry.priorAllocated + allocation;
+    allocationTotal += allocation;
   }
 
-  if (payoutTotal !== input.amount) {
-    throw new AccountingError("settlement conservation invariant failed");
+  if (allocationTotal !== input.amount) {
+    throw new AccountingError("allocation conservation invariant failed");
   }
 
   const nextState: CumulativeState = {
     gross: state.gross + input.amount,
-    paid: nextPaid,
-    nextSettlementNonce: state.nextSettlementNonce + 1n,
+    allocated: nextAllocated,
+    nextDirectNonce: state.nextDirectNonce + 1n,
   };
 
   validateState(agreement, nextState);
 
-  return { payouts, nextState };
+  return { allocations, nextState };
 }
