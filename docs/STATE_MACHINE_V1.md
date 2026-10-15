@@ -66,8 +66,8 @@ agreements_paused == false
 caller == pool.manager_authority
 pool.pending_version == 0
 participant_count in 1..=16
-sum(shares) == 10_000
-shares > 0
+sum(share_units) == 100_000_000
+share_units > 0
 participant authorities strictly sorted + unique
 ```
 
