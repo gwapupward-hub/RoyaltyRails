@@ -598,10 +598,7 @@ mod tests {
         assert_eq!(proposal.agreement_hash, hash);
         assert_eq!(proposal.status, AgreementStatus::Proposed);
         assert_eq!(proposal.participants.len(), 2);
-        assert!(proposal
-            .participants
-            .iter()
-            .all(|p| p.payout_revision == 0));
+        assert!(proposal.participants.iter().all(|p| p.payout_revision == 0));
         assert!(proposal
             .participants
             .iter()
