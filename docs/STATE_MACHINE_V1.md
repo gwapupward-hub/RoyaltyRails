@@ -3,8 +3,6 @@
 Status: Phase 2 hardened freeze candidate  
 Date: 2026-10-15
 
-This document defines legal state transitions for `RevenuePool` and `AgreementVersion` accounts and the independent payout-routing state owned by participants.
-
 ## 1. Agreement statuses
 
 ```text
@@ -14,37 +12,19 @@ Superseded
 Cancelled
 ```
 
-There is no mutable on-chain Draft. Drafting/invitation is an off-chain Studio/API concern.
+No mutable on-chain Draft exists. Drafting/invitation is an off-chain Studio/API concern.
 
-## 2. Agreement status transitions
+Legal status transitions:
 
 ```text
-             proposed participants approve
-             predecessor participants consent
-                         │
-                         ▼
-                  ┌──────────┐
-                  │ Proposed │
-                  └────┬─────┘
-                       │
-           ┌───────────┼─────────────┐
-           │           │             │
-           │ activate  │ cancel      │ reject
-           ▼           ▼             ▼
-       ┌────────┐  ┌───────────┐  ┌───────────┐
-       │ Active │  │ Cancelled │  │ Cancelled │
-       └────┬───┘  └───────────┘  └───────────┘
-            │
-            │ newer fully-consented version activates
-            ▼
-     ┌────────────┐
-     │ Superseded │
-     └────────────┘
+Proposed -> Active
+Proposed -> Cancelled
+Active -> Superseded
 ```
 
-Cancelled and Superseded are terminal agreement-status states. Superseded versions remain economically usable for delayed/historical revenue and outstanding claims.
+Cancelled and Superseded are terminal status states. Superseded versions remain eligible for delayed/historical allocations and outstanding claims.
 
-## 3. RevenuePool version pointers
+## 2. RevenuePool version pointers
 
 ```text
 latest_version: u32
@@ -61,18 +41,18 @@ active_version == 0 || active_version <= latest_version
 pending_version == 0 || pending_version <= latest_version
 ```
 
-At most one pending version exists. Version numbers are monotonically increasing and never reused.
+At most one pending version exists. Version numbers monotonically increase and are never reused.
 
-## 4. Proposal creation
+## 3. Proposal creation
 
-Initial proposal:
+Initial:
 
 ```text
 predecessor_version = 0
 pool.active_version = 0
 ```
 
-Replacement proposal:
+Replacement:
 
 ```text
 predecessor_version = pool.active_version
@@ -85,33 +65,39 @@ Preconditions:
 agreements_paused == false
 caller == pool.manager_authority
 pool.pending_version == 0
-participant_count in 2..=16
+participant_count in 1..=16
 sum(shares) == 10_000
-participants strictly sorted and unique
-all shares > 0
+shares > 0
+participant authorities strictly sorted + unique
 ```
 
 Effects:
 
 ```text
 new_version = latest_version + 1
-create AgreementVersion(status = Proposed)
-pool.latest_version = new_version
-pool.pending_version = new_version
+create AgreementVersion(Proposed)
+latest_version = new_version
+pending_version = new_version
 ```
 
-All proposed participant payout wallets initialize to the default/unset value. They are chosen by each participant during approval.
+Participant payout wallets begin unset and are selected by participants during approval.
 
-## 5. Proposed participant approval
+## 4. Proposed participant approval
 
-`approve_agreement(expected_hash, payout_wallet)` preconditions:
+Instruction concept:
+
+```text
+approve_agreement(expected_hash, payout_wallet)
+```
+
+Preconditions:
 
 ```text
 agreements_paused == false
-agreement.status == Proposed
+status == Proposed
 pool.pending_version == agreement.version
-signer == one proposed participant_authority
-expected_hash == agreement.agreement_hash
+signer matches proposed participant authority
+expected_hash == stored agreement_hash
 participant approval bit == 0
 payout_wallet != default pubkey
 ```
@@ -119,18 +105,17 @@ payout_wallet != default pubkey
 Effects:
 
 ```text
-participant.payout_wallet = chosen wallet
+participant.payout_wallet = selected wallet
 participant.payout_revision = 1
-set proposed-participant approval bit
+set proposed approval bit
+emit ParticipantApproved
 ```
 
-Status remains Proposed.
+## 5. Predecessor supersession consent
 
-## 6. Predecessor supersession consent
+For a replacement, every participant in the current Active predecessor must consent to replacement by the exact proposed hash.
 
-For a replacement version, every participant in the current Active predecessor must consent to the exact replacement hash.
-
-`approve_supersession(expected_new_hash)` preconditions:
+Preconditions:
 
 ```text
 new.status == Proposed
@@ -138,40 +123,29 @@ new.predecessor_version != 0
 old.version == new.predecessor_version
 old.version == pool.active_version
 old.status == Active
-signer == one old participant_authority
+signer is an old participant authority
 expected_new_hash == new.agreement_hash
-old-participant supersession bit in new == 0
+supersession bit == 0
 ```
 
 Effect:
 
 ```text
-set supersession approval bit in new AgreementVersion
+set supersession bit in new AgreementVersion
 ```
 
-A participant who appears in both versions satisfies both roles. Studio may submit `approve_agreement` and `approve_supersession` in one transaction so the user sees one approval action.
+Bits map to predecessor canonical participant order.
 
-## 7. Rejection
+A continuing participant may approve new terms and predecessor supersession in one transaction containing two RoyaltyRail instructions.
 
-A Proposed agreement may be rejected by:
+## 6. Rejection / cancellation
 
-- any participant in the proposed version; or
-- for replacement versions, any participant in the current predecessor version.
+A Proposed version may be rejected by:
 
-The rejecting signer supplies the expected new agreement hash.
+- any proposed participant; or
+- any current predecessor participant for a replacement.
 
-Effects:
-
-```text
-new.status = Cancelled
-pool.pending_version = 0
-```
-
-Existing active/superseded agreements and allocations are unchanged.
-
-## 8. Manager cancellation
-
-Pool manager may cancel only a Proposed version.
+Manager may also cancel a Proposed version.
 
 Effects:
 
@@ -180,9 +154,9 @@ agreement.status = Cancelled
 pool.pending_version = 0
 ```
 
-Cancelled version number is never reused.
+Cancelled version numbers are never reused. Current Active agreement remains unchanged.
 
-## 9. Initial activation
+## 7. Initial activation
 
 Preconditions:
 
@@ -192,8 +166,8 @@ new.status == Proposed
 new.predecessor_version == 0
 pool.active_version == 0
 pool.pending_version == new.version
-approval_bitmap == required_mask(new participant count)
-all new participant payout_wallet values initialized
+new approval mask complete
+all payout wallets initialized
 ```
 
 Effects:
@@ -207,7 +181,7 @@ pool.pending_version = 0
 
 Any caller may trigger activation after consent is complete.
 
-## 10. Replacement activation
+## 8. Replacement activation
 
 Preconditions:
 
@@ -218,9 +192,9 @@ old.status == Active
 new.predecessor_version == old.version
 old.version == pool.active_version
 new.version == pool.pending_version
-new approval bitmap complete
-new supersession approval bitmap == required_mask(old participant count)
-all new participant payout_wallet values initialized
+new approval mask complete
+new supersession mask complete for old participant count
+all new payout wallets initialized
 ```
 
 Atomic effects:
@@ -234,11 +208,26 @@ pool.active_version = new.version
 pool.pending_version = 0
 ```
 
-This is the core anti-removal invariant: a participant in the current agreement cannot be silently removed merely by omitting them from the proposed participant list.
+A removed participant cannot be omitted from the consent set.
 
-## 11. Economic immutability
+## 9. Approval mask rule
 
-After proposal creation, these fields never change:
+For `n` participants:
+
+```text
+if n == 16:
+    required_mask = u16::MAX
+else:
+    required_mask = (1u16 << n) - 1
+```
+
+This rule applies independently to new-participant approval and predecessor supersession consent.
+
+For a one-participant version, required mask is `0b1`.
+
+## 10. Economic immutability
+
+After proposal, these never change:
 
 ```text
 revenue_pool
@@ -253,60 +242,44 @@ share_bps
 role_code
 ```
 
-Mutable fields are limited to:
+Mutable fields are limited to lifecycle/approval, payout routing, allocation/claim accounting, nonce/sequence counters and timestamps.
+
+## 11. Payout-wallet rotation
 
 ```text
-status
-approval_bitmap
-supersession_approval_bitmap
-participant.payout_wallet
-participant.payout_revision
-participant.cumulative_allocated
-participant.cumulative_claimed
-direct_funding_nonce
-allocation_sequence
-activated_slot
-superseded_slot
+update_payout_wallet(new_wallet)
 ```
 
-Mutable payout routing is not an economic amendment.
-
-## 12. Payout-wallet rotation
-
-`update_payout_wallet(new_wallet)` preconditions:
+Preconditions:
 
 ```text
-agreement.status in {Proposed, Active, Superseded}
-signer == participant.participant_authority
-new_wallet != default pubkey
-new_wallet != current payout_wallet
+status in {Proposed, Active, Superseded}
+signer == participant authority
+new wallet != default pubkey
+new wallet != current wallet
 ```
 
 Effects:
 
 ```text
-participant.payout_wallet = new_wallet
-participant.payout_revision += 1
+payout_wallet = new wallet
+payout_revision += 1
 emit PayoutWalletUpdated
 ```
 
-No other participant signature is required because shares/rights are unchanged.
+No other participant signature is required because economics are unchanged.
 
-Cancelled agreements reject payout updates.
-
-## 13. Allocation eligibility
-
-Revenue allocation is permitted only when:
+## 12. Allocation eligibility
 
 ```text
-agreement.status in {Active, Superseded}
+status in {Active, Superseded}
 allocations_paused == false
-agreement settlement mint/token program match config
+settlement mint/token program match config
 ```
 
-Proposed and Cancelled versions cannot allocate revenue through RoyaltyRail instructions.
+Proposed/Cancelled versions cannot allocate through RoyaltyRail.
 
-## 14. Direct funding + allocation transition
+## 13. Direct funding + allocation
 
 Preconditions:
 
@@ -314,83 +287,90 @@ Preconditions:
 agreement eligible for allocation
 amount > 0
 expected_nonce == direct_funding_nonce
-payer source token account mint == configured settlement mint
+payer source mint == configured settlement mint
 payer source token authority == payer signer
-royalty inbox == canonical agreement-version ATA
+Royalty Inbox canonical
 ```
 
 Atomic effects:
 
 ```text
-transfer amount payer_source -> royalty_inbox
-compute canonical allocation vector
+transfer amount payer source -> Royalty Inbox
+run pure canonical allocate(amount)
 cumulative_gross += amount
-participant.cumulative_allocated[i] += allocation[i]
+participant.cumulative_allocated += returned allocations
 direct_funding_nonce += 1
 allocation_sequence += 1
-emit RevenueAllocated
+emit RevenueAllocated(DirectFunding)
 ```
 
-No recipient payout ATA is needed.
+The pure allocation function itself has no replay nonce.
 
-## 15. Plain inbox allocation transition
+## 14. Plain inbox allocation
 
-Before allocation define:
+Define:
 
 ```text
 allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
+unallocated = inbox_balance - allocated_unclaimed
 ```
 
 Preconditions:
 
 ```text
 agreement eligible for allocation
-royalty inbox canonical
+Royalty Inbox canonical
 inbox_balance >= allocated_unclaimed
-unallocated = inbox_balance - allocated_unclaimed
 unallocated > 0
 ```
 
 Effects:
 
 ```text
-allocate exactly unallocated
+run pure canonical allocate(unallocated)
 cumulative_gross += unallocated
-participant.cumulative_allocated[i] += allocation[i]
+participant.cumulative_allocated += returned allocations
 allocation_sequence += 1
-emit RevenueAllocated(mode = Inbox, payment_reference = zero)
+direct_funding_nonce unchanged
+emit RevenueAllocated(Inbox)
 ```
 
 No token leaves the inbox during allocation.
 
-## 16. Claim transition
+## 15. Claim transition
 
-`claim_participant(index)` is permissionless to trigger.
+```text
+claim_participant(index)
+```
+
+Permissionless to trigger.
 
 Preconditions:
 
 ```text
-agreement.status in {Active, Superseded}
+status in {Active, Superseded}
 claims_paused == false
 participant index valid
 claimable = cumulative_allocated - cumulative_claimed
 claimable > 0
-royalty inbox canonical
-payout ATA == canonical ATA for current participant payout_wallet + settlement mint
-inbox balance >= claimable
+Royalty Inbox canonical
+payout ATA == canonical ATA for current payout wallet + settlement mint
+inbox_balance >= claimable
 ```
+
+The vault-solvency invariant plus the SPL token account's `u64` balance representation guarantees current claimable fits the transfer amount type.
 
 Atomic effects:
 
 ```text
-transfer claimable royalty_inbox -> participant payout ATA
+transfer claimable Royalty Inbox -> participant payout ATA
 participant.cumulative_claimed += claimable
 emit PayoutClaimed
 ```
 
-A failure for participant A does not change participant B's claimable state and does not prevent a separate transaction from claiming B.
+A failure for participant A leaves all state unchanged for that transaction and cannot prevent an independent transaction from claiming participant B.
 
-## 17. Inbox accounting invariant across interleavings
+## 16. Inbox invariant across interleavings
 
 At all times:
 
@@ -403,94 +383,107 @@ unallocated = inbox_balance - allocated_unclaimed
 External deposit:
 
 ```text
-inbox_balance increases
-unallocated increases by same amount
+inbox_balance += x
+unallocated += x
 ```
 
 Claim:
 
 ```text
-inbox_balance decreases by x
-allocated_unclaimed decreases by x
+inbox_balance -= x
+allocated_unclaimed -= x
 unallocated unchanged
 ```
 
 Inbox allocation:
 
 ```text
-allocated_unclaimed increases by unallocated
-unallocated becomes zero
+allocated_unclaimed += unallocated
+unallocated -> 0
 ```
 
-This makes deposits, allocations, and claims safe to serialize in any valid order under Solana account locking.
+This supports arbitrary valid serializations of deposit/allocation/claim instructions.
 
-## 18. Allocation sequence semantics
+## 17. Allocation sequence
 
-`allocation_sequence` begins at `0`.
+Starts at `0`.
 
-For a successful allocation:
+Successful allocation:
 
 ```text
 new_sequence = old_sequence + 1
 ```
 
-The allocation commitment/event uses `new_sequence`, and that exact value is then persisted.
+Commitment/event uses `new_sequence`, and that exact value is persisted.
 
-Claims do not change allocation sequence.
+Claims do not modify allocation sequence.
 
-## 19. Direct nonce semantics
+## 18. Direct funding nonce
 
-`direct_funding_nonce` begins at `0`.
+Starts at `0`.
 
-A direct funding allocation must provide the exact current nonce. Success increments it once.
-
-Plain inbox allocation and claims do not modify the direct nonce.
-
-## 20. Pause-state interaction
-
-Pause domains do not mutate agreement status or economics.
+Only `fund_and_allocate` reads/increments it.
 
 ```text
-agreements_paused -> gates propose/approve/supersession/activation flows
-allocations_paused -> gates direct/inbox revenue allocation
-claims_paused -> gates token claims
+expected_nonce must equal current nonce
+success -> nonce + 1
 ```
 
-Guardian may only set pauses. Governance may pause/unpause under the authority policy.
+`allocate_inbox` and claims never modify direct nonce.
 
-No pause action may transfer tokens, edit shares, redirect payout wallets, or increment accounting.
+## 19. Management transfer
+
+Work/Pool manager transfer:
+
+```text
+propose_manager(new_manager)
+accept_manager()
+```
+
+Current manager proposes, new manager signs acceptance.
+
+Management transfer never alters economic terms or participant routing.
+
+## 20. Pause interaction
+
+```text
+agreements_paused -> proposal/approval/supersession/activation flows
+allocations_paused -> direct/inbox allocation
+claims_paused -> claims
+```
+
+Guardian can pause; governance can pause/unpause under the configured authority model.
+
+Pause changes no balances, shares or destinations.
 
 ## 21. Forbidden transitions/actions
 
-The program rejects every equivalent of:
+Reject every equivalent of:
 
 ```text
-Cancelled -> Proposed
-Cancelled -> Active
-Cancelled -> Superseded
-Superseded -> Active
-Superseded -> Cancelled
-Active -> Proposed
-Active -> Cancelled
-Active -> Active with edited economic terms
+Cancelled -> Proposed/Active/Superseded
+Superseded -> Active/Cancelled
+Active -> Proposed/Cancelled
+Active -> Active with edited economics
 Proposed -> Superseded
 replacement activation without predecessor unanimous consent
 manager changing participant payout wallet
 participant changing another participant payout wallet
-claim amount exceeding participant claimable balance
-allocation that makes inbox balance smaller than allocated-unclaimed liability
+claim exceeding claimable amount
+allocation violating inbox solvency
+inbox allocation consuming direct funding nonce
 ```
 
 ## 22. Historical integrity
 
-Every version keeps independent:
+Every version preserves independent:
 
-- cumulative gross allocated;
-- per-participant cumulative allocations;
-- per-participant cumulative claims;
-- payout-routing revision history through events;
+- agreement hash / terms hash;
+- cumulative gross allocation;
+- per-participant allocations/claims;
+- routing-revision history via events;
 - direct funding nonce;
 - allocation sequence;
 - Royalty Inbox.
 
-A newer version never migrates or rewrites the prior version's economic history.
+A later version never rewrites the predecessor's history.
