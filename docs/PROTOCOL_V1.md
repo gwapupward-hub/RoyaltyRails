@@ -52,11 +52,9 @@ Explicitly deferred: recoupment, waterfalls, negative allocations, fiat custody,
 ## 3. Core objects
 
 ### Work
-
-Descriptive root for a creative work or revenue-generating object.
+A descriptive root for a creative work or revenue-generating object.
 
 ### RevenuePool
-
 Defines the class of revenue governed by an agreement.
 
 Pool kinds:
@@ -78,19 +76,15 @@ PaymentDirection
 The label explains why payment is routed; it does not change v1 percentage arithmetic.
 
 ### AgreementVersion
-
 Immutable economic configuration plus mutable approval, allocation, claim, and participant payout-routing state.
 
 ### ParticipantAuthority
-
 Public key that approves economic terms and controls that participant's payout routing.
 
 ### PayoutWallet
-
 Current owner address whose canonical USDC ATA receives a participant's claims. This is routing state, not an economic term.
 
 ### RoyaltyInbox
-
 Canonical USDC ATA owned by an agreement-version-specific PDA. It holds both not-yet-allocated deposits and allocated-but-unclaimed USDC.
 
 ## 4. Canonical participant ordering
@@ -99,12 +93,7 @@ Participants are strictly sorted lexicographically by raw 32-byte `participant_a
 
 Program rejects duplicate or unsorted authorities.
 
-Canonical ordering stabilizes:
-
-- agreement hashing;
-- approval indices;
-- supersession-consent indices;
-- allocation rounding tie-breaks.
+Canonical ordering stabilizes agreement hashing, approval indices, supersession-consent indices, and allocation rounding tie-breaks.
 
 Duplicate payout wallets are allowed.
 
@@ -200,12 +189,7 @@ created_slot: u64
 reserved: [u8; 64]
 ```
 
-Rules:
-
-- manager may propose agreements but cannot activate around participant consent;
-- at most one pending version;
-- versions monotonically increase and are never reused;
-- pool kind, settlement basis and pool metadata semantics are immutable.
+Manager may propose agreements but cannot activate around participant consent. At most one pending version exists. Versions monotonically increase and are never reused. Pool kind, settlement basis and pool metadata semantics are immutable.
 
 ## 8. Participant state
 
@@ -215,7 +199,6 @@ Embedded in AgreementVersion:
 participant_authority: Pubkey
 payout_wallet: Pubkey
 share_bps: u16
-role_code: u16
 payout_revision: u32
 cumulative_allocated: u128
 cumulative_claimed: u128
@@ -226,7 +209,6 @@ Immutable economic fields:
 ```text
 participant_authority
 share_bps
-role_code
 ```
 
 Mutable participant/settlement fields:
@@ -238,7 +220,9 @@ cumulative_allocated
 cumulative_claimed
 ```
 
-Agreement hash excludes routing/accounting fields.
+Detailed creative roles and credits are **not on-chain economic fields**. A participant may have multiple roles; role vocabularies also evolve. Roles live in the deterministic Agreement Manifest anchored by `terms_hash`.
+
+Agreement hash excludes payout routing/accounting state.
 
 ## 9. AgreementVersion
 
@@ -312,9 +296,7 @@ owner = vault_authority_pda
 mint = agreement.settlement_mint
 ```
 
-It may be initialized permissionlessly for Active or Superseded versions.
-
-No instruction exists to arbitrarily withdraw the inbox balance.
+It may be initialized permissionlessly for Active or Superseded versions. No instruction exists to arbitrarily withdraw the inbox balance.
 
 ## 11. Inbox solvency and unallocated revenue
 
@@ -336,7 +318,7 @@ Then:
 unallocated = inbox_balance - allocated_unclaimed
 ```
 
-Effects of operations:
+Operation effects:
 
 ```text
 external deposit:
@@ -354,15 +336,13 @@ allocate_inbox:
     unallocated becomes 0
 ```
 
-This is the core reconciliation invariant for mixed deposits, allocations and claims.
-
 Because an SPL token-account balance is `u64`:
 
 ```text
 sum(current claimable) <= inbox_balance <= u64::MAX
 ```
 
-so each current participant claim necessarily fits an SPL `u64` transfer even though lifetime counters use `u128`.
+so every individual current claim fits an SPL `u64` transfer even though lifetime counters use `u128`.
 
 ## 12. Agreement hash
 
@@ -391,10 +371,9 @@ participant_count_u8
 for each canonical participant:
     participant_authority
     share_bps_u16_le
-    role_code_u16_le
 ```
 
-Payout wallet is intentionally excluded.
+Payout wallet and creative-role metadata are intentionally excluded from the core economic serialization. Roles remain cryptographically anchored through `terms_hash`.
 
 The TypeScript canonical encoder/vector is the cross-language interoperability target.
 
@@ -402,17 +381,7 @@ The TypeScript canonical encoder/vector is the cross-language interoperability t
 
 `terms_hash` anchors the deterministic human-readable Agreement Manifest defined in `AGREEMENT_MANIFEST_V1.md`.
 
-Manifest responsibilities include:
-
-- work/release identifiers;
-- pool definition;
-- gross/net convention;
-- source description;
-- negative-adjustment policy;
-- human-readable participant roles/shares;
-- effective-period metadata;
-- document hashes;
-- disclosure/terms metadata.
+Manifest responsibilities include work/release identifiers, pool definition, gross/net convention, source description, negative-adjustment policy, rich/multi-valued participant roles/credits, effective-period metadata, document hashes, and disclosure/terms metadata.
 
 Studio must recompute manifest hash and agreement hash before requesting approval.
 
@@ -424,14 +393,7 @@ Instruction concept:
 approve_agreement(expected_agreement_hash, payout_wallet)
 ```
 
-Requires:
-
-- agreements not paused;
-- status Proposed;
-- signer matches one proposed participant authority;
-- expected hash equals stored hash;
-- approval bit not already set;
-- payout wallet non-default.
+Requires agreements not paused, Proposed status, signer matching one participant authority, exact expected hash, unset approval bit, and a non-default payout wallet.
 
 Effects:
 
@@ -451,42 +413,17 @@ Replacement activation requires two complete consent sets:
 1. every participant in the proposed version approves the new agreement;
 2. every participant in the currently Active predecessor approves supersession by that exact new agreement hash.
 
-Instruction concept:
+The supersession bitmap is indexed by predecessor canonical participant order, not proposed-version order.
 
-```text
-approve_supersession(expected_new_agreement_hash)
-```
-
-The supersession bitmap is indexed by **predecessor participant canonical order**, not proposed-version order.
-
-A continuing participant may perform both approvals in one user transaction containing two protocol instructions.
-
-A participant present in either consent set may explicitly reject the pending proposal, cancelling it.
+A continuing participant may perform both approvals in one user transaction. A participant present in either consent set may reject the pending proposal, cancelling it.
 
 ## 16. Activation
 
-Initial activation:
+Initial activation requires Proposed status, `predecessor_version == 0`, no active version, complete proposed approval mask, and initialized payout wallets.
 
-```text
-new.status == Proposed
-new.predecessor_version == 0
-pool.active_version == 0
-new approval mask complete
-all payout wallets initialized
-```
+Replacement activation additionally requires the exact current Active predecessor, complete proposed approval mask, complete predecessor supersession mask, and initialized new payout wallets.
 
-Replacement activation additionally requires:
-
-```text
-old.status == Active
-old.version == pool.active_version
-new.predecessor_version == old.version
-new.version == pool.pending_version
-new approval mask complete
-predecessor supersession mask complete
-```
-
-Atomic replacement effects:
+Atomic replacement:
 
 ```text
 old.status = Superseded
@@ -495,7 +432,7 @@ pool.active_version = new.version
 pool.pending_version = 0
 ```
 
-Any caller may trigger activation after all required consent exists.
+Any caller may trigger activation after consent is complete.
 
 For 16 participants:
 
@@ -507,15 +444,11 @@ Never compute `1u16 << 16`.
 
 ## 17. Payout-wallet rotation
 
-Instruction:
-
 ```text
 update_payout_wallet(new_payout_wallet)
 ```
 
-Requires exact participant authority signer and agreement status Proposed/Active/Superseded.
-
-Reject default or no-op destination.
+Requires exact participant authority signer and Proposed/Active/Superseded status. Reject default/no-op destination.
 
 Effects:
 
@@ -529,32 +462,15 @@ It changes no economic field and no agreement hash.
 
 ## 18. Pure allocation engine
 
-The TypeScript reference engine is the normative percentage-math implementation.
+The TypeScript reference engine is normative percentage math. It consumes only agreement shares, cumulative allocation state, and new allocation amount.
 
-It consumes only:
+It does not contain funding-path nonce state, payout wallets, claims, or token logic.
 
-```text
-agreement shares
-cumulative allocation state
-new allocation amount
-```
+Both direct and inbox allocation use the same economic function.
 
-It does **not** contain funding-path nonce state, payout wallets, claims, or token logic.
-
-Both direct and inbox allocation call the same economic algorithm.
-
-Required properties:
-
-- exact conservation;
-- non-negative allocation;
-- bounded lifetime proportional error < 1 base unit per participant;
-- checked integer arithmetic;
-- deterministic canonical output;
-- 1–16 participant support.
+Required properties: exact conservation, non-negative allocation, bounded lifetime proportional error under one base unit per participant, checked integer arithmetic, deterministic canonical output, and 1–16 participant support.
 
 ## 19. Direct funding + allocation
-
-Instruction:
 
 ```text
 fund_and_allocate(
@@ -564,12 +480,10 @@ fund_and_allocate(
 )
 ```
 
-Accounts include config, AgreementVersion, payer signer, payer source token account, vault PDA, Royalty Inbox, settlement mint and Token Program.
-
 Rules:
 
 - agreement Active or Superseded;
-- allocations not paused;
+- allocations unpaused;
 - amount > 0;
 - expected nonce equals stored direct nonce;
 - payer source is configured-mint original-SPL token account;
@@ -578,17 +492,13 @@ Rules:
 - delegated SPL authority is deferred;
 - transfer exact amount source -> Royalty Inbox;
 - run pure allocation engine for exact amount;
-- increment direct nonce exactly once;
-- increment allocation sequence exactly once;
+- increment direct nonce once;
+- increment allocation sequence once;
 - emit allocation commitment/event.
 
-Recipient token accounts are not required.
-
-The nonce is a protocol replay control and is not part of economic allocation vectors.
+Recipient token accounts are not required. Direct nonce is a protocol replay control, not an economic-engine field.
 
 ## 20. Address-only inbox allocation
-
-Instruction:
 
 ```text
 allocate_inbox()
@@ -603,18 +513,11 @@ allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
 unallocated = inbox_balance - allocated_unclaimed
 ```
 
-Requires canonical inbox, valid status, allocations unpaused, solvency, and `unallocated > 0`.
+Requires canonical inbox, valid status, allocations unpaused, solvency and `unallocated > 0`.
 
-It allocates exactly `unallocated`, increments only allocation sequence, and **does not change direct_funding_nonce**.
+It allocates exactly `unallocated`, increments allocation sequence, and **does not change `direct_funding_nonce`**.
 
-Inbox allocation commitment uses:
-
-```text
-mode = Inbox
-payment_reference = [0; 32]
-```
-
-because one allocation may aggregate multiple raw deposits.
+Inbox allocation commitment uses `mode = Inbox` and zero payment reference because one allocation may aggregate multiple raw deposits.
 
 ## 21. Allocation commitment
 
@@ -640,19 +543,11 @@ for each canonical participant:
     allocation_amount_u64_le
 ```
 
-Sequence starts at zero. Successful allocation uses:
-
-```text
-new_sequence = old_sequence + 1
-```
-
-Commitment uses `new_sequence`, and that exact value is persisted.
+Sequence begins at zero. A successful allocation commits to `new_sequence = old_sequence + 1`, then persists that value.
 
 `payment_reference` is reconciliation metadata, not protocol idempotency/replay protection.
 
 ## 22. Claims
-
-Instruction:
 
 ```text
 claim_participant(participant_index: u8)
@@ -660,85 +555,44 @@ claim_participant(participant_index: u8)
 
 Permissionless to trigger.
 
-Requires:
+Requires Active/Superseded status, claims unpaused, valid index, canonical Royalty Inbox, canonical ATA for participant's current payout wallet + configured mint, positive claimable amount, and sufficient inbox balance.
 
-- agreement Active or Superseded;
-- claims not paused;
-- valid participant index;
-- canonical Royalty Inbox;
-- claim destination is canonical ATA for participant's **current** payout wallet + configured mint;
-- `claimable = cumulative_allocated - cumulative_claimed > 0`;
-- inbox balance sufficient.
-
-By the solvency/u64 proof in Section 11, current claimable necessarily fits `u64`.
-
-Vault PDA signs one checked SPL transfer. On success:
+Vault PDA signs a checked SPL transfer. On success:
 
 ```text
 cumulative_claimed += claimable
 emit PayoutClaimed
 ```
 
-One broken/frozen/missing recipient destination cannot block a different participant's independent claim transaction.
+One broken/frozen/missing recipient destination cannot block another participant's independent claim transaction.
 
 ## 23. Missing recipient ATA
 
-ATA creation is independent from economic allocation.
-
-Studio/SDK may compose idempotent ATA creation + `claim_participant` for a recipient when transaction constraints permit.
-
-Failure leaves claimable state unchanged.
+ATA creation is independent from economic allocation. Studio/SDK may compose idempotent ATA creation + `claim_participant` for one recipient where transaction constraints permit. Failure leaves claimable state unchanged.
 
 ## 24. Direct payment reconciliation and retries
 
-`payment_reference` is an opaque 32-byte value useful for hashing an invoice, distributor statement/batch ID, platform payment ID, etc.
+`payment_reference` is an opaque 32-byte value suitable for hashes of invoice IDs, distributor batches, platform payment IDs, etc. It is not a global on-chain uniqueness set.
 
-It is not a global on-chain uniqueness set.
+SDK/API must preserve business idempotency: retain business reference across retries, resolve uncertain transaction status before funding again with a fresh nonce, and expose ambiguous confirmation rather than blindly double-paying.
 
-SDK/API must preserve business idempotency:
-
-- retain the same business reference across retries;
-- resolve uncertain prior transaction status before funding again with a fresh nonce;
-- expose ambiguous confirmation state instead of blindly double-paying.
-
-A future optional on-chain idempotency receipt mode may be added if enterprise demand justifies state/rent cost.
+A future optional receipt PDA may be added if enterprise demand justifies state/rent cost.
 
 ## 25. Raw-deposit irreversibility
 
-Plain token transfers to a Royalty Inbox are a legacy/address-only fallback.
+Plain token transfers to a Royalty Inbox are a legacy/address-only fallback. Once raw USDC is allocated, v1 has no administrator refund path.
 
-Once raw USDC is allocated, v1 has no administrator refund path.
-
-Studio/API must clearly warn payers to verify:
-
-- network;
-- native USDC mint;
-- AgreementVersion;
-- Royalty Inbox address;
-- amount.
-
-A small test payment should be encouraged for unfamiliar large-value senders.
+Studio/API must clearly warn payers to verify network, native USDC mint, AgreementVersion, inbox address and amount. Encourage a small test payment for unfamiliar large-value senders.
 
 ## 26. Negative adjustments and disputes
 
-V1 never creates negative allocations and never claws back a participant's claimed tokens.
+V1 never creates negative allocations and never claws back claimed tokens. Corrected royalty statements/returns/negative adjustments must be netted before new distributable USDC is deposited or resolved commercially outside v1.
 
-Corrected royalty statements/returns/negative adjustments must be netted before new distributable USDC is deposited or resolved commercially outside v1.
-
-V1 only executes **resolved** 10,000-BPS payment instructions. It does not adjudicate under-claims, over-claims, contested rights, or unknown shares.
-
-Future suspense/dispute/offset modules require a separate specification.
+V1 executes resolved 10,000-BPS payment instructions. It does not adjudicate under-claims, over-claims, contested rights, or unknown shares. Future suspense/dispute/offset modules require separate specifications.
 
 ## 27. Management authority transfer
 
-Work and RevenuePool management use two-step:
-
-```text
-propose_manager(new_manager)
-accept_manager()
-```
-
-Management controls metadata and proposal creation, not participant economics, claims, or payout routing.
+Work/RevenuePool management uses two-step `propose_manager(new_manager)` / `accept_manager()`. Management controls metadata and proposal creation, not participant economics, claims, or payout routing.
 
 ## 28. Pause model
 
@@ -750,9 +604,7 @@ allocations_paused
 claims_paused
 ```
 
-Guardian may only pause. Governance may pause/unpause and rotate guardian.
-
-Pause instructions never transfer funds or edit economics.
+Guardian may only pause. Governance may pause/unpause and rotate guardian. Pause instructions never transfer funds or edit economics.
 
 ## 29. Events
 
@@ -786,76 +638,40 @@ PayoutClaimed
 
 ## 30. Public-data and privacy model
 
-V1 is public-chain infrastructure.
+V1 is public-chain infrastructure. Do not put tax IDs, bank details, home addresses, private emails, government IDs or private contract text on-chain.
 
-Do not put tax IDs, bank details, home addresses, private emails, government IDs or private contract text on-chain.
-
-Participant authorities, percentages, allocations, claims and token flows are public.
-
-Studio must disclose this before approval. Private royalty splits require a future distinct design.
+Participant authorities, percentages, allocations, claims and token flows are public. Studio must disclose this before approval. Private royalty splits require a future distinct design.
 
 ## 31. User experience requirements
 
-Studio should hide protocol jargon and provide:
+Studio should hide protocol jargon and provide off-chain drafts/invites, deterministic human-readable manifest review, recomputed hash verification, sponsored transaction fees where appropriate, one-click dual amendment consent for continuing participants, participant-owned payout routing, automatic keeper-driven allocations/claims, actionable claim-failure states, and exportable evidence packages.
 
-- off-chain draft/invite phase;
-- deterministic human-readable manifest review;
-- recomputed hash verification before signing;
-- sponsored transaction fees where appropriate;
-- one-click dual amendment consent for continuing participants;
-- participant-owned payout routing;
-- automatic keeper-driven inbox allocation/claims;
-- actionable claim failure states;
-- exportable agreement/evidence package.
-
-Solana supports a separate transaction fee payer, so a participant can approve while a sponsor covers network fees; authorization signatures remain required from the relevant participant. The SDK must preserve this distinction.
+A transaction fee sponsor may pay SOL while the relevant participant still supplies the required authorization signature.
 
 ## 32. Integration requirements
 
-Canonical SDK helpers should include:
-
-```text
-derive config/work/pool/agreement/vault/inbox addresses
-canonicalize + hash Agreement Manifest
-derive agreement hash
-read approval/supersession state
-build approval transactions
-fund_and_allocate
-allocate_inbox
-calculate claimable
-prepare recipient ATA
-claim_participant
-update payout wallet
-build/verify reconciliation references
-verify allocation commitments
-```
+Canonical SDK helpers should cover address derivation, Agreement Manifest canonicalization/hashing, agreement hashing, approval/supersession flows, direct funding, inbox allocation, claimability, ATA preparation, participant claiming, payout rotation, reconciliation references and allocation-commitment verification.
 
 Protocol correctness must never depend on RoyaltyRail's hosted backend.
 
 ## 33. Transaction-format compatibility
 
-Do not require Solana v1-format transactions unless an operation actually needs them.
+Do not require Solana v1-format transactions unless an operation needs them. Phase 3 benchmarks must test maximum-participant proposal/approval/claim flows across supported formats.
 
-Phase 3 benchmarks must test maximum-participant proposal/approval/claim flows across supported formats.
-
-If v1 transactions are used, SDK must explicitly configure v1 message resource limits/priority because v1 resource configuration differs from legacy/v0 semantics.
+If v1 transactions are used, SDK must explicitly configure v1 message resources/priority rather than assume legacy/v0 ComputeBudget behavior.
 
 ## 34. Storage and schema evolution
 
-Long-lived RoyaltyRail accounts reserve zeroed padding bytes.
+Long-lived RoyaltyRail accounts reserve zeroed padding bytes. Future versions may interpret reserved bytes only through explicit reviewed schema migration. Reserved bytes may never become a backdoor for altering existing economics.
 
-Future versions may interpret reserved bytes only through explicit reviewed schema migration. Reserved bytes may never become a backdoor for altering existing economics.
-
-RoyaltyRail-owned historical Work/Pool/Agreement accounts and Royalty Inbox accounts are not closed through v1 protocol instructions.
+RoyaltyRail-owned historical Work/Pool/Agreement accounts and Royalty Inbox accounts are not closed through v1 instructions.
 
 ## 35. Mainnet trust boundary
 
-“No admin withdrawal” is only meaningful while deployed bytecode remains trustworthy.
-
 Before meaningful mainnet value:
 
-- upgrade authority must use hardened multisig/governance;
-- normal upgrade delay/timelock policy must be explicit;
+- upgrade authority uses hardened multisig/governance;
+- normal upgrade delay/timelock policy is explicit;
 - deployed program/ProgramData changes monitored;
 - reproducible/verifiable builds published;
 - emergency upgrade process documented;
