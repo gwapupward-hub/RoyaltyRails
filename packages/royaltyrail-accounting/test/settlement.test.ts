@@ -3,6 +3,7 @@ import fc from "fast-check";
 
 import {
   AccountingError,
+  TOTAL_SHARE_UNITS,
   allocate,
   initialState,
   validateAgreement,
@@ -14,9 +15,9 @@ function agreement(shares: number[]): Agreement {
     id: "RR-TEST",
     version: 1,
     settlementBasis: "REVENUE_PARTICIPATION",
-    participants: shares.map((shareBps, index) => ({
+    participants: shares.map((shareUnits, index) => ({
       id: `p${index}`,
-      shareBps,
+      shareUnits,
     })),
   };
 }
@@ -33,11 +34,11 @@ function abs(value: bigint): bigint {
 
 function sharesFromWeights(weights: number[]): number[] {
   const minimum = weights.length;
-  const distributable = 10_000 - minimum;
+  const distributable = TOTAL_SHARE_UNITS - minimum;
   const totalWeight = weights.reduce((a, b) => a + b, 0);
   const shares = weights.map((weight) => 1 + Math.floor((distributable * weight) / totalWeight));
 
-  let remainder = 10_000 - shares.reduce((a, b) => a + b, 0);
+  let remainder = TOTAL_SHARE_UNITS - shares.reduce((a, b) => a + b, 0);
   for (let i = 0; remainder > 0; i = (i + 1) % shares.length) {
     shares[i] = (shares[i] ?? 0) + 1;
     remainder -= 1;
@@ -47,22 +48,28 @@ function sharesFromWeights(weights: number[]): number[] {
 }
 
 describe("agreement validation", () => {
-  it("requires exactly 10,000 BPS", () => {
-    expect(() => validateAgreement(agreement([5_000, 4_999]))).toThrow(AccountingError);
-    expect(() => validateAgreement(agreement([5_000, 5_001]))).toThrow(AccountingError);
-    expect(() => validateAgreement(agreement([5_000, 5_000]))).not.toThrow();
+  it("requires exactly 100,000,000 share units", () => {
+    expect(() => validateAgreement(agreement([50_000_000, 49_999_999]))).toThrow(AccountingError);
+    expect(() => validateAgreement(agreement([50_000_000, 50_000_001]))).toThrow(AccountingError);
+    expect(() => validateAgreement(agreement([50_000_000, 50_000_000]))).not.toThrow();
   });
 
   it("allows a single 100% participant", () => {
-    expect(() => validateAgreement(agreement([10_000]))).not.toThrow();
+    expect(() => validateAgreement(agreement([100_000_000]))).not.toThrow();
+  });
+
+  it("supports six decimal places of percentage precision", () => {
+    expect(() =>
+      validateAgreement(agreement([33_333_333, 33_333_333, 33_333_334])),
+    ).not.toThrow();
   });
 
   it("rejects duplicate participant identifiers", () => {
     const invalid: Agreement = {
-      ...agreement([5_000, 5_000]),
+      ...agreement([50_000_000, 50_000_000]),
       participants: [
-        { id: "same", shareBps: 5_000 },
-        { id: "same", shareBps: 5_000 },
+        { id: "same", shareUnits: 50_000_000 },
+        { id: "same", shareUnits: 50_000_000 },
       ],
     };
 
@@ -72,7 +79,7 @@ describe("agreement validation", () => {
 
 describe("allocation", () => {
   it("allocates a single-recipient deposit at 100%", () => {
-    const a = agreement([10_000]);
+    const a = agreement([100_000_000]);
     const result = allocate(a, initialState(a), { amount: 987_654n });
 
     expect(result.allocations).toEqual({ p0: 987_654n });
@@ -80,7 +87,7 @@ describe("allocation", () => {
   });
 
   it("allocates an exact 70/20/10 deposit", () => {
-    const a = agreement([7_000, 2_000, 1_000]);
+    const a = agreement([70_000_000, 20_000_000, 10_000_000]);
     const result = allocate(a, initialState(a), { amount: 1_000_000n });
 
     expect(result.allocations).toEqual({
@@ -92,16 +99,16 @@ describe("allocation", () => {
   });
 
   it("handles the edge case that breaks fixed cumulative-remainder assignment", () => {
-    const a = agreement([1, 4_999, 5_000]);
-    const first = allocate(a, initialState(a), { amount: 5_001n });
+    const a = agreement([1, 49_999_999, 50_000_000]);
+    const first = allocate(a, initialState(a), { amount: 50_000_001n });
     const second = allocate(a, first.nextState, { amount: 1n });
 
     expect(Object.values(second.allocations).every((value) => value >= 0n)).toBe(true);
     expect(sum(Object.values(second.allocations))).toBe(1n);
   });
 
-  it("never accumulates more than one base unit of lifetime allocation error", () => {
-    const a = agreement([3_333, 3_333, 3_334]);
+  it("never accumulates more than one asset base unit of lifetime allocation error", () => {
+    const a = agreement([33_333_333, 33_333_333, 33_333_334]);
     let state = initialState(a);
 
     for (let i = 0; i < 10_001; i += 1) {
@@ -110,8 +117,9 @@ describe("allocation", () => {
 
     for (const participant of a.participants) {
       const allocated = state.allocated[participant.id] ?? 0n;
-      const residual = state.gross * BigInt(participant.shareBps) - allocated * 10_000n;
-      expect(abs(residual)).toBeLessThan(10_000n);
+      const residual =
+        state.gross * BigInt(participant.shareUnits) - allocated * BigInt(TOTAL_SHARE_UNITS);
+      expect(abs(residual)).toBeLessThan(BigInt(TOTAL_SHARE_UNITS));
     }
   });
 });
@@ -139,8 +147,9 @@ describe("property invariants", () => {
 
           for (const participant of a.participants) {
             const allocated = state.allocated[participant.id] ?? 0n;
-            const residual = state.gross * BigInt(participant.shareBps) - allocated * 10_000n;
-            expect(abs(residual)).toBeLessThan(10_000n);
+            const residual =
+              state.gross * BigInt(participant.shareUnits) - allocated * BigInt(TOTAL_SHARE_UNITS);
+            expect(abs(residual)).toBeLessThan(BigInt(TOTAL_SHARE_UNITS));
           }
         },
       ),
