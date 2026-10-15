@@ -26,18 +26,15 @@ export interface Agreement {
 }
 
 export interface CumulativeState {
-  /** Total settlement-asset base units allocated under this agreement version. */
+  /** Total settlement-asset base units economically allocated under this agreement version. */
   gross: bigint;
   /** Lifetime economic allocation to each participant. Token claims are tracked separately on-chain. */
   allocated: Readonly<Record<string, bigint>>;
-  /** Expected nonce for the next direct funding + allocation operation. */
-  nextDirectNonce: bigint;
 }
 
 export interface AllocationInput {
   /** Positive settlement-asset base-unit amount, e.g. native USDC has 6 decimals. */
   amount: bigint;
-  expectedNonce: bigint;
 }
 
 export interface AllocationResult {
