@@ -1,6 +1,6 @@
 # RoyaltyRail Phase 3A — Anchor Foundation and Rust Parity
 
-Status: parity implementation in progress  
+Status: implementation complete; final merge-candidate CI required  
 Started: 2026-10-15
 
 ## Objective
@@ -28,7 +28,10 @@ Anchor 1.2.1 is the selected stable line. The workspace initially uses Anchor's 
 - deterministic named-vector and 100-case generated-corpus parity against the frozen TypeScript fixture;
 - fixed PDA seed helpers and immutable derivation vectors;
 - Anchor/Borsh serialized payload-size assertions, including the 2,036-byte maximum AgreementVersion account size;
-- Rust CI bootstrap for fmt, clippy, locked tests, and Cargo.lock generation.
+- committed `Cargo.lock` and locked Rust dependency resolution;
+- read-only CI gates for Rust formatting, clippy with `-D warnings`, tests, and TypeScript reference checks.
+
+The Phase 3A Anchor crate intentionally contains **no `#[program]` instruction module**. `declare_id!`, PDA helpers, and serialization types are present, but the instruction surface begins only in Phase 3B. This avoids pretending that a no-op program is part of the frozen on-chain API and keeps Phase 3A free of token-moving or lifecycle behavior.
 
 ## Stage 3A sequence
 
@@ -40,14 +43,32 @@ Anchor 1.2.1 is the selected stable line. The workspace initially uses Anchor's 
 6. Match every canonical TypeScript vector, including the deterministic 100-case corpus. ✅
 7. Add PDA derivation golden vectors. ✅
 8. Add account serialized-size assertions. ✅
-9. Commit `Cargo.lock` and require locked Rust CI. In progress.
-10. Run `cargo fmt`, `cargo clippy -D warnings`, Rust tests, TypeScript tests, and cross-language parity in CI. In progress.
+9. Commit `Cargo.lock` and require locked Rust CI. ✅
+10. Run `cargo fmt`, `cargo clippy -D warnings`, Rust tests, TypeScript tests, and cross-language parity in CI. ✅
+
+## Verified parity surface
+
+The Rust implementation is required to reproduce the frozen TypeScript contract for:
+
+- `100_000_000` total share units and 1–16 participants;
+- raw 32-byte canonical authority ordering;
+- bounded-error cumulative allocation and conservation;
+- `u64` current allocation amounts and `u128` lifetime state;
+- near-`u128::MAX` entitlement calculations without wider cumulative multiplication;
+- canonical agreement hash `7c3864a1ad4ed61713d694523cd2737bc69ad81bd1428c72f5bd3dcba76b2032`;
+- canonical allocation commitment `bbbb4c0ef0d9617c5427d85cf9828d5767689a59bd696324adde3e03d9316950`;
+- all named regression/boundary vectors;
+- the deterministic 100-case xorshift32 golden corpus;
+- canonical PDA derivation/bump vectors;
+- the 2,036-byte maximum AgreementVersion account allocation.
 
 ## Hard gate
 
-Phase 3B cannot begin until Rust reproduces the frozen TypeScript reference exactly and all Phase 3A CI checks are green.
+Phase 3B cannot begin until the exact PR merge-candidate head passes both the TypeScript reference job and the read-only Rust parity job.
 
-No token-transfer instruction is allowed in this phase.
+No token-transfer instruction is allowed in Phase 3A.
+
+A green Phase 3A gate establishes implementation parity with the frozen reference specification only. It is not a smart-contract security audit, formal verification, legal approval, deployment approval, or mainnet readiness determination.
 
 ## PDA vector policy
 
