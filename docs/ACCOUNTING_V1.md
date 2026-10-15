@@ -7,8 +7,6 @@ Date: 2026-10-15
 
 The TypeScript reference engine defines **economic allocation math only**. It does not perform token delivery and does not know about payout wallets, Solana token accounts, funding-path nonces, claims, or RPC execution.
 
-This separation is intentional:
-
 ```text
 revenue amount
     ↓
@@ -21,49 +19,76 @@ protocol replay / funding controls
 independent token claims
 ```
 
-Both direct funding and plain Royalty Inbox allocation use the same economic function. Replay protection exists only in the protocol path that needs it.
+Both direct funding and Royalty Inbox allocation use the same economic function. Replay protection exists only in the protocol path that needs it.
 
-## Percentages
+## Share precision
 
-Shares are integer basis points:
+RoyaltyRail v1 does **not** use basis points as its canonical on-chain percentage representation.
 
-- 10,000 BPS = 100%
-- every executable agreement totals exactly 10,000 BPS
-- V1 supports 1–16 participants
-- all participant shares are positive
+Music-rights systems can require fractional percentages substantially finer than 0.01%. RoyaltyRail therefore uses a fixed share scale supporting six decimal places in percentage representation:
 
-No floating-point arithmetic is permitted.
+```text
+TOTAL_SHARE_UNITS = 100,000,000
+```
 
-A single 100% participant is valid. This supports buyouts, full rights assignments, estate/entity consolidation, and standard routing after collaborators unanimously exit an older version.
+Examples:
+
+```text
+100%       = 100,000,000 share units
+50%        =  50,000,000 share units
+5%         =   5,000,000 share units
+21.75%     =  21,750,000 share units
+33.333333% =  33,333,333 share units
+0.000001%  =           1 share unit
+```
+
+Properties:
+
+- every executable agreement totals exactly `100,000,000` share units;
+- V1 supports 1–16 participants;
+- every participant share is a positive integer;
+- the canonical on-chain share field is `u32`;
+- UI may display ordinary percentages but MUST convert losslessly to/from canonical share units;
+- no floating-point arithmetic is permitted in economic calculations.
+
+This precision aligns with current music-rights data conventions that may communicate percentages with up to six digits after the decimal point.
+
+A single 100% participant is valid.
 
 ## Why naive remainder assignment was rejected
 
-A tempting design computes each participant's cumulative floored entitlement and gives the entire remainder to one fixed recipient. That recipient's cumulative target can later decrease by one base unit before its floored entitlement increases, implying a negative/clawback delta.
+A tempting design computes each participant's cumulative floored entitlement and gives the entire remainder to one fixed recipient. That recipient's cumulative target can later decrease by one asset base unit before its floored entitlement increases, implying a negative/clawback delta.
 
 RoyaltyRail forbids negative allocation deltas.
 
 ## Bounded-error carry apportionment
 
+Let:
+
+```text
+D = 100,000,000
+```
+
 For participant `i`:
 
 ```text
-residual_before_i = gross * share_bps_i - allocated_i * 10_000
-accrued_i         = residual_before_i + new_amount * share_bps_i
+residual_before_i = gross * share_units_i - allocated_i * D
+accrued_i         = residual_before_i + new_amount * share_units_i
 ```
 
-Whole base units due are allocated first:
+Whole settlement-asset base units due are allocated first:
 
 ```text
-base_i = max(0, trunc(accrued_i / 10_000))
+base_i = max(0, trunc(accrued_i / D))
 ```
 
-Any remaining indivisible units are assigned to participants with the highest residual score. Canonical participant order breaks exact ties.
+Any remaining indivisible asset units are assigned to participants with the highest residual score. Canonical participant order breaks exact ties.
 
 After allocation:
 
 ```text
 residual_after_i =
-  new_gross * share_bps_i - new_allocated_i * 10_000
+  new_gross * share_units_i - new_allocated_i * D
 ```
 
 ## Required allocation invariants
@@ -73,21 +98,31 @@ For every successful allocation:
 1. `sum(current allocations) == new_amount`
 2. every current allocation is `>= 0`
 3. `sum(cumulative_allocated) == cumulative_gross`
-4. for every participant, `abs(residual) < 10_000`
+4. for every participant, `abs(residual) < D`
 5. therefore lifetime proportional deviation is less than one settlement-asset base unit
 6. identical canonical economic state + amount produces identical allocation output
 
-For native Solana USDC, one base unit is one millionth of one USDC.
+For native Solana USDC, one asset base unit is one millionth of one USDC.
+
+Share precision and asset precision are separate concepts: a share may be represented with six decimal places of **percentage** precision even when a particular small USDC deposit cannot be physically divided that finely. The bounded-error allocator carries that fractional entitlement forward across future allocations.
+
+## Numeric width
+
+Actual transfer amounts are `u64` because SPL Token balances/amounts are `u64`.
+
+Lifetime accounting uses `u128`.
+
+Allocation intermediates must use checked `u128` arithmetic. The maximum v1 share scale (`100,000,000`) multiplied by a `u64` allocation amount remains comfortably within `u128`.
+
+No wrapping arithmetic is allowed.
 
 ## Replay protection is not accounting math
 
-Direct funding requires a protocol-level `direct_funding_nonce` because it both transfers tokens and allocates them.
+Direct funding requires protocol-level `direct_funding_nonce` because it both transfers tokens and allocates them.
 
-Plain `allocate_inbox()` allocates funds that are already in the Royalty Inbox and MUST NOT consume or modify the direct-funding nonce.
+Plain `allocate_inbox()` allocates funds already in the Royalty Inbox and MUST NOT consume or modify the direct-funding nonce.
 
-Therefore the reference allocation engine intentionally has no nonce field or expected-nonce input.
-
-Protocol implementation wraps the pure economic function:
+The reference engine intentionally has no nonce field or expected-nonce input.
 
 ```text
 fund_and_allocate:
@@ -101,8 +136,6 @@ allocate_inbox:
     run canonical allocate(unallocated)
     do not touch direct nonce
 ```
-
-This prevents funding-path replay rules from contaminating economic test vectors.
 
 ## Allocation is not claiming
 
@@ -126,57 +159,53 @@ Required claim invariant:
 0 <= cumulative_claimed_i <= cumulative_allocated_i
 ```
 
-A payout-wallet rotation changes neither allocation history nor claimable amount.
+Payout-wallet rotation changes neither allocation history nor claimable amount.
 
 ## Royalty Inbox balance invariant
-
-The protocol-level state must maintain:
 
 ```text
 allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
 inbox_balance >= allocated_unclaimed
 ```
 
-The difference is revenue deposited into the Royalty Inbox but not yet economically allocated:
+Unallocated revenue:
 
 ```text
 unallocated = inbox_balance - allocated_unclaimed
 ```
 
-Claims reduce inbox balance and allocated-unclaimed by the same amount, so they leave `unallocated` unchanged.
+Claims reduce inbox balance and allocated-unclaimed equally, leaving `unallocated` unchanged.
 
 `allocate_inbox()` allocates exactly the positive `unallocated` balance.
 
 ### Claim amount width proof
 
-An SPL Token account balance is represented as `u64`. The Royalty Inbox solvency invariant implies:
+An SPL Token account balance is `u64`.
 
 ```text
 sum(all participant claimable) <= inbox_balance <= u64::MAX
 ```
 
-Therefore each individual participant's current `claimable` amount is also `<= u64::MAX` even though lifetime cumulative accounting uses `u128`.
-
-A valid solvent v1 state cannot produce a current claim amount too large for an SPL Token transfer. No claim-chunking mechanism is needed.
+Therefore every individual current claim also fits `u64`, even though lifetime accounting uses `u128`.
 
 ## Partition behavior
 
-Different deposit partitioning can change which participant receives a single indivisible rounding unit at an intermediate point. That is expected in discrete allocation systems.
+Different deposit partitioning can change which participant receives a single indivisible USDC base unit at an intermediate point. That is expected in discrete allocation systems.
 
-RoyaltyRail's guarantee is **bounded lifetime proportional error**, not identical intermediate allocations for every possible deposit partition.
+RoyaltyRail guarantees bounded lifetime proportional error, not identical intermediate allocations for every possible deposit partition.
 
 ## Canonical implementation rule
 
-The TypeScript allocation engine and JSON vectors are the v1 economic reference.
+The TypeScript allocation engine and canonical JSON vectors are the v1 economic reference.
 
-The Rust/Anchor allocation function must match:
+Rust/Anchor allocation must match:
 
-- all canonical vectors;
-- conservation properties;
-- non-negative allocation behavior;
+- canonical vectors;
+- share scale `100,000,000`;
+- conservation;
+- non-negative allocations;
 - residual bounds;
-- 1–16 participant behavior.
+- 1–16 participant behavior;
+- six-decimal percentage-share cases.
 
-Protocol-level direct nonce tests are separate Anchor/SDK tests.
-
-Claim logic must not be allowed to alter or recompute percentage allocations.
+Protocol-level replay/claim behavior is tested separately.
