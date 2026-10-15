@@ -13,7 +13,7 @@ jobs:
   reference-specs:
     name: TypeScript reference specs
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -24,8 +24,19 @@ jobs:
         with:
           node-version: 22
 
+      - name: Generate reproducible lockfile candidate
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Upload lockfile candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock-candidate
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Install dependencies
         run: npm install
 
-      - name: Typecheck and test
+      - name: Typecheck, spec consistency, and tests
         run: npm run check
