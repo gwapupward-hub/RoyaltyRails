@@ -8,6 +8,8 @@ import {
   type SettlementResult,
 } from "./types.js";
 
+const DENOMINATOR = BigInt(TOTAL_BPS);
+
 export class AccountingError extends Error {
   constructor(message: string) {
     super(message);
@@ -46,10 +48,6 @@ export function validateAgreement(agreement: Agreement): void {
   if (totalBps !== TOTAL_BPS) {
     throw new AccountingError(`participant shares must total exactly ${TOTAL_BPS} BPS`);
   }
-
-  if (!ids.has(agreement.remainderRecipientId)) {
-    throw new AccountingError("remainder recipient must be an agreement participant");
-  }
 }
 
 export function initialState(agreement: Agreement): CumulativeState {
@@ -62,6 +60,10 @@ export function initialState(agreement: Agreement): CumulativeState {
   };
 }
 
+function roundingResidual(gross: bigint, paid: bigint, shareBps: number): bigint {
+  return gross * BigInt(shareBps) - paid * DENOMINATOR;
+}
+
 export function validateState(agreement: Agreement, state: CumulativeState): void {
   validateAgreement(agreement);
 
@@ -69,13 +71,21 @@ export function validateState(agreement: Agreement, state: CumulativeState): voi
   if (state.nextSettlementNonce < 0n) throw new AccountingError("nonce cannot be negative");
 
   let totalPaid = 0n;
+  let residualTotal = 0n;
   const participantIds = new Set(agreement.participants.map(({ id }) => id));
 
   for (const participant of agreement.participants) {
     const paid = state.paid[participant.id];
     if (paid === undefined) throw new AccountingError("state is missing participant payout data");
     if (paid < 0n) throw new AccountingError("participant paid amount cannot be negative");
+
+    const residual = roundingResidual(state.gross, paid, participant.shareBps);
+    if (residual <= -DENOMINATOR || residual >= DENOMINATOR) {
+      throw new AccountingError("participant rounding residual is outside the permitted bound");
+    }
+
     totalPaid += paid;
+    residualTotal += residual;
   }
 
   for (const stateId of Object.keys(state.paid)) {
@@ -87,14 +97,24 @@ export function validateState(agreement: Agreement, state: CumulativeState): voi
   if (totalPaid !== state.gross) {
     throw new AccountingError("cumulative paid amount must equal cumulative gross");
   }
+  if (residualTotal !== 0n) {
+    throw new AccountingError("rounding residuals must net to zero");
+  }
 }
 
 /**
- * Deterministic cumulative apportionment.
+ * Deterministic bounded-error apportionment.
  *
- * Rather than rounding every payment independently, RoyaltyRail computes each
- * participant's lifetime target from cumulative gross and pays only the delta.
- * Any indivisible remainder goes to the explicitly approved remainder recipient.
+ * Each participant carries an implicit signed rounding residual derived from
+ * cumulative gross, BPS, and cumulative amount paid. A settlement first pays
+ * every whole base unit currently due, then allocates the remaining indivisible
+ * units to the highest residual scores. Canonical participant order breaks ties.
+ *
+ * Guarantees:
+ * - payouts are never negative;
+ * - payouts exactly conserve the settlement amount;
+ * - each participant's lifetime rounding error stays below one base unit;
+ * - no fixed recipient accumulates every rounding remainder.
  */
 export function settle(
   agreement: Agreement,
@@ -108,40 +128,61 @@ export function settle(
     throw new AccountingError("settlement nonce mismatch");
   }
 
-  const newGross = state.gross + input.amount;
-  const baseTargets: Record<string, bigint> = {};
-  let baseTargetTotal = 0n;
+  const scored = agreement.participants.map((participant, index) => {
+    const priorPaid = state.paid[participant.id];
+    if (priorPaid === undefined) {
+      throw new AccountingError("internal participant accounting mismatch");
+    }
 
-  for (const participant of agreement.participants) {
-    const target = (newGross * BigInt(participant.shareBps)) / BigInt(TOTAL_BPS);
-    baseTargets[participant.id] = target;
-    baseTargetTotal += target;
+    const residualBefore = roundingResidual(state.gross, priorPaid, participant.shareBps);
+    const accruedNumerator = residualBefore + input.amount * BigInt(participant.shareBps);
+
+    // BigInt division truncates toward zero. For non-positive accrued entitlement,
+    // the participant receives zero rather than a negative/clawback payment.
+    const basePayout = accruedNumerator <= 0n ? 0n : accruedNumerator / DENOMINATOR;
+    const score = accruedNumerator - basePayout * DENOMINATOR;
+
+    return {
+      id: participant.id,
+      index,
+      priorPaid,
+      basePayout,
+      score,
+    };
+  });
+
+  const baseTotal = scored.reduce((sum, entry) => sum + entry.basePayout, 0n);
+  const remaining = input.amount - baseTotal;
+
+  if (remaining < 0n || remaining > BigInt(scored.length)) {
+    throw new AccountingError("rounding allocation exceeded recipient bounds");
   }
 
-  const remainder = newGross - baseTargetTotal;
-  const targets: Record<string, bigint> = { ...baseTargets };
-  targets[agreement.remainderRecipientId] =
-    (targets[agreement.remainderRecipientId] ?? 0n) + remainder;
+  const ranked = [...scored].sort((a, b) => {
+    if (a.score > b.score) return -1;
+    if (a.score < b.score) return 1;
+    return a.index - b.index;
+  });
+
+  const extraRecipients = new Set<string>();
+  const extraCount = Number(remaining);
+
+  for (let i = 0; i < extraCount; i += 1) {
+    const entry = ranked[i];
+    if (entry === undefined || entry.score < 0n) {
+      throw new AccountingError("invalid rounding allocation candidate");
+    }
+    extraRecipients.add(entry.id);
+  }
 
   const payouts: Record<string, bigint> = {};
   const nextPaid: Record<string, bigint> = {};
   let payoutTotal = 0n;
 
-  for (const participant of agreement.participants) {
-    const priorPaid = state.paid[participant.id];
-    const target = targets[participant.id];
-
-    if (priorPaid === undefined || target === undefined) {
-      throw new AccountingError("internal participant accounting mismatch");
-    }
-
-    const payout = target - priorPaid;
-    if (payout < 0n) {
-      throw new AccountingError("settlement would reduce a participant's cumulative payout");
-    }
-
-    payouts[participant.id] = payout;
-    nextPaid[participant.id] = target;
+  for (const entry of scored) {
+    const payout = entry.basePayout + (extraRecipients.has(entry.id) ? 1n : 0n);
+    payouts[entry.id] = payout;
+    nextPaid[entry.id] = entry.priorPaid + payout;
     payoutTotal += payout;
   }
 
@@ -149,12 +190,13 @@ export function settle(
     throw new AccountingError("settlement conservation invariant failed");
   }
 
-  return {
-    payouts,
-    nextState: {
-      gross: newGross,
-      paid: nextPaid,
-      nextSettlementNonce: state.nextSettlementNonce + 1n,
-    },
+  const nextState: CumulativeState = {
+    gross: state.gross + input.amount,
+    paid: nextPaid,
+    nextSettlementNonce: state.nextSettlementNonce + 1n,
   };
+
+  validateState(agreement, nextState);
+
+  return { payouts, nextState };
 }
