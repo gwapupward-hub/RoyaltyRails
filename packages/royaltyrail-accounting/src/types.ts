@@ -1,4 +1,4 @@
-export const TOTAL_BPS = 10_000;
+export const TOTAL_SHARE_UNITS = 100_000_000;
 export const MIN_RECIPIENTS = 1;
 export const MAX_RECIPIENTS = 16;
 
@@ -10,8 +10,11 @@ export type SettlementBasis =
 export interface Participant {
   /** Stable economic participant identifier inside an agreement version. */
   id: string;
-  /** Integer basis points. 10_000 = 100%. */
-  shareBps: number;
+  /**
+   * Fixed-point percentage units. 100_000_000 = 100% and 1 unit = 0.000001%.
+   * This matches six decimal places in percentage representation.
+   */
+  shareUnits: number;
 }
 
 export interface Agreement {
