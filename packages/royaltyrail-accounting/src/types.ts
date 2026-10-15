@@ -1,5 +1,5 @@
 export const TOTAL_BPS = 10_000;
-export const MIN_RECIPIENTS = 2;
+export const MIN_RECIPIENTS = 1;
 export const MAX_RECIPIENTS = 16;
 
 export type SettlementBasis =
