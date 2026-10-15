@@ -103,7 +103,6 @@ Maximum serialized size:
 | `participant_authority: Pubkey` | 32 |
 | `payout_wallet: Pubkey` | 32 |
 | `share_bps: u16` | 2 |
-| `role_code: u16` | 2 |
 | `payout_revision: u32` | 4 |
 | `cumulative_allocated: u128` | 16 |
 | `cumulative_claimed: u128` | 16 |
@@ -111,13 +110,13 @@ Maximum serialized size:
 Serialized size:
 
 ```text
-104 bytes
+102 bytes
 ```
 
 Maximum participant vector:
 
 ```text
-4-byte Vec prefix + (16 × 104) = 1,668 bytes
+4-byte Vec prefix + (16 × 102) = 1,636 bytes
 ```
 
 Economic hashing uses only:
@@ -125,8 +124,9 @@ Economic hashing uses only:
 ```text
 participant_authority
 share_bps
-role_code
 ```
+
+Detailed creative roles/credits are not protocol-economic fields. They live in the deterministic Agreement Manifest anchored by `terms_hash`, where a participant may have multiple evolving role labels without forcing the Solana program to maintain a music-industry role taxonomy.
 
 Payout and accounting fields are mutable state and excluded from the agreement hash.
 
@@ -145,7 +145,7 @@ Payout and accounting fields are mutable state and excluded from the agreement h
 | `token_program: Pubkey` | 32 |
 | `terms_hash: [u8; 32]` | 32 |
 | `agreement_hash: [u8; 32]` | 32 |
-| `participants: Vec<Participant>` | 1,668 |
+| `participants: Vec<Participant>` | 1,636 |
 | `approval_bitmap: u16` | 2 |
 | `supersession_approval_bitmap: u16` | 2 |
 | `cumulative_gross: u128` | 16 |
@@ -159,7 +159,7 @@ Payout and accounting fields are mutable state and excluded from the agreement h
 Maximum serialized size with 16 participants:
 
 ```text
-2,036 bytes
+2,004 bytes
 ```
 
 Agreement account is allocated once at proposal time. V1 should prefer fixed max-size allocation unless rent benchmarking provides a compelling reason to use participant-count-specific sizing.
@@ -182,7 +182,8 @@ else:
 Dedicated tests are required for:
 
 - new-participant `approval_bitmap`;
-- predecessor `supersession_approval_bitmap`.
+- predecessor `supersession_approval_bitmap`;
+- one-participant mask `0b1`.
 
 ## 8. Cumulative accounting width
 
@@ -224,6 +225,8 @@ Royalty Inbox solvency:
 allocated_unclaimed = cumulative_gross - sum(cumulative_claimed)
 inbox_balance >= allocated_unclaimed
 ```
+
+Because `inbox_balance` is an SPL-token `u64`, every individual current claimable amount is necessarily within `u64` in a valid solvent state.
 
 ## 10. Reserved storage policy
 
