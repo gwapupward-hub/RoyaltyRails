@@ -42,10 +42,7 @@ fn require_pool_manager(pool: &RevenuePoolState, authority: Pubkey) -> Result<()
     Ok(())
 }
 
-fn require_agreement_pool(
-    pool_key: Pubkey,
-    agreement: &AgreementVersionState,
-) -> Result<()> {
+fn require_agreement_pool(pool_key: Pubkey, agreement: &AgreementVersionState) -> Result<()> {
     require_keys_eq!(
         agreement.revenue_pool,
         pool_key,
@@ -110,10 +107,7 @@ pub fn process_approve_agreement(
 ) -> Result<()> {
     require_agreements_unpaused(&ctx.accounts.config)?;
     require_schema_version(ctx.accounts.revenue_pool.schema_version)?;
-    require_agreement_pool(
-        ctx.accounts.revenue_pool.key(),
-        &ctx.accounts.agreement,
-    )?;
+    require_agreement_pool(ctx.accounts.revenue_pool.key(), &ctx.accounts.agreement)?;
     require_pending(&ctx.accounts.revenue_pool, &ctx.accounts.agreement)?;
 
     let signer = ctx.accounts.participant.key();
@@ -215,10 +209,7 @@ pub fn process_cancel_agreement(ctx: Context<CancelAgreement>) -> Result<()> {
     require_agreement_pool(pool_key, &ctx.accounts.agreement)?;
     let agreement_key = ctx.accounts.agreement.key();
     let manager = ctx.accounts.manager.key();
-    lifecycle::cancel_proposal(
-        &mut ctx.accounts.revenue_pool,
-        &mut ctx.accounts.agreement,
-    )?;
+    lifecycle::cancel_proposal(&mut ctx.accounts.revenue_pool, &mut ctx.accounts.agreement)?;
     emit!(AgreementCancelled {
         agreement: agreement_key,
         manager_authority: manager,
@@ -286,11 +277,7 @@ pub fn process_update_payout_wallet(
 ) -> Result<()> {
     let signer = ctx.accounts.participant.key();
     let agreement_key = ctx.accounts.agreement.key();
-    let update = lifecycle::update_payout_wallet(
-        &mut ctx.accounts.agreement,
-        signer,
-        new_wallet,
-    )?;
+    let update = lifecycle::update_payout_wallet(&mut ctx.accounts.agreement, signer, new_wallet)?;
 
     emit!(PayoutWalletUpdated {
         agreement: agreement_key,
