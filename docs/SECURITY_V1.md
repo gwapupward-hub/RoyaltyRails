@@ -42,7 +42,7 @@ Security-critical relationships are re-derived or constrained on-chain.
 
 ```text
 participant_count in 1..=16
-sum(shares) == 10_000 share units
+sum(shares) == 100_000_000 share units
 all shares > 0
 sum(current allocations) == newly allocated amount
 sum(cumulative_allocated) == cumulative_gross
