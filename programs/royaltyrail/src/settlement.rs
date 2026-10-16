@@ -17,8 +17,7 @@ pub fn require_settleable_agreement(
     agreement: &AgreementVersionState,
 ) -> Result<()> {
     require!(
-        config.schema_version == SCHEMA_VERSION_V1
-            && agreement.schema_version == SCHEMA_VERSION_V1,
+        config.schema_version == SCHEMA_VERSION_V1 && agreement.schema_version == SCHEMA_VERSION_V1,
         RoyaltyRailError::UnsupportedSchemaVersion
     );
     require!(
@@ -192,7 +191,9 @@ mod tests {
             require_settleable_agreement(&cfg, &agreement(AgreementStatus::Superseded)).is_ok()
         );
         assert!(require_settleable_agreement(&cfg, &agreement(AgreementStatus::Proposed)).is_err());
-        assert!(require_settleable_agreement(&cfg, &agreement(AgreementStatus::Cancelled)).is_err());
+        assert!(
+            require_settleable_agreement(&cfg, &agreement(AgreementStatus::Cancelled)).is_err()
+        );
     }
 
     #[test]
