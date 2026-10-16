@@ -311,7 +311,10 @@ fn replacement_rejects_wrong_predecessor_nonparticipant_and_duplicate_supersessi
         1,
         0,
         AgreementStatus::Active,
-        vec![participant(30, 130, 60_000_000), participant(31, 131, 40_000_000)],
+        vec![
+            participant(30, 130, 60_000_000),
+            participant(31, 131, 40_000_000),
+        ],
     );
     let wrong_predecessor = agreement(
         9,
@@ -339,8 +342,7 @@ fn replacement_rejects_wrong_predecessor_nonparticipant_and_duplicate_supersessi
     approve_supersession(&p, &mut successor, &predecessor, alice, hash)
         .expect("alice supersession");
     assert!(approve_supersession(&p, &mut successor, &predecessor, alice, hash).is_err());
-    approve_supersession(&p, &mut successor, &predecessor, bob, hash)
-        .expect("bob supersession");
+    approve_supersession(&p, &mut successor, &predecessor, bob, hash).expect("bob supersession");
 }
 
 #[test]
@@ -356,7 +358,10 @@ fn replacement_activation_is_atomic_with_respect_to_missing_consent() {
         1,
         0,
         AgreementStatus::Active,
-        vec![participant(30, 130, 60_000_000), participant(31, 131, 40_000_000)],
+        vec![
+            participant(30, 130, 60_000_000),
+            participant(31, 131, 40_000_000),
+        ],
     );
     let mut successor = agreement(
         2,
@@ -385,8 +390,7 @@ fn replacement_activation_is_atomic_with_respect_to_missing_consent() {
     assert_eq!(p.active_version, 1);
     assert_eq!(p.pending_version, 2);
 
-    approve_supersession(&p, &mut successor, &predecessor, bob, hash)
-        .expect("bob supersession");
+    approve_supersession(&p, &mut successor, &predecessor, bob, hash).expect("bob supersession");
     activate_replacement(&mut p, &mut successor, &mut predecessor, 31)
         .expect("replacement activation");
     assert_eq!(predecessor.status, AgreementStatus::Superseded);
@@ -409,7 +413,10 @@ fn only_members_of_the_relevant_consent_set_can_reject() {
         1,
         0,
         AgreementStatus::Active,
-        vec![participant(30, 130, 60_000_000), participant(31, 131, 40_000_000)],
+        vec![
+            participant(30, 130, 60_000_000),
+            participant(31, 131, 40_000_000),
+        ],
     );
     let mut successor = agreement(
         2,
@@ -426,7 +433,9 @@ fn only_members_of_the_relevant_consent_set_can_reject() {
     );
 
     assert!(reject_by_proposed_participant(&mut p, &mut successor, outsider).is_err());
-    assert!(reject_by_predecessor_participant(&mut p, &mut successor, &predecessor, outsider).is_err());
+    assert!(
+        reject_by_predecessor_participant(&mut p, &mut successor, &predecessor, outsider).is_err()
+    );
     assert_eq!(successor.status, AgreementStatus::Proposed);
     assert_eq!(p.pending_version, 2);
 
