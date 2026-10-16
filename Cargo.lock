@@ -204,6 +204,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "anchor-spl"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c3557c0a140ddcd5641bfe66bbb0c563b9576100a1226ad54316c791849c3e9"
+dependencies = [
+ "anchor-lang",
+ "spl-associated-token-account-interface",
+]
+
+[[package]]
 name = "anchor-syn"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -761,6 +771,7 @@ name = "royaltyrail"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "anchor-spl",
  "royaltyrail-core",
 ]
 
@@ -1426,6 +1437,16 @@ checksum = "17358d1e9a13e5b9c2264d301102126cf11a47fd394cdf3dec174fe7bc96e1de"
 dependencies = [
  "solana-address 2.9.0",
  "solana-sdk-ids",
+]
+
+[[package]]
+name = "spl-associated-token-account-interface"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6433917b60441d68d99a17e121d9db0ea15a9a69c0e5afa34649cf5ba12612f"
+dependencies = [
+ "solana-instruction 3.5.1",
+ "solana-pubkey 3.0.0",
 ]
 
 [[package]]
