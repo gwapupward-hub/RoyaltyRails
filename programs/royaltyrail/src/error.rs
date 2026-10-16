@@ -100,4 +100,16 @@ pub enum RoyaltyRailError {
     PayoutRevisionOverflow,
     #[msg("checked arithmetic overflow")]
     ArithmeticOverflow,
+    #[msg("settlement is available only for Active or Superseded agreements")]
+    SettlementUnavailable,
+    #[msg("agreement settlement configuration does not match ProtocolConfig")]
+    SettlementConfigMismatch,
+    #[msg("agreement allocation/claim counters violate settlement invariants")]
+    AllocationStateInvariantViolation,
+    #[msg("Royalty Inbox balance is below allocated-but-unclaimed liabilities")]
+    RoyaltyInboxInsolvent,
+    #[msg("participant index is outside the agreement participant set")]
+    InvalidParticipantIndex,
+    #[msg("current claim amount exceeds the SPL token u64 amount domain")]
+    ClaimAmountExceedsTokenWidth,
 }
