@@ -103,6 +103,9 @@ jobs:
     timeout-minutes: 60
     container:
       image: quay.io/ottersec/anchor:v1.2.1
+      # Agave 4.1.2 asserts io_uring support at startup; Docker's default
+      # seccomp profile blocks the io_uring syscalls inside job containers.
+      options: --security-opt seccomp=unconfined
 
     steps:
       - name: Checkout PR branch
