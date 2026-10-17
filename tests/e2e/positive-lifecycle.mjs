@@ -1,13 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import {
-  AnchorProvider,
-  BN,
-  EventParser,
-  Program,
-  setProvider,
-} from "@anchor-lang/core";
+import anchor from "@anchor-lang/core";
 import {
   Keypair,
   LAMPORTS_PER_SOL,
@@ -24,6 +18,10 @@ import {
   mintTo,
   transferChecked,
 } from "@solana/spl-token";
+
+// @anchor-lang/core ships CommonJS to Node; BN is not detectable as a named
+// ESM export, so destructure from the default export instead.
+const { AnchorProvider, BN, EventParser, Program, setProvider } = anchor;
 
 const USDC_DECIMALS = 6;
 const SHARE_UNITS = 100_000_000;
