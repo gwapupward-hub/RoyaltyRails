@@ -146,8 +146,10 @@ jobs:
           anchor test --validator legacy --skip-build
           status=$?
           if [ "$status" -ne 0 ]; then
-            echo "--- solana-test-validator log ---"
+            echo "--- Anchor validator wrapper log ---"
             cat .anchor/test-ledger/test-ledger-log.txt 2>/dev/null || true
+            echo "--- solana-test-validator validator.log ---"
+            cat .anchor/test-ledger/validator.log 2>/dev/null || true
             echo "--- RoyaltyRail program log ---"
             cat .anchor/program-logs/*.log 2>/dev/null || true
           fi
