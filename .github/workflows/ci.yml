@@ -58,3 +58,41 @@ jobs:
 
       - name: Rust tests and parity vectors
         run: cargo test --workspace --all-targets --locked
+
+  anchor-build:
+    name: Anchor SBF + IDL
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container:
+      image: quay.io/ottersec/anchor:v1.2.1
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Verify pinned Anchor and Solana CLIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          anchor --version | tee /tmp/anchor-version
+          solana --version | tee /tmp/solana-version
+          rustc --version
+          grep -F "anchor-cli 1.2.1" /tmp/anchor-version
+          grep -F "solana-cli 4.1.2" /tmp/solana-version
+
+      - name: Build SBF program and IDL from clean checkout
+        shell: bash
+        run: anchor build --ignore-keys
+
+      - name: Assert required build artifacts and settlement IDL surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s target/deploy/royaltyrail.so
+          test -s target/idl/royaltyrail.json
+          grep -q 'initialize_royalty_inbox' target/idl/royaltyrail.json
+          grep -q 'fund_and_allocate' target/idl/royaltyrail.json
+          grep -q 'allocate_inbox' target/idl/royaltyrail.json
+          grep -q 'claim_participant' target/idl/royaltyrail.json
