@@ -1,4 +1,9 @@
 use anchor_lang::prelude::*;
+use royaltyrail_core::{
+    allocate, allocation_commitment_v1, AllocationCommitmentInputV1,
+    AllocationCommitmentParticipantV1, AllocationMode, CumulativeState,
+    Participant as CoreParticipant,
+};
 
 use crate::{
     error::RoyaltyRailError,
@@ -11,6 +16,19 @@ pub struct InboxAccounting {
     pub total_claimed: u128,
     pub allocated_unclaimed: u128,
     pub unallocated: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreparedAllocation {
+    pub prior_gross: u128,
+    pub prior_sequence: u64,
+    pub prior_allocated: Vec<u128>,
+    pub gross_amount: u64,
+    pub allocations: Vec<u64>,
+    pub next_allocated: Vec<u128>,
+    pub next_gross: u128,
+    pub next_sequence: u64,
+    pub commitment: [u8; 32],
 }
 
 pub fn require_settleable_agreement(
@@ -37,6 +55,14 @@ pub fn require_settleable_agreement(
         agreement.token_program,
         config.token_program,
         RoyaltyRailError::SettlementConfigMismatch
+    );
+    Ok(())
+}
+
+pub fn require_allocations_enabled(config: &ProtocolConfigState) -> Result<()> {
+    require!(
+        !config.allocations_paused,
+        RoyaltyRailError::AllocationsPaused
     );
     Ok(())
 }
@@ -126,6 +152,123 @@ pub fn inbox_accounting(
     })
 }
 
+pub fn next_direct_funding_nonce(
+    agreement: &AgreementVersionState,
+    expected_nonce: u64,
+) -> Result<u64> {
+    require!(
+        agreement.direct_funding_nonce == expected_nonce,
+        RoyaltyRailError::DirectFundingNonceMismatch
+    );
+    agreement
+        .direct_funding_nonce
+        .checked_add(1)
+        .ok_or(RoyaltyRailError::ArithmeticOverflow.into())
+}
+
+pub fn prepare_revenue_allocation(
+    config: &ProtocolConfigState,
+    agreement_key: &Pubkey,
+    agreement: &AgreementVersionState,
+    amount: u64,
+    mode: AllocationMode,
+    payment_reference: [u8; 32],
+) -> Result<PreparedAllocation> {
+    require_settleable_agreement(config, agreement)?;
+    require_allocations_enabled(config)?;
+    require!(amount > 0, RoyaltyRailError::AllocationAmountZero);
+    validate_allocation_state(agreement)?;
+
+    let core_participants: Vec<CoreParticipant> = agreement
+        .participants
+        .iter()
+        .map(|participant| CoreParticipant {
+            authority: participant.participant_authority.to_bytes(),
+            share_units: participant.share_units,
+        })
+        .collect();
+    let prior_allocated: Vec<u128> = agreement
+        .participants
+        .iter()
+        .map(|participant| participant.cumulative_allocated)
+        .collect();
+    let core_state = CumulativeState {
+        gross: agreement.cumulative_gross,
+        allocated: prior_allocated.clone(),
+    };
+    let allocation = allocate(&core_participants, &core_state, amount)
+        .map_err(|_| error!(RoyaltyRailError::AllocationEngineFailure))?;
+    let next_sequence = agreement
+        .allocation_sequence
+        .checked_add(1)
+        .ok_or(RoyaltyRailError::ArithmeticOverflow)?;
+
+    let commitment_allocations: Vec<AllocationCommitmentParticipantV1> = agreement
+        .participants
+        .iter()
+        .zip(allocation.allocations.iter().copied())
+        .map(
+            |(participant, allocation_amount)| AllocationCommitmentParticipantV1 {
+                participant_authority: participant.participant_authority.to_bytes(),
+                allocation_amount,
+            },
+        )
+        .collect();
+    let commitment = allocation_commitment_v1(&AllocationCommitmentInputV1 {
+        deployment_id: config.deployment_id,
+        agreement: agreement_key.to_bytes(),
+        allocation_sequence: next_sequence,
+        mode,
+        gross_amount: amount,
+        payment_reference,
+        allocations: &commitment_allocations,
+    })
+    .map_err(|_| error!(RoyaltyRailError::AllocationEngineFailure))?;
+
+    Ok(PreparedAllocation {
+        prior_gross: agreement.cumulative_gross,
+        prior_sequence: agreement.allocation_sequence,
+        prior_allocated,
+        gross_amount: amount,
+        allocations: allocation.allocations,
+        next_allocated: allocation.next_state.allocated,
+        next_gross: allocation.next_state.gross,
+        next_sequence,
+        commitment,
+    })
+}
+
+pub fn apply_prepared_allocation(
+    agreement: &mut AgreementVersionState,
+    prepared: &PreparedAllocation,
+) -> Result<()> {
+    require!(
+        agreement.cumulative_gross == prepared.prior_gross
+            && agreement.allocation_sequence == prepared.prior_sequence
+            && agreement.participants.len() == prepared.prior_allocated.len()
+            && agreement.participants.len() == prepared.next_allocated.len(),
+        RoyaltyRailError::StalePreparedAllocation
+    );
+
+    for ((participant, prior_allocated), next_allocated) in agreement
+        .participants
+        .iter_mut()
+        .zip(prepared.prior_allocated.iter().copied())
+        .zip(prepared.next_allocated.iter().copied())
+    {
+        require!(
+            participant.cumulative_allocated == prior_allocated,
+            RoyaltyRailError::StalePreparedAllocation
+        );
+        participant.cumulative_allocated = next_allocated;
+    }
+
+    agreement.cumulative_gross = prepared.next_gross;
+    agreement.allocation_sequence = prepared.next_sequence;
+    validate_allocation_state(agreement)?;
+    Ok(())
+}
+
 pub fn participant_claimable(
     agreement: &AgreementVersionState,
     participant_index: u8,
@@ -211,6 +354,16 @@ mod tests {
         }
     }
 
+    fn allocation_ready_agreement(status: AgreementStatus) -> AgreementVersionState {
+        let mut agreement = agreement(status);
+        for participant in &mut agreement.participants {
+            participant.cumulative_allocated = 0;
+            participant.cumulative_claimed = 0;
+        }
+        agreement.cumulative_gross = 0;
+        agreement
+    }
+
     #[test]
     fn only_active_and_superseded_agreements_are_settleable() {
         let cfg = config();
@@ -234,6 +387,22 @@ mod tests {
         let mut wrong_program = agreement(AgreementStatus::Active);
         wrong_program.token_program = key(91);
         assert!(require_settleable_agreement(&cfg, &wrong_program).is_err());
+    }
+
+    #[test]
+    fn allocation_pause_is_independent_from_settlement_status() {
+        let mut cfg = config();
+        let agreement = allocation_ready_agreement(AgreementStatus::Active);
+        cfg.allocations_paused = true;
+        assert!(prepare_revenue_allocation(
+            &cfg,
+            &key(70),
+            &agreement,
+            1,
+            AllocationMode::Inbox,
+            [0; 32],
+        )
+        .is_err());
     }
 
     #[test]
@@ -286,6 +455,84 @@ mod tests {
         let mut gross_mismatch = agreement(AgreementStatus::Active);
         gross_mismatch.cumulative_gross = 101;
         assert!(validate_allocation_state(&gross_mismatch).is_err());
+    }
+
+    #[test]
+    fn direct_nonce_is_protocol_replay_state_not_allocation_state() {
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        assert_eq!(next_direct_funding_nonce(&a, 0).expect("next nonce"), 1);
+        assert!(next_direct_funding_nonce(&a, 1).is_err());
+
+        a.direct_funding_nonce = u64::MAX;
+        assert!(next_direct_funding_nonce(&a, u64::MAX).is_err());
+    }
+
+    #[test]
+    fn prepared_allocation_is_pure_until_applied() {
+        let cfg = config();
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        let agreement_key = key(70);
+        let direct_nonce_before = a.direct_funding_nonce;
+
+        let prepared = prepare_revenue_allocation(
+            &cfg,
+            &agreement_key,
+            &a,
+            3,
+            AllocationMode::DirectFunding,
+            [9; 32],
+        )
+        .expect("prepared allocation");
+
+        assert_eq!(a.cumulative_gross, 0);
+        assert_eq!(a.allocation_sequence, 0);
+        assert_eq!(a.participants[0].cumulative_allocated, 0);
+        assert_eq!(a.participants[1].cumulative_allocated, 0);
+        assert_eq!(prepared.allocations, vec![2, 1]);
+        assert_eq!(prepared.next_gross, 3);
+        assert_eq!(prepared.next_sequence, 1);
+        assert_ne!(prepared.commitment, [0; 32]);
+
+        apply_prepared_allocation(&mut a, &prepared).expect("apply allocation");
+        assert_eq!(a.cumulative_gross, 3);
+        assert_eq!(a.allocation_sequence, 1);
+        assert_eq!(a.participants[0].cumulative_allocated, 2);
+        assert_eq!(a.participants[1].cumulative_allocated, 1);
+        assert_eq!(a.direct_funding_nonce, direct_nonce_before);
+    }
+
+    #[test]
+    fn stale_prepared_allocation_is_rejected() {
+        let cfg = config();
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        let prepared = prepare_revenue_allocation(
+            &cfg,
+            &key(70),
+            &a,
+            2,
+            AllocationMode::Inbox,
+            [0; 32],
+        )
+        .expect("prepared allocation");
+
+        a.allocation_sequence = 1;
+        assert!(apply_prepared_allocation(&mut a, &prepared).is_err());
+    }
+
+    #[test]
+    fn allocation_sequence_overflow_is_rejected_before_commitment() {
+        let cfg = config();
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        a.allocation_sequence = u64::MAX;
+        assert!(prepare_revenue_allocation(
+            &cfg,
+            &key(70),
+            &a,
+            1,
+            AllocationMode::Inbox,
+            [0; 32],
+        )
+        .is_err());
     }
 
     #[test]
