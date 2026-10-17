@@ -1,6 +1,6 @@
 [toolchain]
 anchor_version = "1.2.1"
-solana_version = "=4.1.2"
+solana_version = "4.1.2"
 package_manager = "npm"
 
 [features]
@@ -13,3 +13,9 @@ royaltyrail = "ErqjTNhQWyLCjJZpFg9jyGAgWJS7KYLN5kFUiNf3KYdH"
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
+
+[test]
+startup_wait = 90000
+
+[scripts]
+test = "node tests/e2e/positive-lifecycle.mjs"

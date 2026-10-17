@@ -16,7 +16,10 @@ cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+# Anchor SPL 1.2.1's IDL builder references token_interface types behind its
+# token_2022 feature. Enable that feature only for IDL generation; the runtime
+# program continues to use anchor_spl::token and the original SPL Token Program.
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "anchor-spl/token_2022"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

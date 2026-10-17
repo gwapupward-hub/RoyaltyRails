@@ -58,3 +58,102 @@ jobs:
 
       - name: Rust tests and parity vectors
         run: cargo test --workspace --all-targets --locked
+
+  anchor-build:
+    name: Anchor SBF + IDL
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container:
+      image: quay.io/ottersec/anchor:v1.2.1
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Verify pinned Anchor and Solana CLIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          anchor --version | tee /tmp/anchor-version
+          solana --version | tee /tmp/solana-version
+          rustc --version
+          grep -F "anchor-cli 1.2.1" /tmp/anchor-version
+          grep -F "solana-cli 4.1.2" /tmp/solana-version
+
+      - name: Build SBF program and IDL from clean checkout
+        shell: bash
+        run: anchor build --ignore-keys
+
+      - name: Assert required build artifacts and settlement IDL surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s target/deploy/royaltyrail.so
+          test -s target/idl/royaltyrail.json
+          grep -q 'initialize_royalty_inbox' target/idl/royaltyrail.json
+          grep -q 'fund_and_allocate' target/idl/royaltyrail.json
+          grep -q 'allocate_inbox' target/idl/royaltyrail.json
+          grep -q 'claim_participant' target/idl/royaltyrail.json
+
+  localnet-positive:
+    name: Local validator positive lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: quay.io/ottersec/anchor:v1.2.1
+      # Agave 4.1.2 asserts io_uring support at startup; Docker's default
+      # seccomp profile blocks the io_uring syscalls inside job containers.
+      options: --security-opt seccomp=unconfined
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Install reference and pinned E2E client dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false \
+            @anchor-lang/core@1.2.1 \
+            @solana/web3.js@1.99.0 \
+            @solana/spl-token@0.4.15
+          test "$(node -p "require('./node_modules/@anchor-lang/core/package.json').version")" = "1.2.1"
+          test "$(node -p "require('./node_modules/@solana/web3.js/package.json').version")" = "1.99.0"
+          test "$(node -p "require('./node_modules/@solana/spl-token/package.json').version")" = "0.4.15"
+
+      - name: Create disposable localnet wallet and program identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.config/solana" target/deploy
+          solana-keygen new --no-bip39-passphrase --silent --force \
+            -o "$HOME/.config/solana/id.json"
+          solana-keygen new --no-bip39-passphrase --silent --force \
+            -o target/deploy/royaltyrail-keypair.json
+          anchor keys sync
+          test -s target/deploy/royaltyrail-keypair.json
+
+      - name: Build program with disposable synced localnet identity
+        shell: bash
+        run: anchor build
+
+      - name: Run positive lifecycle against solana-test-validator
+        shell: bash
+        run: |
+          set +e
+          anchor test --validator legacy --skip-build
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "--- Anchor validator wrapper log ---"
+            cat .anchor/test-ledger/test-ledger-log.txt 2>/dev/null || true
+            echo "--- solana-test-validator validator.log ---"
+            cat .anchor/test-ledger/validator.log 2>/dev/null || true
+            echo "--- RoyaltyRail program log ---"
+            cat .anchor/program-logs/*.log 2>/dev/null || true
+          fi
+          exit "$status"
