@@ -14,5 +14,8 @@ royaltyrail = "ErqjTNhQWyLCjJZpFg9jyGAgWJS7KYLN5kFUiNf3KYdH"
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
+[test]
+startup_wait = 90000
+
 [scripts]
 test = "node tests/e2e/positive-lifecycle.mjs"
