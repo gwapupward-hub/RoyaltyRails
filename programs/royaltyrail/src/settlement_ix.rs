@@ -84,10 +84,7 @@ pub fn process_fund_and_allocate(
         ctx.accounts.royalty_inbox.key(),
         &ctx.accounts.royalty_inbox,
     )?;
-    inbox_accounting(
-        &ctx.accounts.agreement,
-        ctx.accounts.royalty_inbox.amount,
-    )?;
+    inbox_accounting(&ctx.accounts.agreement, ctx.accounts.royalty_inbox.amount)?;
 
     require_keys_eq!(
         ctx.accounts.payer_source.mint,
@@ -152,10 +149,7 @@ pub fn process_allocate_inbox(ctx: Context<AllocateInbox>) -> Result<()> {
         &ctx.accounts.royalty_inbox,
     )?;
 
-    let accounting = inbox_accounting(
-        &ctx.accounts.agreement,
-        ctx.accounts.royalty_inbox.amount,
-    )?;
+    let accounting = inbox_accounting(&ctx.accounts.agreement, ctx.accounts.royalty_inbox.amount)?;
     require!(
         accounting.unallocated > 0,
         RoyaltyRailError::NoUnallocatedInboxFunds
