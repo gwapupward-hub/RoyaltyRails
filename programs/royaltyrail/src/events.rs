@@ -153,3 +153,13 @@ pub struct RoyaltyInboxInitialized {
     pub token_program: Pubkey,
     pub initialized_by: Pubkey,
 }
+
+#[event]
+pub struct RevenueAllocated {
+    pub agreement: Pubkey,
+    pub allocation_sequence: u64,
+    pub mode: u8,
+    pub gross_amount: u64,
+    pub payment_reference: [u8; 32],
+    pub allocation_commitment: [u8; 32],
+}
