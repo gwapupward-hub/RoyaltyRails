@@ -1,16 +1,20 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::{self, AssociatedToken},
-    token::{Mint, Token, TokenAccount},
+    token::{self, Mint, Token, TokenAccount},
 };
+use royaltyrail_core::AllocationMode;
 
 use crate::{
     error::RoyaltyRailError,
-    events::RoyaltyInboxInitialized,
+    events::{RevenueAllocated, RoyaltyInboxInitialized},
     pda::{AGREEMENT_SEED, CONFIG_SEED, VAULT_SEED},
-    settlement::{require_canonical_royalty_inbox, require_settleable_agreement},
+    settlement::{
+        apply_prepared_allocation, inbox_accounting, next_direct_funding_nonce,
+        prepare_revenue_allocation, require_canonical_royalty_inbox, require_settleable_agreement,
+    },
     state::{AgreementVersionState, ProtocolConfigState},
-    ID,
+    ID, USDC_DECIMALS,
 };
 
 pub fn process_initialize_royalty_inbox(ctx: Context<InitializeRoyaltyInbox>) -> Result<()> {
@@ -59,6 +63,131 @@ pub fn process_initialize_royalty_inbox(ctx: Context<InitializeRoyaltyInbox>) ->
     Ok(())
 }
 
+pub fn process_fund_and_allocate(
+    ctx: Context<FundAndAllocate>,
+    amount: u64,
+    expected_nonce: u64,
+    payment_reference: [u8; 32],
+) -> Result<()> {
+    require_settleable_agreement(&ctx.accounts.config, &ctx.accounts.agreement)?;
+    require!(
+        ctx.accounts.settlement_mint.decimals == USDC_DECIMALS,
+        RoyaltyRailError::InvalidSettlementMintDecimals
+    );
+
+    let agreement_key = ctx.accounts.agreement.key();
+    let vault_authority = ctx.accounts.vault_authority.key();
+    validate_existing_royalty_inbox(
+        agreement_key,
+        &ctx.accounts.agreement,
+        vault_authority,
+        ctx.accounts.royalty_inbox.key(),
+        &ctx.accounts.royalty_inbox,
+    )?;
+    inbox_accounting(
+        &ctx.accounts.agreement,
+        ctx.accounts.royalty_inbox.amount,
+    )?;
+
+    require_keys_eq!(
+        ctx.accounts.payer_source.mint,
+        ctx.accounts.agreement.settlement_mint,
+        RoyaltyRailError::InvalidPayerSourceMint
+    );
+    require_keys_eq!(
+        ctx.accounts.payer_source.owner,
+        ctx.accounts.payer.key(),
+        RoyaltyRailError::InvalidPayerSourceAuthority
+    );
+
+    let next_nonce = next_direct_funding_nonce(&ctx.accounts.agreement, expected_nonce)?;
+    let prepared = prepare_revenue_allocation(
+        &ctx.accounts.config,
+        &agreement_key,
+        &ctx.accounts.agreement,
+        amount,
+        AllocationMode::DirectFunding,
+        payment_reference,
+    )?;
+
+    token::transfer_checked(
+        CpiContext::new(
+            ctx.accounts.token_program.key(),
+            token::TransferChecked {
+                from: ctx.accounts.payer_source.to_account_info(),
+                mint: ctx.accounts.settlement_mint.to_account_info(),
+                to: ctx.accounts.royalty_inbox.to_account_info(),
+                authority: ctx.accounts.payer.to_account_info(),
+            },
+        ),
+        amount,
+        ctx.accounts.settlement_mint.decimals,
+    )?;
+
+    apply_prepared_allocation(&mut ctx.accounts.agreement, &prepared)?;
+    ctx.accounts.agreement.direct_funding_nonce = next_nonce;
+
+    emit!(RevenueAllocated {
+        agreement: agreement_key,
+        allocation_sequence: prepared.next_sequence,
+        mode: AllocationMode::DirectFunding as u8,
+        gross_amount: prepared.gross_amount,
+        payment_reference,
+        allocation_commitment: prepared.commitment,
+    });
+
+    Ok(())
+}
+
+pub fn process_allocate_inbox(ctx: Context<AllocateInbox>) -> Result<()> {
+    require_settleable_agreement(&ctx.accounts.config, &ctx.accounts.agreement)?;
+
+    let agreement_key = ctx.accounts.agreement.key();
+    let vault_authority = ctx.accounts.vault_authority.key();
+    validate_existing_royalty_inbox(
+        agreement_key,
+        &ctx.accounts.agreement,
+        vault_authority,
+        ctx.accounts.royalty_inbox.key(),
+        &ctx.accounts.royalty_inbox,
+    )?;
+
+    let accounting = inbox_accounting(
+        &ctx.accounts.agreement,
+        ctx.accounts.royalty_inbox.amount,
+    )?;
+    require!(
+        accounting.unallocated > 0,
+        RoyaltyRailError::NoUnallocatedInboxFunds
+    );
+
+    let direct_nonce_before = ctx.accounts.agreement.direct_funding_nonce;
+    let prepared = prepare_revenue_allocation(
+        &ctx.accounts.config,
+        &agreement_key,
+        &ctx.accounts.agreement,
+        accounting.unallocated,
+        AllocationMode::Inbox,
+        [0; 32],
+    )?;
+    apply_prepared_allocation(&mut ctx.accounts.agreement, &prepared)?;
+    require!(
+        ctx.accounts.agreement.direct_funding_nonce == direct_nonce_before,
+        RoyaltyRailError::StalePreparedAllocation
+    );
+
+    emit!(RevenueAllocated {
+        agreement: agreement_key,
+        allocation_sequence: prepared.next_sequence,
+        mode: AllocationMode::Inbox as u8,
+        gross_amount: prepared.gross_amount,
+        payment_reference: [0; 32],
+        allocation_commitment: prepared.commitment,
+    });
+
+    Ok(())
+}
+
 fn validate_initialized_royalty_inbox(
     royalty_inbox: &AccountInfo<'_>,
     expected_mint: Pubkey,
@@ -94,6 +223,33 @@ fn validate_initialized_royalty_inbox(
     Ok(())
 }
 
+fn validate_existing_royalty_inbox(
+    agreement_key: Pubkey,
+    agreement: &AgreementVersionState,
+    vault_authority: Pubkey,
+    royalty_inbox_key: Pubkey,
+    royalty_inbox: &TokenAccount,
+) -> Result<()> {
+    require_canonical_royalty_inbox(
+        &ID,
+        &agreement_key,
+        agreement,
+        &vault_authority,
+        &royalty_inbox_key,
+    )?;
+    require_keys_eq!(
+        royalty_inbox.mint,
+        agreement.settlement_mint,
+        RoyaltyRailError::InvalidRoyaltyInboxMint
+    );
+    require_keys_eq!(
+        royalty_inbox.owner,
+        vault_authority,
+        RoyaltyRailError::InvalidRoyaltyInboxAuthority
+    );
+    Ok(())
+}
+
 #[derive(Accounts)]
 pub struct InitializeRoyaltyInbox<'info> {
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
@@ -117,4 +273,46 @@ pub struct InitializeRoyaltyInbox<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct FundAndAllocate<'info> {
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, ProtocolConfigState>,
+    #[account(
+        mut,
+        seeds = [AGREEMENT_SEED, agreement.revenue_pool.as_ref(), &agreement.version.to_le_bytes()],
+        bump = agreement.bump
+    )]
+    pub agreement: Account<'info, AgreementVersionState>,
+    #[account(address = config.settlement_mint @ RoyaltyRailError::SettlementConfigMismatch)]
+    pub settlement_mint: Account<'info, Mint>,
+    /// CHECK: canonical agreement vault PDA; it intentionally has no state account.
+    #[account(seeds = [VAULT_SEED, agreement.key().as_ref()], bump)]
+    pub vault_authority: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub royalty_inbox: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub payer_source: Account<'info, TokenAccount>,
+    pub payer: Signer<'info>,
+    #[account(address = config.token_program @ RoyaltyRailError::SettlementConfigMismatch)]
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct AllocateInbox<'info> {
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, ProtocolConfigState>,
+    #[account(
+        mut,
+        seeds = [AGREEMENT_SEED, agreement.revenue_pool.as_ref(), &agreement.version.to_le_bytes()],
+        bump = agreement.bump
+    )]
+    pub agreement: Account<'info, AgreementVersionState>,
+    /// CHECK: canonical agreement vault PDA; it intentionally has no state account.
+    #[account(seeds = [VAULT_SEED, agreement.key().as_ref()], bump)]
+    pub vault_authority: UncheckedAccount<'info>,
+    pub royalty_inbox: Account<'info, TokenAccount>,
+    #[account(address = config.token_program @ RoyaltyRailError::SettlementConfigMismatch)]
+    pub token_program: Program<'info, Token>,
 }
