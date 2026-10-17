@@ -120,6 +120,18 @@ pub enum RoyaltyRailError {
     AllocationEngineFailure,
     #[msg("the prepared allocation no longer matches current agreement state")]
     StalePreparedAllocation,
+    #[msg("claim instructions are paused")]
+    ClaimsPaused,
+    #[msg("the participant has no positive claimable amount")]
+    NoClaimableAmount,
+    #[msg("the prepared claim no longer matches current participant state")]
+    StalePreparedClaim,
+    #[msg("the payout destination is not the canonical ATA for the current payout wallet")]
+    InvalidPayoutDestinationAddress,
+    #[msg("the payout destination mint does not match the configured settlement mint")]
+    InvalidPayoutDestinationMint,
+    #[msg("the payout destination token authority does not match the current payout wallet")]
+    InvalidPayoutDestinationAuthority,
     #[msg("the supplied vault authority is not the canonical agreement vault PDA")]
     InvalidVaultAuthority,
     #[msg("the supplied Royalty Inbox is not the canonical vault ATA")]
