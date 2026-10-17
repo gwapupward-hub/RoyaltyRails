@@ -163,3 +163,13 @@ pub struct RevenueAllocated {
     pub payment_reference: [u8; 32],
     pub allocation_commitment: [u8; 32],
 }
+
+#[event]
+pub struct PayoutClaimed {
+    pub agreement: Pubkey,
+    pub participant_index: u8,
+    pub participant_authority: Pubkey,
+    pub payout_wallet: Pubkey,
+    pub payout_revision: u32,
+    pub amount: u64,
+}
