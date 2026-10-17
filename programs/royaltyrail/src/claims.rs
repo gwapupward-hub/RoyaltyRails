@@ -163,8 +163,7 @@ mod tests {
         let sequence_before = agreement.allocation_sequence;
         let gross_before = agreement.cumulative_gross;
 
-        let prepared =
-            prepare_participant_claim(&cfg, &agreement, 0, 100).expect("prepared claim");
+        let prepared = prepare_participant_claim(&cfg, &agreement, 0, 100).expect("prepared claim");
         assert_eq!(prepared.amount, 50);
         assert_eq!(prepared.next_claimed, 60);
         assert_eq!(agreement.participants[0].cumulative_claimed, 10);
@@ -205,8 +204,7 @@ mod tests {
     fn payout_rotation_invalidates_a_stale_prepared_claim() {
         let cfg = config();
         let mut agreement = agreement();
-        let prepared =
-            prepare_participant_claim(&cfg, &agreement, 0, 100).expect("prepared claim");
+        let prepared = prepare_participant_claim(&cfg, &agreement, 0, 100).expect("prepared claim");
 
         agreement.participants[0].payout_wallet = key(99);
         agreement.participants[0].payout_revision = 2;
