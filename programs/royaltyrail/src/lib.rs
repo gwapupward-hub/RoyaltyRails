@@ -513,10 +513,7 @@ pub mod royaltyrail {
         settlement_ix::process_allocate_inbox(ctx)
     }
 
-    pub fn claim_participant(
-        ctx: Context<ClaimParticipant>,
-        participant_index: u8,
-    ) -> Result<()> {
+    pub fn claim_participant(ctx: Context<ClaimParticipant>, participant_index: u8) -> Result<()> {
         settlement_ix::process_claim_participant(ctx, participant_index)
     }
 }
