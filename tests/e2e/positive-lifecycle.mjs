@@ -122,6 +122,9 @@ function assertConservation(agreement) {
 }
 
 async function requireEvent(connection, program, signature, expectedName) {
+  // .rpc() returns at the provider's "processed" commitment; wait until the
+  // transaction is visible at "confirmed" before reading its logs.
+  await connection.confirmTransaction(signature, "confirmed");
   const tx = await connection.getTransaction(signature, {
     commitment: "confirmed",
     maxSupportedTransactionVersion: 0,
