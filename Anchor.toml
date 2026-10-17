@@ -19,3 +19,4 @@ startup_wait = 90000
 
 [scripts]
 test = "node tests/e2e/positive-lifecycle.mjs"
+test-adversarial = "node tests/e2e/adversarial-matrix.mjs"
