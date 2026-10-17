@@ -100,4 +100,56 @@ pub enum RoyaltyRailError {
     PayoutRevisionOverflow,
     #[msg("checked arithmetic overflow")]
     ArithmeticOverflow,
+    #[msg("settlement is available only for Active or Superseded agreements")]
+    SettlementUnavailable,
+    #[msg("agreement settlement configuration does not match ProtocolConfig")]
+    SettlementConfigMismatch,
+    #[msg("allocation instructions are paused")]
+    AllocationsPaused,
+    #[msg("allocation amount must be greater than zero")]
+    AllocationAmountZero,
+    #[msg("the expected direct-funding nonce does not match agreement state")]
+    DirectFundingNonceMismatch,
+    #[msg("the payer source token account mint does not match the settlement mint")]
+    InvalidPayerSourceMint,
+    #[msg("the payer signer is not the source token-account authority")]
+    InvalidPayerSourceAuthority,
+    #[msg("the Royalty Inbox has no unallocated settlement funds")]
+    NoUnallocatedInboxFunds,
+    #[msg("the canonical allocation engine rejected the agreement state or allocation")]
+    AllocationEngineFailure,
+    #[msg("the prepared allocation no longer matches current agreement state")]
+    StalePreparedAllocation,
+    #[msg("claim instructions are paused")]
+    ClaimsPaused,
+    #[msg("the participant has no positive claimable amount")]
+    NoClaimableAmount,
+    #[msg("the prepared claim no longer matches current participant state")]
+    StalePreparedClaim,
+    #[msg("the payout destination is not the canonical ATA for the current payout wallet")]
+    InvalidPayoutDestinationAddress,
+    #[msg("the payout destination mint does not match the configured settlement mint")]
+    InvalidPayoutDestinationMint,
+    #[msg("the payout destination token authority does not match the current payout wallet")]
+    InvalidPayoutDestinationAuthority,
+    #[msg("the supplied vault authority is not the canonical agreement vault PDA")]
+    InvalidVaultAuthority,
+    #[msg("the supplied Royalty Inbox is not the canonical vault ATA")]
+    InvalidRoyaltyInboxAddress,
+    #[msg("the Royalty Inbox must be owned by the configured SPL Token Program")]
+    InvalidRoyaltyInboxOwner,
+    #[msg("the Royalty Inbox has an invalid or uninitialized SPL Token account layout")]
+    InvalidRoyaltyInboxData,
+    #[msg("the Royalty Inbox mint does not match the configured settlement mint")]
+    InvalidRoyaltyInboxMint,
+    #[msg("the Royalty Inbox token authority is not the canonical vault PDA")]
+    InvalidRoyaltyInboxAuthority,
+    #[msg("agreement allocation/claim counters violate settlement invariants")]
+    AllocationStateInvariantViolation,
+    #[msg("Royalty Inbox balance is below allocated-but-unclaimed liabilities")]
+    RoyaltyInboxInsolvent,
+    #[msg("participant index is outside the agreement participant set")]
+    InvalidParticipantIndex,
+    #[msg("current claim amount exceeds the SPL token u64 amount domain")]
+    ClaimAmountExceedsTokenWidth,
 }

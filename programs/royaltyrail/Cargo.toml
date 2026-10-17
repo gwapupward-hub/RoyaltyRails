@@ -26,4 +26,5 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [dependencies]
 anchor-lang.workspace = true
+anchor-spl.workspace = true
 royaltyrail-core.workspace = true

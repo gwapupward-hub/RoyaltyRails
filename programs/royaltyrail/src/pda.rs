@@ -6,6 +6,15 @@ pub const POOL_SEED: &[u8] = b"pool";
 pub const AGREEMENT_SEED: &[u8] = b"agreement";
 pub const VAULT_SEED: &[u8] = b"vault";
 
+const ASSOCIATED_TOKEN_PROGRAM_BYTES: [u8; 32] = [
+    0x8c, 0x97, 0x25, 0x8f, 0x4e, 0x24, 0x89, 0xf1, 0xbb, 0x3d, 0x10, 0x29, 0x14, 0x8e, 0x0d, 0x83,
+    0x0b, 0x5a, 0x13, 0x99, 0xda, 0xff, 0x10, 0x84, 0x04, 0x8e, 0x7b, 0xd8, 0xdb, 0xe9, 0xf8, 0x59,
+];
+
+pub fn associated_token_program_id() -> Pubkey {
+    Pubkey::new_from_array(ASSOCIATED_TOKEN_PROGRAM_BYTES)
+}
+
 pub fn config_pda(program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[CONFIG_SEED], program_id)
 }
@@ -32,6 +41,25 @@ pub fn agreement_pda(program_id: &Pubkey, revenue_pool: &Pubkey, version: u32) -
 
 pub fn vault_pda(program_id: &Pubkey, agreement: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[VAULT_SEED, agreement.as_ref()], program_id)
+}
+
+pub fn royalty_inbox_address(
+    program_id: &Pubkey,
+    agreement: &Pubkey,
+    settlement_mint: &Pubkey,
+    token_program: &Pubkey,
+) -> (Pubkey, u8, Pubkey) {
+    let (vault, vault_bump) = vault_pda(program_id, agreement);
+    let inbox = Pubkey::find_program_address(
+        &[
+            vault.as_ref(),
+            token_program.as_ref(),
+            settlement_mint.as_ref(),
+        ],
+        &associated_token_program_id(),
+    )
+    .0;
+    (vault, vault_bump, inbox)
 }
 
 #[cfg(test)]
@@ -105,5 +133,31 @@ mod tests {
                 0x69, 0x35, 0x9d, 0x15,
             ]
         );
+    }
+
+    #[test]
+    fn royalty_inbox_uses_canonical_legacy_ata_seed_order() {
+        let program_id = Pubkey::new_from_array(VECTOR_PROGRAM_ID);
+        let agreement = Pubkey::new_from_array([0x66; 32]);
+        let mint = Pubkey::new_from_array([0x44; 32]);
+        let token_program = Pubkey::new_from_array([0x55; 32]);
+
+        assert_eq!(
+            associated_token_program_id().to_string(),
+            "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        );
+
+        let (vault, vault_bump, inbox) =
+            royalty_inbox_address(&program_id, &agreement, &mint, &token_program);
+        let (expected_vault, expected_vault_bump) = vault_pda(&program_id, &agreement);
+        let expected_inbox = Pubkey::find_program_address(
+            &[vault.as_ref(), token_program.as_ref(), mint.as_ref()],
+            &associated_token_program_id(),
+        )
+        .0;
+
+        assert_eq!(vault, expected_vault);
+        assert_eq!(vault_bump, expected_vault_bump);
+        assert_eq!(inbox, expected_inbox);
     }
 }

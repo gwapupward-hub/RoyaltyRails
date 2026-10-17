@@ -1,10 +1,13 @@
 use anchor_lang::prelude::*;
 
 pub mod agreement_ix;
+pub mod claims;
 pub mod error;
 pub mod events;
 pub mod lifecycle;
 pub mod pda;
+pub mod settlement;
+pub mod settlement_ix;
 pub mod state;
 
 use agreement_ix::*;
@@ -12,6 +15,7 @@ use error::RoyaltyRailError;
 use events::*;
 use lifecycle::AgreementParticipantInput;
 use pda::{CONFIG_SEED, POOL_SEED, WORK_SEED};
+use settlement_ix::*;
 use state::{
     ProtocolConfigState, RevenuePoolKind, RevenuePoolState, SettlementBasis, WorkState,
     PROTOCOL_CONFIG_ACCOUNT_BYTES, REVENUE_POOL_ACCOUNT_BYTES, SCHEMA_VERSION_V1,
@@ -490,6 +494,27 @@ pub mod royaltyrail {
         new_wallet: Pubkey,
     ) -> Result<()> {
         agreement_ix::process_update_payout_wallet(ctx, new_wallet)
+    }
+
+    pub fn initialize_royalty_inbox(ctx: Context<InitializeRoyaltyInbox>) -> Result<()> {
+        settlement_ix::process_initialize_royalty_inbox(ctx)
+    }
+
+    pub fn fund_and_allocate(
+        ctx: Context<FundAndAllocate>,
+        amount: u64,
+        expected_nonce: u64,
+        payment_reference: [u8; 32],
+    ) -> Result<()> {
+        settlement_ix::process_fund_and_allocate(ctx, amount, expected_nonce, payment_reference)
+    }
+
+    pub fn allocate_inbox(ctx: Context<AllocateInbox>) -> Result<()> {
+        settlement_ix::process_allocate_inbox(ctx)
+    }
+
+    pub fn claim_participant(ctx: Context<ClaimParticipant>, participant_index: u8) -> Result<()> {
+        settlement_ix::process_claim_participant(ctx, participant_index)
     }
 }
 
