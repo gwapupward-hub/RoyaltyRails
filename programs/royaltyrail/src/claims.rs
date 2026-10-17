@@ -205,7 +205,12 @@ mod tests {
         let after_first = inbox_accounting(&agreement, inbox_balance).expect("solvent after first");
         assert_eq!(after_first.allocated_unclaimed, 35);
         assert_eq!(after_first.unallocated, 0);
-        assert_eq!(inbox_accounting(&agreement, inbox_balance + 7).unwrap().unallocated, 7);
+        assert_eq!(
+            inbox_accounting(&agreement, inbox_balance + 7)
+                .expect("raw deposit accounting")
+                .unallocated,
+            7
+        );
 
         let second = prepare_participant_claim(&cfg, &agreement, 1, inbox_balance)
             .expect("second participant claim");
