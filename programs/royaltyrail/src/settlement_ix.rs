@@ -6,9 +6,10 @@ use anchor_spl::{
 use royaltyrail_core::AllocationMode;
 
 use crate::{
+    claims::{apply_prepared_claim, prepare_participant_claim},
     error::RoyaltyRailError,
-    events::{RevenueAllocated, RoyaltyInboxInitialized},
-    pda::{AGREEMENT_SEED, CONFIG_SEED, VAULT_SEED},
+    events::{PayoutClaimed, RevenueAllocated, RoyaltyInboxInitialized},
+    pda::{associated_token_program_id, AGREEMENT_SEED, CONFIG_SEED, VAULT_SEED},
     settlement::{
         apply_prepared_allocation, inbox_accounting, next_direct_funding_nonce,
         prepare_revenue_allocation, require_canonical_royalty_inbox, require_settleable_agreement,
@@ -182,6 +183,73 @@ pub fn process_allocate_inbox(ctx: Context<AllocateInbox>) -> Result<()> {
     Ok(())
 }
 
+pub fn process_claim_participant(
+    ctx: Context<ClaimParticipant>,
+    participant_index: u8,
+) -> Result<()> {
+    require_settleable_agreement(&ctx.accounts.config, &ctx.accounts.agreement)?;
+    require!(
+        ctx.accounts.settlement_mint.decimals == USDC_DECIMALS,
+        RoyaltyRailError::InvalidSettlementMintDecimals
+    );
+
+    let agreement_key = ctx.accounts.agreement.key();
+    let vault_authority = ctx.accounts.vault_authority.key();
+    validate_existing_royalty_inbox(
+        agreement_key,
+        &ctx.accounts.agreement,
+        vault_authority,
+        ctx.accounts.royalty_inbox.key(),
+        &ctx.accounts.royalty_inbox,
+    )?;
+
+    let prepared = prepare_participant_claim(
+        &ctx.accounts.config,
+        &ctx.accounts.agreement,
+        participant_index,
+        ctx.accounts.royalty_inbox.amount,
+    )?;
+    validate_payout_destination(
+        prepared.payout_wallet,
+        ctx.accounts.agreement.settlement_mint,
+        ctx.accounts.agreement.token_program,
+        ctx.accounts.payout_destination.key(),
+        &ctx.accounts.payout_destination,
+    )?;
+
+    let vault_bump = [ctx.bumps.vault_authority];
+    let vault_signer_seeds: &[&[u8]] = &[VAULT_SEED, agreement_key.as_ref(), &vault_bump];
+    let signer_seeds: &[&[&[u8]]] = &[vault_signer_seeds];
+
+    token::transfer_checked(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.key(),
+            token::TransferChecked {
+                from: ctx.accounts.royalty_inbox.to_account_info(),
+                mint: ctx.accounts.settlement_mint.to_account_info(),
+                to: ctx.accounts.payout_destination.to_account_info(),
+                authority: ctx.accounts.vault_authority.to_account_info(),
+            },
+            signer_seeds,
+        ),
+        prepared.amount,
+        ctx.accounts.settlement_mint.decimals,
+    )?;
+
+    apply_prepared_claim(&mut ctx.accounts.agreement, &prepared)?;
+
+    emit!(PayoutClaimed {
+        agreement: agreement_key,
+        participant_index: prepared.participant_index,
+        participant_authority: prepared.participant_authority,
+        payout_wallet: prepared.payout_wallet,
+        payout_revision: prepared.payout_revision,
+        amount: prepared.amount,
+    });
+
+    Ok(())
+}
+
 fn validate_initialized_royalty_inbox(
     royalty_inbox: &AccountInfo<'_>,
     expected_mint: Pubkey,
@@ -240,6 +308,48 @@ fn validate_existing_royalty_inbox(
         royalty_inbox.owner,
         vault_authority,
         RoyaltyRailError::InvalidRoyaltyInboxAuthority
+    );
+    Ok(())
+}
+
+fn payout_destination_address(
+    payout_wallet: &Pubkey,
+    settlement_mint: &Pubkey,
+    token_program: &Pubkey,
+) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            payout_wallet.as_ref(),
+            token_program.as_ref(),
+            settlement_mint.as_ref(),
+        ],
+        &associated_token_program_id(),
+    )
+    .0
+}
+
+fn validate_payout_destination(
+    payout_wallet: Pubkey,
+    settlement_mint: Pubkey,
+    token_program: Pubkey,
+    payout_destination_key: Pubkey,
+    payout_destination: &TokenAccount,
+) -> Result<()> {
+    let expected = payout_destination_address(&payout_wallet, &settlement_mint, &token_program);
+    require_keys_eq!(
+        payout_destination_key,
+        expected,
+        RoyaltyRailError::InvalidPayoutDestinationAddress
+    );
+    require_keys_eq!(
+        payout_destination.mint,
+        settlement_mint,
+        RoyaltyRailError::InvalidPayoutDestinationMint
+    );
+    require_keys_eq!(
+        payout_destination.owner,
+        payout_wallet,
+        RoyaltyRailError::InvalidPayoutDestinationAuthority
     );
     Ok(())
 }
@@ -307,6 +417,29 @@ pub struct AllocateInbox<'info> {
     #[account(seeds = [VAULT_SEED, agreement.key().as_ref()], bump)]
     pub vault_authority: UncheckedAccount<'info>,
     pub royalty_inbox: Account<'info, TokenAccount>,
+    #[account(address = config.token_program @ RoyaltyRailError::SettlementConfigMismatch)]
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimParticipant<'info> {
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, ProtocolConfigState>,
+    #[account(
+        mut,
+        seeds = [AGREEMENT_SEED, agreement.revenue_pool.as_ref(), &agreement.version.to_le_bytes()],
+        bump = agreement.bump
+    )]
+    pub agreement: Account<'info, AgreementVersionState>,
+    #[account(address = config.settlement_mint @ RoyaltyRailError::SettlementConfigMismatch)]
+    pub settlement_mint: Account<'info, Mint>,
+    /// CHECK: canonical agreement vault PDA; it intentionally has no state account.
+    #[account(seeds = [VAULT_SEED, agreement.key().as_ref()], bump)]
+    pub vault_authority: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub royalty_inbox: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub payout_destination: Account<'info, TokenAccount>,
     #[account(address = config.token_program @ RoyaltyRailError::SettlementConfigMismatch)]
     pub token_program: Program<'info, Token>,
 }
