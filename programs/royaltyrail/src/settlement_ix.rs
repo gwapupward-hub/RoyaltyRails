@@ -29,7 +29,7 @@ pub fn process_initialize_royalty_inbox(ctx: Context<InitializeRoyaltyInbox>) ->
     )?;
 
     associated_token::create_idempotent(CpiContext::new(
-        ctx.accounts.associated_token_program.to_account_info(),
+        ctx.accounts.associated_token_program.key(),
         associated_token::Create {
             payer: ctx.accounts.payer.to_account_info(),
             associated_token: ctx.accounts.royalty_inbox.to_account_info(),
