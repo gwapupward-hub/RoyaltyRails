@@ -468,6 +468,16 @@ mod tests {
     }
 
     #[test]
+    fn consumed_direct_nonce_cannot_be_reused() {
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        let next = next_direct_funding_nonce(&a, 0).expect("consume nonce zero");
+        a.direct_funding_nonce = next;
+
+        assert!(next_direct_funding_nonce(&a, 0).is_err());
+        assert_eq!(next_direct_funding_nonce(&a, 1).expect("next nonce"), 2);
+    }
+
+    #[test]
     fn prepared_allocation_is_pure_until_applied() {
         let cfg = config();
         let mut a = allocation_ready_agreement(AgreementStatus::Active);
@@ -502,6 +512,18 @@ mod tests {
     }
 
     #[test]
+    fn same_prepared_allocation_cannot_be_applied_twice() {
+        let cfg = config();
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        let prepared =
+            prepare_revenue_allocation(&cfg, &key(70), &a, 5, AllocationMode::Inbox, [0; 32])
+                .expect("prepared allocation");
+
+        apply_prepared_allocation(&mut a, &prepared).expect("first apply");
+        assert!(apply_prepared_allocation(&mut a, &prepared).is_err());
+    }
+
+    #[test]
     fn stale_prepared_allocation_is_rejected() {
         let cfg = config();
         let mut a = allocation_ready_agreement(AgreementStatus::Active);
@@ -511,6 +533,39 @@ mod tests {
 
         a.allocation_sequence = 1;
         assert!(apply_prepared_allocation(&mut a, &prepared).is_err());
+    }
+
+    #[test]
+    fn inbox_allocation_consumes_unallocated_balance_exactly_once() {
+        let cfg = config();
+        let mut a = allocation_ready_agreement(AgreementStatus::Active);
+        let inbox_balance = 9u64;
+        let before = inbox_accounting(&a, inbox_balance).expect("raw deposit available");
+        assert_eq!(before.unallocated, inbox_balance);
+
+        let prepared = prepare_revenue_allocation(
+            &cfg,
+            &key(70),
+            &a,
+            before.unallocated,
+            AllocationMode::Inbox,
+            [0; 32],
+        )
+        .expect("allocate raw deposit");
+        apply_prepared_allocation(&mut a, &prepared).expect("apply inbox allocation");
+
+        let after = inbox_accounting(&a, inbox_balance).expect("fully allocated inbox");
+        assert_eq!(after.allocated_unclaimed, u128::from(inbox_balance));
+        assert_eq!(after.unallocated, 0);
+        assert!(prepare_revenue_allocation(
+            &cfg,
+            &key(70),
+            &a,
+            after.unallocated,
+            AllocationMode::Inbox,
+            [0; 32],
+        )
+        .is_err());
     }
 
     #[test]
