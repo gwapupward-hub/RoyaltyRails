@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 pub mod agreement_ix;
+pub mod claims;
 pub mod error;
 pub mod events;
 pub mod lifecycle;
@@ -510,6 +511,13 @@ pub mod royaltyrail {
 
     pub fn allocate_inbox(ctx: Context<AllocateInbox>) -> Result<()> {
         settlement_ix::process_allocate_inbox(ctx)
+    }
+
+    pub fn claim_participant(
+        ctx: Context<ClaimParticipant>,
+        participant_index: u8,
+    ) -> Result<()> {
+        settlement_ix::process_claim_participant(ctx, participant_index)
     }
 }
 
