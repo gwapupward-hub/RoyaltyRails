@@ -39,6 +39,10 @@ pub fn prepare_participant_claim(
         .participants
         .get(usize::from(participant_index))
         .ok_or(RoyaltyRailError::InvalidParticipantIndex)?;
+    require!(
+        participant.payout_wallet != Pubkey::default() && participant.payout_revision > 0,
+        RoyaltyRailError::PayoutRouteUninitialized
+    );
     let next_claimed = participant
         .cumulative_claimed
         .checked_add(u128::from(amount))
@@ -185,6 +189,15 @@ mod tests {
         let cfg = config();
         let mut agreement = agreement();
         agreement.participants[0].cumulative_claimed = 60;
+        assert!(prepare_participant_claim(&cfg, &agreement, 0, 100).is_err());
+    }
+
+    #[test]
+    fn uninitialized_payout_route_is_rejected() {
+        let cfg = config();
+        let mut agreement = agreement();
+        agreement.participants[0].payout_wallet = Pubkey::default();
+        agreement.participants[0].payout_revision = 0;
         assert!(prepare_participant_claim(&cfg, &agreement, 0, 100).is_err());
     }
 
