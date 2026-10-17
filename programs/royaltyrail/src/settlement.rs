@@ -248,30 +248,18 @@ mod tests {
             &a.token_program,
         );
 
-        assert!(require_canonical_royalty_inbox(
-            &program_id,
-            &agreement_key,
-            &a,
-            &vault,
-            &inbox,
-        )
-        .is_ok());
-        assert!(require_canonical_royalty_inbox(
-            &program_id,
-            &agreement_key,
-            &a,
-            &key(72),
-            &inbox,
-        )
-        .is_err());
-        assert!(require_canonical_royalty_inbox(
-            &program_id,
-            &agreement_key,
-            &a,
-            &vault,
-            &key(73),
-        )
-        .is_err());
+        assert!(
+            require_canonical_royalty_inbox(&program_id, &agreement_key, &a, &vault, &inbox,)
+                .is_ok()
+        );
+        assert!(
+            require_canonical_royalty_inbox(&program_id, &agreement_key, &a, &key(72), &inbox,)
+                .is_err()
+        );
+        assert!(
+            require_canonical_royalty_inbox(&program_id, &agreement_key, &a, &vault, &key(73),)
+                .is_err()
+        );
     }
 
     #[test]
