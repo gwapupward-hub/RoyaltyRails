@@ -87,16 +87,12 @@ pub fn process_fund_and_allocate(
     )?;
     inbox_accounting(&ctx.accounts.agreement, ctx.accounts.royalty_inbox.amount)?;
 
-    require_keys_eq!(
+    validate_payer_source_fields(
         ctx.accounts.payer_source.mint,
-        ctx.accounts.agreement.settlement_mint,
-        RoyaltyRailError::InvalidPayerSourceMint
-    );
-    require_keys_eq!(
         ctx.accounts.payer_source.owner,
+        ctx.accounts.agreement.settlement_mint,
         ctx.accounts.payer.key(),
-        RoyaltyRailError::InvalidPayerSourceAuthority
-    );
+    )?;
 
     let next_nonce = next_direct_funding_nonce(&ctx.accounts.agreement, expected_nonce)?;
     let prepared = prepare_revenue_allocation(
@@ -271,18 +267,54 @@ fn validate_initialized_royalty_inbox(
     let token_account = TokenAccount::try_deserialize(&mut data_slice)
         .map_err(|_| error!(RoyaltyRailError::InvalidRoyaltyInboxData))?;
 
-    require_keys_eq!(
+    validate_royalty_inbox_token_fields(
         token_account.mint,
+        token_account.owner,
+        expected_mint,
+        expected_authority,
+    )
+}
+
+fn validate_royalty_inbox_token_fields(
+    inbox_mint: Pubkey,
+    inbox_authority: Pubkey,
+    expected_mint: Pubkey,
+    expected_authority: Pubkey,
+) -> Result<()> {
+    require_keys_eq!(
+        inbox_mint,
         expected_mint,
         RoyaltyRailError::InvalidRoyaltyInboxMint
     );
     require_keys_eq!(
-        token_account.owner,
+        inbox_authority,
         expected_authority,
         RoyaltyRailError::InvalidRoyaltyInboxAuthority
     );
-
     Ok(())
+}
+
+fn validate_existing_royalty_inbox_fields(
+    agreement_key: Pubkey,
+    agreement: &AgreementVersionState,
+    vault_authority: Pubkey,
+    royalty_inbox_key: Pubkey,
+    royalty_inbox_mint: Pubkey,
+    royalty_inbox_authority: Pubkey,
+) -> Result<()> {
+    require_canonical_royalty_inbox(
+        &ID,
+        &agreement_key,
+        agreement,
+        &vault_authority,
+        &royalty_inbox_key,
+    )?;
+    validate_royalty_inbox_token_fields(
+        royalty_inbox_mint,
+        royalty_inbox_authority,
+        agreement.settlement_mint,
+        vault_authority,
+    )
 }
 
 fn validate_existing_royalty_inbox(
@@ -292,22 +324,31 @@ fn validate_existing_royalty_inbox(
     royalty_inbox_key: Pubkey,
     royalty_inbox: &TokenAccount,
 ) -> Result<()> {
-    require_canonical_royalty_inbox(
-        &ID,
-        &agreement_key,
+    validate_existing_royalty_inbox_fields(
+        agreement_key,
         agreement,
-        &vault_authority,
-        &royalty_inbox_key,
-    )?;
-    require_keys_eq!(
+        vault_authority,
+        royalty_inbox_key,
         royalty_inbox.mint,
-        agreement.settlement_mint,
-        RoyaltyRailError::InvalidRoyaltyInboxMint
+        royalty_inbox.owner,
+    )
+}
+
+fn validate_payer_source_fields(
+    source_mint: Pubkey,
+    source_authority: Pubkey,
+    expected_mint: Pubkey,
+    payer: Pubkey,
+) -> Result<()> {
+    require_keys_eq!(
+        source_mint,
+        expected_mint,
+        RoyaltyRailError::InvalidPayerSourceMint
     );
     require_keys_eq!(
-        royalty_inbox.owner,
-        vault_authority,
-        RoyaltyRailError::InvalidRoyaltyInboxAuthority
+        source_authority,
+        payer,
+        RoyaltyRailError::InvalidPayerSourceAuthority
     );
     Ok(())
 }
@@ -328,12 +369,13 @@ fn payout_destination_address(
     .0
 }
 
-fn validate_payout_destination(
+fn validate_payout_destination_fields(
     payout_wallet: Pubkey,
     settlement_mint: Pubkey,
     token_program: Pubkey,
     payout_destination_key: Pubkey,
-    payout_destination: &TokenAccount,
+    payout_destination_mint: Pubkey,
+    payout_destination_authority: Pubkey,
 ) -> Result<()> {
     let expected = payout_destination_address(&payout_wallet, &settlement_mint, &token_program);
     require_keys_eq!(
@@ -342,16 +384,33 @@ fn validate_payout_destination(
         RoyaltyRailError::InvalidPayoutDestinationAddress
     );
     require_keys_eq!(
-        payout_destination.mint,
+        payout_destination_mint,
         settlement_mint,
         RoyaltyRailError::InvalidPayoutDestinationMint
     );
     require_keys_eq!(
-        payout_destination.owner,
+        payout_destination_authority,
         payout_wallet,
         RoyaltyRailError::InvalidPayoutDestinationAuthority
     );
     Ok(())
+}
+
+fn validate_payout_destination(
+    payout_wallet: Pubkey,
+    settlement_mint: Pubkey,
+    token_program: Pubkey,
+    payout_destination_key: Pubkey,
+    payout_destination: &TokenAccount,
+) -> Result<()> {
+    validate_payout_destination_fields(
+        payout_wallet,
+        settlement_mint,
+        token_program,
+        payout_destination_key,
+        payout_destination.mint,
+        payout_destination.owner,
+    )
 }
 
 #[derive(Accounts)]
@@ -442,4 +501,147 @@ pub struct ClaimParticipant<'info> {
     pub payout_destination: Account<'info, TokenAccount>,
     #[account(address = config.token_program @ RoyaltyRailError::SettlementConfigMismatch)]
     pub token_program: Program<'info, Token>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        pda::royalty_inbox_address,
+        state::{AgreementStatus, SCHEMA_VERSION_V1},
+    };
+
+    fn key(value: u8) -> Pubkey {
+        Pubkey::new_from_array([value; 32])
+    }
+
+    fn agreement() -> AgreementVersionState {
+        AgreementVersionState {
+            schema_version: SCHEMA_VERSION_V1,
+            bump: 1,
+            revenue_pool: key(10),
+            version: 1,
+            predecessor_version: 0,
+            status: AgreementStatus::Active,
+            settlement_mint: key(4),
+            token_program: key(5),
+            terms_hash: [11; 32],
+            agreement_hash: [12; 32],
+            participants: Vec::new(),
+            approval_bitmap: 0,
+            supersession_approval_bitmap: 0,
+            cumulative_gross: 0,
+            direct_funding_nonce: 0,
+            allocation_sequence: 0,
+            created_slot: 1,
+            activated_slot: 2,
+            superseded_slot: 0,
+            reserved: [0; 128],
+        }
+    }
+
+    #[test]
+    fn existing_royalty_inbox_rejects_address_mint_and_authority_substitution() {
+        let agreement_key = key(70);
+        let agreement = agreement();
+        let (vault, _, inbox) = royalty_inbox_address(
+            &ID,
+            &agreement_key,
+            &agreement.settlement_mint,
+            &agreement.token_program,
+        );
+
+        assert!(validate_existing_royalty_inbox_fields(
+            agreement_key,
+            &agreement,
+            vault,
+            inbox,
+            agreement.settlement_mint,
+            vault,
+        )
+        .is_ok());
+        assert!(validate_existing_royalty_inbox_fields(
+            agreement_key,
+            &agreement,
+            vault,
+            key(71),
+            agreement.settlement_mint,
+            vault,
+        )
+        .is_err());
+        assert!(validate_existing_royalty_inbox_fields(
+            agreement_key,
+            &agreement,
+            vault,
+            inbox,
+            key(72),
+            vault,
+        )
+        .is_err());
+        assert!(validate_existing_royalty_inbox_fields(
+            agreement_key,
+            &agreement,
+            vault,
+            inbox,
+            agreement.settlement_mint,
+            key(73),
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn payer_source_rejects_mint_or_authority_substitution() {
+        let payer = key(20);
+        let mint = key(4);
+
+        assert!(validate_payer_source_fields(mint, payer, mint, payer).is_ok());
+        assert!(validate_payer_source_fields(key(90), payer, mint, payer).is_err());
+        assert!(validate_payer_source_fields(mint, key(91), mint, payer).is_err());
+    }
+
+    #[test]
+    fn payout_destination_rejects_address_mint_and_authority_substitution() {
+        let payout_wallet = key(80);
+        let settlement_mint = key(4);
+        let token_program = key(5);
+        let payout_destination =
+            payout_destination_address(&payout_wallet, &settlement_mint, &token_program);
+
+        assert!(validate_payout_destination_fields(
+            payout_wallet,
+            settlement_mint,
+            token_program,
+            payout_destination,
+            settlement_mint,
+            payout_wallet,
+        )
+        .is_ok());
+        assert!(validate_payout_destination_fields(
+            payout_wallet,
+            settlement_mint,
+            token_program,
+            key(81),
+            settlement_mint,
+            payout_wallet,
+        )
+        .is_err());
+        assert!(validate_payout_destination_fields(
+            payout_wallet,
+            settlement_mint,
+            token_program,
+            payout_destination,
+            key(82),
+            payout_wallet,
+        )
+        .is_err());
+        assert!(validate_payout_destination_fields(
+            payout_wallet,
+            settlement_mint,
+            token_program,
+            payout_destination,
+            settlement_mint,
+            key(83),
+        )
+        .is_err());
+    }
 }
