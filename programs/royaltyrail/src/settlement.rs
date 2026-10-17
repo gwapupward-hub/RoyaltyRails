@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     error::RoyaltyRailError,
+    pda::royalty_inbox_address,
     state::{AgreementStatus, AgreementVersionState, ProtocolConfigState, SCHEMA_VERSION_V1},
 };
 
@@ -36,6 +37,33 @@ pub fn require_settleable_agreement(
         agreement.token_program,
         config.token_program,
         RoyaltyRailError::SettlementConfigMismatch
+    );
+    Ok(())
+}
+
+pub fn require_canonical_royalty_inbox(
+    program_id: &Pubkey,
+    agreement_key: &Pubkey,
+    agreement: &AgreementVersionState,
+    vault_authority: &Pubkey,
+    royalty_inbox: &Pubkey,
+) -> Result<()> {
+    let (expected_vault, _, expected_inbox) = royalty_inbox_address(
+        program_id,
+        agreement_key,
+        &agreement.settlement_mint,
+        &agreement.token_program,
+    );
+
+    require_keys_eq!(
+        *vault_authority,
+        expected_vault,
+        RoyaltyRailError::InvalidVaultAuthority
+    );
+    require_keys_eq!(
+        *royalty_inbox,
+        expected_inbox,
+        RoyaltyRailError::InvalidRoyaltyInboxAddress
     );
     Ok(())
 }
@@ -206,6 +234,44 @@ mod tests {
         let mut wrong_program = agreement(AgreementStatus::Active);
         wrong_program.token_program = key(91);
         assert!(require_settleable_agreement(&cfg, &wrong_program).is_err());
+    }
+
+    #[test]
+    fn royalty_inbox_identity_rejects_address_substitution() {
+        let program_id = key(70);
+        let agreement_key = key(71);
+        let a = agreement(AgreementStatus::Active);
+        let (vault, _, inbox) = royalty_inbox_address(
+            &program_id,
+            &agreement_key,
+            &a.settlement_mint,
+            &a.token_program,
+        );
+
+        assert!(require_canonical_royalty_inbox(
+            &program_id,
+            &agreement_key,
+            &a,
+            &vault,
+            &inbox,
+        )
+        .is_ok());
+        assert!(require_canonical_royalty_inbox(
+            &program_id,
+            &agreement_key,
+            &a,
+            &key(72),
+            &inbox,
+        )
+        .is_err());
+        assert!(require_canonical_royalty_inbox(
+            &program_id,
+            &agreement_key,
+            &a,
+            &vault,
+            &key(73),
+        )
+        .is_err());
     }
 
     #[test]

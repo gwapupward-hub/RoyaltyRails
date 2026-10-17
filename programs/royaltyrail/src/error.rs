@@ -104,6 +104,18 @@ pub enum RoyaltyRailError {
     SettlementUnavailable,
     #[msg("agreement settlement configuration does not match ProtocolConfig")]
     SettlementConfigMismatch,
+    #[msg("the supplied vault authority is not the canonical agreement vault PDA")]
+    InvalidVaultAuthority,
+    #[msg("the supplied Royalty Inbox is not the canonical vault ATA")]
+    InvalidRoyaltyInboxAddress,
+    #[msg("the Royalty Inbox must be owned by the configured SPL Token Program")]
+    InvalidRoyaltyInboxOwner,
+    #[msg("the Royalty Inbox has an invalid or uninitialized SPL Token account layout")]
+    InvalidRoyaltyInboxData,
+    #[msg("the Royalty Inbox mint does not match the configured settlement mint")]
+    InvalidRoyaltyInboxMint,
+    #[msg("the Royalty Inbox token authority is not the canonical vault PDA")]
+    InvalidRoyaltyInboxAuthority,
     #[msg("agreement allocation/claim counters violate settlement invariants")]
     AllocationStateInvariantViolation,
     #[msg("Royalty Inbox balance is below allocated-but-unclaimed liabilities")]

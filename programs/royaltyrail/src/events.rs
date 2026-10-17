@@ -143,3 +143,13 @@ pub struct PayoutWalletUpdated {
     pub new_wallet: Pubkey,
     pub payout_revision: u32,
 }
+
+#[event]
+pub struct RoyaltyInboxInitialized {
+    pub agreement: Pubkey,
+    pub royalty_inbox: Pubkey,
+    pub vault_authority: Pubkey,
+    pub settlement_mint: Pubkey,
+    pub token_program: Pubkey,
+    pub initialized_by: Pubkey,
+}
