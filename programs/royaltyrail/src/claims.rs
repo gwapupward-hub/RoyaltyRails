@@ -90,7 +90,10 @@ pub fn apply_prepared_claim(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{AgreementStatus, ParticipantState, SCHEMA_VERSION_V1};
+    use crate::{
+        settlement::inbox_accounting,
+        state::{AgreementStatus, ParticipantState, SCHEMA_VERSION_V1},
+    };
 
     fn key(value: u8) -> Pubkey {
         Pubkey::new_from_array([value; 32])
@@ -174,6 +177,48 @@ mod tests {
         assert_eq!(agreement.direct_funding_nonce, nonce_before);
         assert_eq!(agreement.allocation_sequence, sequence_before);
         assert_eq!(agreement.cumulative_gross, gross_before);
+    }
+
+    #[test]
+    fn same_prepared_claim_cannot_be_applied_twice() {
+        let cfg = config();
+        let mut agreement = agreement();
+        let prepared = prepare_participant_claim(&cfg, &agreement, 0, 85).expect("prepared claim");
+
+        apply_prepared_claim(&mut agreement, &prepared).expect("first claim apply");
+        assert!(apply_prepared_claim(&mut agreement, &prepared).is_err());
+    }
+
+    #[test]
+    fn sequential_independent_claims_preserve_solvency() {
+        let cfg = config();
+        let mut agreement = agreement();
+        let mut inbox_balance = 85u64;
+
+        let first = prepare_participant_claim(&cfg, &agreement, 0, inbox_balance)
+            .expect("first participant claim");
+        inbox_balance = inbox_balance
+            .checked_sub(first.amount)
+            .expect("first transfer balance");
+        apply_prepared_claim(&mut agreement, &first).expect("apply first claim");
+
+        let after_first = inbox_accounting(&agreement, inbox_balance).expect("solvent after first");
+        assert_eq!(after_first.allocated_unclaimed, 35);
+        assert_eq!(after_first.unallocated, 0);
+        assert_eq!(inbox_accounting(&agreement, inbox_balance + 7).unwrap().unallocated, 7);
+
+        let second = prepare_participant_claim(&cfg, &agreement, 1, inbox_balance)
+            .expect("second participant claim");
+        inbox_balance = inbox_balance
+            .checked_sub(second.amount)
+            .expect("second transfer balance");
+        apply_prepared_claim(&mut agreement, &second).expect("apply second claim");
+
+        let after_second = inbox_accounting(&agreement, inbox_balance).expect("fully settled");
+        assert_eq!(after_second.allocated_unclaimed, 0);
+        assert_eq!(after_second.unallocated, 0);
+        assert_eq!(agreement.participants[0].cumulative_claimed, 60);
+        assert_eq!(agreement.participants[1].cumulative_claimed, 40);
     }
 
     #[test]
