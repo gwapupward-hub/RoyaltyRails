@@ -104,6 +104,22 @@ pub enum RoyaltyRailError {
     SettlementUnavailable,
     #[msg("agreement settlement configuration does not match ProtocolConfig")]
     SettlementConfigMismatch,
+    #[msg("allocation instructions are paused")]
+    AllocationsPaused,
+    #[msg("allocation amount must be greater than zero")]
+    AllocationAmountZero,
+    #[msg("the expected direct-funding nonce does not match agreement state")]
+    DirectFundingNonceMismatch,
+    #[msg("the payer source token account mint does not match the settlement mint")]
+    InvalidPayerSourceMint,
+    #[msg("the payer signer is not the source token-account authority")]
+    InvalidPayerSourceAuthority,
+    #[msg("the Royalty Inbox has no unallocated settlement funds")]
+    NoUnallocatedInboxFunds,
+    #[msg("the canonical allocation engine rejected the agreement state or allocation")]
+    AllocationEngineFailure,
+    #[msg("the prepared allocation no longer matches current agreement state")]
+    StalePreparedAllocation,
     #[msg("the supplied vault authority is not the canonical agreement vault PDA")]
     InvalidVaultAuthority,
     #[msg("the supplied Royalty Inbox is not the canonical vault ATA")]
