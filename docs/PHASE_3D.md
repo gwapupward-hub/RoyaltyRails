@@ -100,6 +100,8 @@ Positive-path assertions must cover:
 - superseded agreement historical settlement behavior
 - payout-wallet rotation followed by a claim to the new canonical destination
 
+Status: **passing.** `tests/e2e/positive-lifecycle.mjs` (Anchor.toml script `test`) runs in the CI job "Local validator positive lifecycle" against a fresh `solana-test-validator`.
+
 ## Stage 3D.3 — Adversarial local-validator matrix
 
 The on-chain harness must attempt and reject at least:
@@ -122,6 +124,8 @@ The on-chain harness must attempt and reject at least:
 - any transition that would make the inbox insolvent
 
 Each rejection must also prove that the failed transaction left SPL balances and protocol state unchanged.
+
+Status: **passing.** `tests/e2e/adversarial-matrix.mjs` (Anchor.toml script `test-adversarial`) lands 63 invalid transactions on a fresh validator in the CI job "Local validator adversarial matrix". Every one is rejected with its expected error code, and every tracked protocol, SPL token, and mint account is byte-identical before and after. Every item above is covered. Two caveats: the inbox and payout mint/authority substitutions are rejected by the canonical-address check, which precedes the field checks. Inbox insolvency cannot be induced by an external caller; its on-chain attack paths are rejected and its guard is unit-tested. No program code changed and no defect was found. Full matrix, rollback method, coverage classification, limitations, and reproduction steps: [`PHASE_3D3_ADVERSARIAL_EVIDENCE.md`](PHASE_3D3_ADVERSARIAL_EVIDENCE.md).
 
 ## Stage 3D.4 — Devnet readiness
 
