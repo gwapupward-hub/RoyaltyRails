@@ -505,15 +505,9 @@ mod tests {
     fn stale_prepared_allocation_is_rejected() {
         let cfg = config();
         let mut a = allocation_ready_agreement(AgreementStatus::Active);
-        let prepared = prepare_revenue_allocation(
-            &cfg,
-            &key(70),
-            &a,
-            2,
-            AllocationMode::Inbox,
-            [0; 32],
-        )
-        .expect("prepared allocation");
+        let prepared =
+            prepare_revenue_allocation(&cfg, &key(70), &a, 2, AllocationMode::Inbox, [0; 32])
+                .expect("prepared allocation");
 
         a.allocation_sequence = 1;
         assert!(apply_prepared_allocation(&mut a, &prepared).is_err());
@@ -524,15 +518,10 @@ mod tests {
         let cfg = config();
         let mut a = allocation_ready_agreement(AgreementStatus::Active);
         a.allocation_sequence = u64::MAX;
-        assert!(prepare_revenue_allocation(
-            &cfg,
-            &key(70),
-            &a,
-            1,
-            AllocationMode::Inbox,
-            [0; 32],
-        )
-        .is_err());
+        assert!(
+            prepare_revenue_allocation(&cfg, &key(70), &a, 1, AllocationMode::Inbox, [0; 32],)
+                .is_err()
+        );
     }
 
     #[test]
