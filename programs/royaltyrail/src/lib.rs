@@ -498,6 +498,19 @@ pub mod royaltyrail {
     pub fn initialize_royalty_inbox(ctx: Context<InitializeRoyaltyInbox>) -> Result<()> {
         settlement_ix::process_initialize_royalty_inbox(ctx)
     }
+
+    pub fn fund_and_allocate(
+        ctx: Context<FundAndAllocate>,
+        amount: u64,
+        expected_nonce: u64,
+        payment_reference: [u8; 32],
+    ) -> Result<()> {
+        settlement_ix::process_fund_and_allocate(ctx, amount, expected_nonce, payment_reference)
+    }
+
+    pub fn allocate_inbox(ctx: Context<AllocateInbox>) -> Result<()> {
+        settlement_ix::process_allocate_inbox(ctx)
+    }
 }
 
 #[derive(Accounts)]
