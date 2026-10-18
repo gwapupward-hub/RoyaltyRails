@@ -2,7 +2,7 @@
 
 **Repository:** `gwapupward-hub/RoyaltyRails`
 **Branch:** `feat/phase-3d-localnet-e2e-v1`
-**Scope:** preparation only; no deployment, initialization, or authority signature was performed.
+**Scope:** written as preparation; the custody model below is the recommendation. The program was later deployed and initialized on devnet; see *Actual custody* and `DEPLOYMENT_DEVNET_V1.md`.
 
 ## Custody decision
 
@@ -17,7 +17,11 @@ The recommended model is:
 
 The iPhone wallet-app route is **not** treated as deployment-compatible. Phantom and similar wallets may derive a different address from the same phrase and do not natively sign the Solana CLI's program-deployment buffer writes. They can be used only after a separately verified dApp transaction flow exists; that flow is not present here.
 
-## Five-role custody plan
+## Actual custody (owner-reported, 2026-10-18)
+
+The five devnet private keys were generated and handled in an AI agent's environment, not on the owner-controlled machine recommended above and not in a Codespace. The owner recorded this as an approved devnet-only custody exception. The upgrade-authority, governance, and guardian backups were stored but not verified by re-entry. Consequence: treat all five keys as exposed to that environment's operator. Whoever can access them can upgrade this devnet program, and with it bypass every protection, and can act as its permanent governance. The recorded evidence proves the on-chain state at verification time, not that it remains under the owner's sole control. Never reuse these keys, or this custody model, beyond devnet.
+
+## Five-role custody plan (recommended)
 
 | Role | Public address published | Private key custody | Required operations |
 |---|---|---|---|
@@ -54,7 +58,7 @@ The placeholders must be replaced with the five public addresses. No private-key
 
 ## Gate 6 readiness
 
-**Status: PASS.** The owner confirmed secure backup of all five devnet-only identities. Public identity commit `20ccae9`, frozen-manifest commit `97e3b76`, CI run `39092819552`, and post-freeze reproducibility CI run `39094215260` are recorded. All six required CI jobs passed, and the frozen manifest SHA-256 is `8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66`.
+**Status: identity criteria met; custody criteria NOT met.** Public identity commit `20ccae9`, frozen-manifest commit `97e3b76`, CI run `39092819552`, and post-freeze reproducibility CI run `39094215260` are recorded; all six required CI jobs passed; the frozen manifest SHA-256 is `8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66`. However, the five keys were generated and handled in an AI agent's environment (owner-approved devnet-only exception), and the owner reports that the critical backups were stored but not verified by re-entry.
 
 ## Gate 7 readiness
 
@@ -64,7 +68,7 @@ PR #9 was not merged. No mainnet operation was performed.
 
 ## Blockers and owner decisions
 
-- **Signer environment:** choose and secure the owner-controlled Mac/Linux/private VM used over iPhone SSH. Do not use GitHub Codespaces for the three critical private keys under the strict custody requirement.
+- **Signer environment:** choose and secure the owner-controlled Mac/Linux/private VM used over iPhone SSH (not followed by the recorded deployment; see *Actual custody*). Do not use GitHub Codespaces for the three critical private keys under the strict custody requirement.
 - **Build supply chain:** verify the pinned Agave/Anchor/Rust toolchain on that owner-controlled machine. The repository's existing runbook pins the versions but does not itself make a third-party mobile wallet a compatible CLI signer.
 - **Mainnet policy:** this devnet owner-held-key model is not a mainnet custody recommendation. Mainnet should use a hardened multisig/timelock or a separately verified external signer.
-- **No PR merge:** PR #9 was not merged and no deployment or initialization was attempted.
+- **No PR merge:** PR #9 has not been merged. The devnet deployment and initialization were performed later (see `DEPLOYMENT_DEVNET_V1.md`).

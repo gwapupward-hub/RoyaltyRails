@@ -1,17 +1,17 @@
 # RoyaltyRail Devnet Deployment V1
 
-Status: **devnet deployed and independently verified.** Phase 3D hard gates 6 (permanent devnet identity) and 7 (devnet deployment evidence) are complete for this devnet deployment. No mainnet operation was performed. The five private keys remain outside the repository and CI.
+Status: **devnet deployed and independently verified (Gate 7); Gate 6 custody criteria not met.** The frozen build is deployed and initialized on devnet, the 16-participant lifecycle passed twice, and Claude's independent re-verification against finalized devnet state passed 21/21 checks. Gate 6's identity criteria (frozen, consistent, reproducible) are met, but its custody criteria are not: the owner reports that the five private keys were generated and handled in an AI agent's environment, under an owner-approved devnet-only custody exception, and that the critical backups were stored but not verified by re-entry. No mainnet operation was performed. No private key is in the repository or CI, and Claude never held one.
 
 This document is the deployment runbook and, once completed, the deployment record. Devnet proof is a deployment and integration milestone. It is not a smart-contract security audit, and devnet is not mainnet.
 
-**Owner custody decision (commit `20ccae9`, [`PHASE_3D4_OWNER_CUSTODY_READINESS.md`](PHASE_3D4_OWNER_CUSTODY_READINESS.md)):** the keys are held on an owner-controlled machine operated from the iPhone over SSH, not in a GitHub Codespace. The public addresses were recorded with `scripts/devnet/prepare-authorities.sh`, which handles public data only.
+**Actual custody (owner-reported, 2026-10-18):** the five devnet private keys were generated and handled in an AI agent's environment, not on the owner-controlled machine recommended in [`PHASE_3D4_OWNER_CUSTODY_READINESS.md`](PHASE_3D4_OWNER_CUSTODY_READINESS.md) and not in a Codespace. The owner recorded this as an approved devnet-only custody exception. The upgrade-authority, governance, and guardian backups were stored but not verified by re-entry. Consequence: treat all five keys as exposed to that environment's operator. Whoever can access them can upgrade this devnet program, and with it bypass every protection, and can act as its permanent governance. The recorded evidence proves the on-chain state at verification time, not that it remains under the owner's sole control. Never reuse these keys, or this custody model, beyond devnet.
 
-The runbook below still applies from step 5 onward, run on that machine instead of a Codespace. The owner scripts are tested on Linux x86_64. On macOS, `sha256sum` must be available (for example from Homebrew `coreutils`), or use a Linux VM.
+The runbook below documents the intended owner-custodied procedure; the recorded deployment used its scripts (step 5 onward) in the environment above. The owner scripts are tested on Linux x86_64. On macOS, `sha256sum` must be available (for example from Homebrew `coreutils`).
 
 | Gate | Status | Blocked on |
 |---|---|---|
-| 6. Permanent devnet identity frozen securely | PASS | frozen public identity commit `20ccae9`; manifest commit `97e3b76`; six CI jobs green |
-| 7. Devnet deployment and end-to-end smoke evidence | PASS | finalized deployment, initialization, two lifecycle runs, and 21/21 independent checks |
+| 6. Permanent devnet identity frozen securely | NOT MET (custody) | identity frozen in `20ccae9`, manifest `97e3b76`, reproduced by later CI builds with six jobs green; but the keys were generated and handled in an AI agent's environment and the critical backups were not verified by re-entry (owner-approved devnet-only exception) |
+| 7. Devnet deployment and end-to-end smoke evidence | PASS | finalized deployment, initialization, two lifecycle runs; independent verifier 21/21, re-run by Claude 21/21 |
 
 ## Deployment record
 
@@ -28,11 +28,11 @@ The runbook below still applies from step 5 onward, run on that machine instead 
 | Governance / guardian | `9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m` (permanent) / `9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp` |
 | ProtocolConfig, deployment ID, settlement test mint | `docs/evidence/devnet-config.json`; config `2mjq5rPDHCamoqFkDmh277Y44pf8nKfUyw9byJPK1Qtq`; mint `GcvqpGThY4ay9Ro7tfWwdSmKWYw8ZruZyvEwSdbnLUtZ` |
 | Lifecycle runs (16 participants, twice) | `docs/evidence/devnet-lifecycle-20261018T055623Z-run1.json` and `-run2.json`; both PASS |
-| Independent verification | `docs/evidence/devnet-verification.json`; 21/21 checks PASS at finalized commitment |
+| Independent verification | `docs/evidence/devnet-verification.json`; 21/21 checks PASS at finalized commitment. Re-verified independently by Claude from fresh finalized devnet reads at 2026-10-18T06:53:18.127Z: 21/21 PASS (`docs/evidence/devnet-verification-recheck.json`) |
 
 ## Signing model
 
-Claude and GitHub Actions never hold, receive, or see a private key or seed phrase. Every private key is generated and used only in the owner's own terminal, on the owner-controlled machine chosen in the custody decision above. Each owner script reads only the keys its step needs:
+Claude and GitHub Actions never held, received, or saw a private key or seed phrase. Each owner script reads only the keys its step needs (table below). In the recorded deployment those scripts ran in the AI agent environment described above, which held all five keys.
 
 | Step (who runs it) | Program key | Deployer | Upgrade authority | Governance | Guardian |
 |---|---|---|---|---|---|
@@ -61,12 +61,12 @@ All of this was rehearsed with the guardian key absent throughout and the govern
 
 | Vector | Mitigation | Residual risk |
 |---|---|---|
-| AI-agent runtime (Claude Code containers) | Keys are generated and used only in the owner's Codespace. `generate-keys.sh` refuses to run if `CLAUDECODE` is set. On devnet, `common.sh` refuses agent shells for every key-using step. Claude only ever receives public keys and public evidence. | The guards prevent accidents; they are not a security boundary. The owner must not run Claude Code (or any agent) inside the key-holding Codespace. |
+| AI-agent runtimes | Intended: keys generated and used only in an owner-controlled environment. The guards in `generate-keys.sh` and `common.sh` detect only Claude Code (`CLAUDECODE`) and CI shells; they cannot detect other agent environments. **The recorded deployment's keys were generated and handled in an AI agent's environment** (owner-approved devnet-only exception). Claude only ever received public keys and public evidence. | The operator of that agent environment can access all five keys, including the upgrade authority and the permanent governance. |
 | GitHub Actions / CI logs / artifacts | CI never receives keys. It builds and checks only public data: the program ID, public keys, hashes. Every key-using script refuses to run when `CI` or `GITHUB_ACTIONS` is set. | none identified |
 | Source control | Keys live in `~/royaltyrails-devnet` with mode 700/600. Every script refuses key directories inside the repository. The owner commits only named public files. `.gitignore` excludes build output. | none, provided only the runbook's explicit `git add` paths are used |
 | Terminal scrollback and logs | Seed phrases appear only on the terminal's alternate screen, which has no scrollback, and are cleared before returning. They are never written to disk or logs. Backup verification input is hidden. Deploy output is shown and captured in memory, never written to a file (a failed deploy prints the temporary buffer's recovery phrase). | Anything visible on screen can be photographed or screen-recorded. |
 | Shell history | No secret is ever typed on a command line. Phrases are entered only at hidden prompts. | none identified |
-| Codespace / GitHub infrastructure | Plaintext keyfiles are on a GitHub-hosted VM. Mitigations: two-factor or passkey on the GitHub account; Settings Sync off; no extensions; never open key files in the editor; short retention; delete the Codespace after verification. | GitHub, and anyone who controls the owner's GitHub session, can read the keys. Acceptable **for devnet only**. |
+| Codespace / GitHub infrastructure (if used) | Plaintext keyfiles are on a GitHub-hosted VM. Mitigations: two-factor or passkey on the GitHub account; Settings Sync off; no extensions; never open key files in the editor; short retention; delete the Codespace after verification. | GitHub, and anyone who controls the owner's GitHub session, can read the keys. Acceptable **for devnet only**. |
 | npm dependencies | Root and E2E lockfiles pin all packages by version and SHA-512 integrity. All 81 E2E packages resolve from registry.npmjs.org. Installs run with `--ignore-scripts`. Critical keys are loaded only in the one step that signs with them (`init-config.sh`), and lifecycle runs read only the deployer. | Locked dependency code still runs beside the deployer and, during initialization, the governance and upgrade-authority keys. |
 | Solana CLI supply chain | `codespace-setup.sh` no longer pipes an installer into `sh`. It downloads the Agave v4.1.2 release archive and verifies its pinned SHA-256 (`5991d027…f770`) before extracting `solana` and `solana-keygen`. That hash was confirmed identical from GitHub Releases and release.anza.xyz, and the archive's binaries are byte-identical to those used in every local rehearsal (release commit `182084b8`). | Trust in Anza's release process. |
 | iPhone | No screenshots (iCloud Photos sync); no copy and paste of phrases (Universal Clipboard); turn off Predictive and Auto-Correction while typing phrases (Settings → General → Keyboard). | A compromised phone or browser session defeats all of the above. |
@@ -84,7 +84,7 @@ No external signer has been verified for this workflow, and none is claimed. Mis
 - **Ledger (`usb://ledger`):** needs a USB connection from the machine that runs the Solana CLI. An iPhone cannot connect a Ledger to a Codespace.
 - **Mobile wallet apps:** they cannot sign `solana program deploy` buffer writes or the CLI's deploy transaction. They would need a dApp page to sign the custom `initialize_config` transaction, and they derive different keys from the same phrase.
 
-Until a signer that the iPhone owner can use is verified for program deployment, upgrade-authority signing, and Anchor instructions, devnet uses owner-held keyfiles in the Codespace. **Mainnet must not use this model.** It requires a hardened multisig with a timelock (`SECURITY_V1.md` §23).
+Until a signer that the iPhone owner can use is verified for program deployment, upgrade-authority signing, and Anchor instructions, devnet uses plaintext keyfiles; in the recorded deployment they were in an AI agent's environment (see *Actual custody*). **Mainnet must not use this model.** It requires a hardened multisig with a timelock (`SECURITY_V1.md` §23).
 
 ## Configuration initialization is bound to the upgrade authority
 
@@ -110,7 +110,7 @@ The authorized initializer then succeeds and holds governance (`INIT-AUTH-01`). 
 
 Gate 6 passes only when all of these hold, each checked in CI or by Claude:
 
-1. Five distinct devnet keys exist, generated by the owner in their own Codespace. Upgrade-authority, governance, and guardian backups were verified by re-entry (owner-attested; only public keys leave the Codespace).
+1. Five distinct devnet keys exist, generated by the owner in an owner-controlled environment, never in an agent runtime. Upgrade-authority, governance, and guardian backups are verified by re-entry (owner-attested; only public keys leave that environment). **Not met by the recorded deployment** (see *Actual custody*).
 2. One program ID across `declare_id!`, `Anchor.toml` (`[programs.localnet]`, `[programs.devnet]`), the IDL `address`, the raw 32 bytes embedded in `royaltyrail.so`, and `deployments/devnet/authorities.json`. CI step: "Verify one program ID across declare_id!, IDL, binary, Anchor.toml, and devnet authorities" (`scripts/devnet/program-id.mjs check`).
 3. Built with the pinned toolchain (Anchor 1.2.1, Agave 4.1.2, Rust 1.89.0, `quay.io/ottersec/anchor:v1.2.1`).
 4. The CI build writes `MANIFEST.json`: commit, program ID, SHA-256 and sizes, toolchain, CI run, cluster and genesis, and expected authorities. Claude commits it unchanged as `deployments/devnet/manifest.json`.
@@ -333,10 +333,10 @@ Compute varies between runs because canonical PDA and ATA validation runs `find_
 3. **Maximum participants (measured, moderate headroom).** At 16 participants, allocation instructions use most of the 200,000 default compute budget (see the table above), and usage varies with keys. Composing these instructions with others in one transaction, or future code growth, can exceed the default. Production clients should request an explicit compute budget, and benchmarks should be repeated for every program change. The devnet run must confirm the figures on devnet's runtime.
 4. **Upgrade authority is a superuser.** One key can replace the bytecode and with it every protection, including "no admin withdrawal", and it now also approves the one-time config initialization. Devnet uses one owner-held key; mainnet requires a hardened multisig with a timelock and monitoring.
 5. **Governance is permanent.** v1 cannot rotate governance. Losing the governance key permanently removes unpause and guardian rotation for that deployment; the guardian can still pause.
-6. **Cloud key custody.** Devnet keys are plaintext files on a GitHub-hosted Codespace (see *Threat model*). Acceptable only because devnet value is nil. No external signer is verified for an iPhone-only owner.
+6. **Agent-environment key custody.** All five devnet keys were generated and handled in an AI agent's environment (owner-approved devnet-only exception), and the critical backups were not verified by re-entry. The upgrade authority, which can replace the program, and the permanent governance of this deployment must be considered exposed to that environment's operator. Acceptable only because devnet value is nil; the remedy is a fresh owner-custodied identity and a new deployment. No external signer is verified for an iPhone-only owner.
 7. **Dependency code beside keys.** Integrity-locked npm packages run in the same process as the deployer key, and during initialization the governance and upgrade-authority keys.
 8. **Build verification.** The artifact is built by CI in a pinned container (by tag, not digest), its hashes are frozen, and later CI builds must reproduce them. It is not a `solana-verify` verifiable build, and reproducibility outside that container has not been demonstrated.
-9. **Pre-deployment window.** Between the identity commit and deployment, whoever holds the program keypair can deploy first. It never leaves the owner's Codespace, but deployment should follow Gate 6 promptly.
+9. **Pre-deployment window.** Between the identity commit and deployment, whoever holds the program keypair can deploy first. In the recorded deployment it was in an AI agent's environment until deployment; it has no power now that the program is deployed.
 10. **Devnet is not durable.** Devnet can be reset. The recorded signatures and this document remain the evidence of record.
 
 Resolved in Stage 3D.4: **first-caller configuration initialization** (see above).

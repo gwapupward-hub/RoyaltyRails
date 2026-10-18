@@ -141,14 +141,14 @@ After the local-validator gate is green:
 
 Devnet proof is a deployment/integration milestone, not a smart-contract security audit.
 
-Status: **complete for the recorded devnet deployment; hard gates 6 and 7 PASS.** The five private keys remain outside the repository, CI, and agent runtime. Prepared, deployed, and independently verified:
+Status: **devnet deployed and independently verified (hard gate 7 met); hard gate 6 NOT met on custody.** The identity is frozen and reproducible, but the owner reports that the five private keys were generated and handled in an AI agent's environment (an owner-approved devnet-only custody exception) and that the critical backups were not verified by re-entry. No private key is in the repository or CI, and Claude never held one. Prepared, deployed, and independently verified:
 
 - **Initialization front-running is closed.** `initialize_config` requires the program's current upgrade authority as co-signer, verified against this program's ProgramData (`CFG-04` to `CFG-08`).
-- **Owner-custodied signing model.** Every key is generated and used only in the owner's Codespace. Each step reads only the keys it needs: lifecycle runs read only the deployer, and the governance key is read only during initialization. Deployment and initialization require typed owner authorization. Key-using scripts refuse agent and CI shells on devnet.
+- **Owner-custodied signing model.** Designed so that every key is generated and used only in an owner-controlled environment; the recorded deployment deviated (see the status above). Each step reads only the keys it needs: lifecycle runs read only the deployer, and the governance key is read only during initialization. Deployment and initialization require typed owner authorization. Key-using scripts refuse agent and CI shells on devnet.
 - **Verified backups.** `generate-keys.sh` shows each lasting key's seed phrase only on the terminal's alternate screen and verifies the paper backup by re-entry (`solana-keygen pubkey ASK`; `prompt://` derives a different key). It refuses to overwrite keys and outputs only public keys.
 - **Supply chain.**
   - The Solana CLI is installed from the Agave release archive verified against a pinned SHA-256.
-  - E2E client libraries are installed from an integrity-locked lockfile (`tests/e2e/package-lock.json`) with install scripts disabled, in CI and in the Codespace.
+  - E2E client libraries are installed from an integrity-locked lockfile (`tests/e2e/package-lock.json`) with install scripts disabled, in CI and in the owner's environment.
 - **Gate 6 automation.**
   - CI verifies one program ID across `declare_id!`, `Anchor.toml`, the IDL, the binary's embedded bytes, and the recorded authorities.
   - It writes a deployment manifest into the artifact.
@@ -160,12 +160,12 @@ Status: **complete for the recorded devnet deployment; hard gates 6 and 7 PASS.*
 
 Completed in order (`DEPLOYMENT_DEVNET_V1.md` contains the public record):
 
-1. Five devnet identities were generated and backed up under the approved devnet-only custody exception; only public addresses were committed.
-2. The CI manifest was frozen and reproduced by later CI runs, with all six jobs green (Gate 6).
+1. Five devnet identities were generated and handled in an AI agent's environment under an owner-approved devnet-only custody exception; the critical backups were stored but not verified by re-entry; only public addresses were committed.
+2. The CI manifest was frozen and reproduced by later CI runs, with all six jobs green (Gate 6 identity criteria).
 3. The frozen artifact was deployed, ProtocolConfig initialized with governance and upgrade-authority signatures, and the deployer-only lifecycle passed twice.
 4. The independent finalized-RPC verifier passed 21/21 checks and public evidence was recorded (Gate 7).
 
-Hard-gate items 6 and 7 are met for this devnet deployment. PR #9 remains unmerged.
+Hard-gate item 7 is met. Item 6 is not met as documented, on custody: either the owner formally accepts the devnet-only custody exception as satisfying it, or a fresh owner-custodied identity is generated and deployed. PR #9 remains unmerged.
 
 ## Explicit non-goals
 
