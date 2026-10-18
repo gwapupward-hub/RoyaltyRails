@@ -18,7 +18,7 @@
     "orange": "#F08A24"
   },
   "status": "devnet-deployed-not-mainnet-audited",
-  "securityContact": "PENDING_OWNER_CONFIRMATION",
+  "securityContact": "thagwapspot@gmail.com",
   "publication": {
     "pmpIdl": "not_published",
     "pmpSecurity": "not_published",
@@ -27,5 +27,8 @@
   "economics": {
     "onchainCurrent": "0% protocol settlement fee for current v1 deployed binary",
     "futurePhase3F": "Basic 0.25% (25 bps); Premium Security 1.00% (100 bps), not implemented"
-  }
+  },
+  "securityPolicyUrl": "https://github.com/gwapupward-hub/RoyaltyRails/blob/main/SECURITY.md",
+  "securityMetadataFile": "deployments/devnet/security-metadata.json",
+  "securityContactStatus": "owner_designated; receipt and public metadata publication not yet verified"
 }
