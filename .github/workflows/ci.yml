@@ -100,12 +100,16 @@ jobs:
       # The deployable artifact: devnet deployments use these exact bytes, and the
       # devnet lifecycle compares on-chain ProgramData against them.
       - name: Record build hashes and source commit
+        id: build-info
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build-artifact
           cp target/deploy/royaltyrail.so target/idl/royaltyrail.json build-artifact/
           git -c safe.directory='*' rev-parse HEAD > build-artifact/SOURCE_COMMIT
+          # The checkout follows the branch head, which can be newer than the
+          # triggering commit; name the artifact after what was actually built.
+          echo "commit=$(cat build-artifact/SOURCE_COMMIT)" >> "$GITHUB_OUTPUT"
           {
             anchor --version
             solana --version
@@ -119,7 +123,7 @@ jobs:
       - name: Upload deployable program artifact
         uses: actions/upload-artifact@v4
         with:
-          name: royaltyrail-sbf-${{ github.event.pull_request.head.sha || github.sha }}
+          name: royaltyrail-sbf-${{ steps.build-info.outputs.commit }}
           path: build-artifact/
           if-no-files-found: error
 
