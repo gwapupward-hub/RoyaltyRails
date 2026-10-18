@@ -54,7 +54,7 @@ assert.ok(dInfo.data.subarray(45 + binary.bytes).every((b) => b === 0),
 const record = {
   schema: 'royaltyrails-phase3e-readonly-preflight-v1',
   checkedAt: new Date().toISOString(),
-  rpcUrl, genesis, slot, commitment: 'finalized',
+  rpcHost: new URL(rpcUrl).hostname, genesis, slot, commitment: 'finalized',
   programId: program.toBase58(),
   programData: programData.toBase58(),
   upgradeAuthority: expectedAuthority,
