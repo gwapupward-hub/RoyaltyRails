@@ -138,6 +138,10 @@ RoyaltyRails does not claim confidential royalty splits in v1.
 
 No contract, address, API or economic output in this repository should be treated as production settlement infrastructure until explicit security, legal, deployment and mainnet-readiness gates are complete.
 
+## Security reports
+
+Report vulnerabilities privately to **thagwapspot@gmail.com**. See the [RoyaltyRails security disclosure policy](SECURITY.md). The current deployment is devnet-only and has **not received an independent smart-contract security audit**. Never send private keys or recovery phrases in email.
+
 ## License
 
 License and contribution policy will be finalized before public production release.
