@@ -19,7 +19,7 @@
 //   RR_EXPECTED_UPGRADE_AUTHORITY        required on devnet; must equal the ProgramData authority
 //   RR_EXPECTED_GOVERNANCE               required on devnet; governance pubkey to initialize or verify
 //   RR_EXPECTED_GUARDIAN                 required on devnet; guardian pubkey to initialize or verify
-//   RR_GOVERNANCE_KEYPAIR                governance keypair path; only read if ProtocolConfig is absent
+//   RR_GOVERNANCE_KEYPAIR                governance keypair path; signs only if ProtocolConfig is absent
 //   RR_UPGRADE_AUTHORITY_KEYPAIR         upgrade-authority keypair path; only read if ProtocolConfig is
 //                                        absent (initialize_config requires its co-signature)
 //   RR_IDL_PATH                          default target/idl/royaltyrail.json
@@ -265,7 +265,17 @@ async function main() {
 
   // --------------------------------------------------------- ProtocolConfig
   const [config] = PublicKey.findProgramAddressSync([CONFIG_SEED], programId);
-  const expectedGovernance = onDevnet ? requiredPubkey("RR_EXPECTED_GOVERNANCE") : optionalPubkey("RR_EXPECTED_GOVERNANCE") ?? wallet.publicKey;
+  // Localnet-only default governance: deterministic and publicly derivable, distinct
+  // from the provider wallet (the upgrade authority), and initially unfunded, which
+  // mirrors the devnet key separation. Defaults are never used on devnet.
+  const governanceKeypair = process.env.RR_GOVERNANCE_KEYPAIR
+    ? loadKeypair(process.env.RR_GOVERNANCE_KEYPAIR)
+    : onDevnet
+      ? null
+      : Keypair.fromSeed(createHash("sha256").update("royaltyrails-localnet-governance-v1").digest());
+  const expectedGovernance = onDevnet
+    ? requiredPubkey("RR_EXPECTED_GOVERNANCE")
+    : optionalPubkey("RR_EXPECTED_GOVERNANCE") ?? governanceKeypair.publicKey;
   // Localnet default guardian: a fixed, keyless public key distinct from governance.
   const expectedGuardian = onDevnet
     ? requiredPubkey("RR_EXPECTED_GUARDIAN")
@@ -276,9 +286,8 @@ async function main() {
   let configState = await program.account.protocolConfigState.fetchNullable(config, "confirmed");
   let configInitialization = null;
   if (!configState) {
-    const governancePath = process.env.RR_GOVERNANCE_KEYPAIR ?? (onDevnet ? null : process.env.ANCHOR_WALLET);
-    assert.ok(governancePath, "ProtocolConfig is absent: RR_GOVERNANCE_KEYPAIR is required to initialize it");
-    const governance = loadKeypair(governancePath);
+    assert.ok(governanceKeypair, "ProtocolConfig is absent: RR_GOVERNANCE_KEYPAIR is required to initialize it");
+    const governance = governanceKeypair;
     assert.ok(governance.publicKey.equals(expectedGovernance), "RR_GOVERNANCE_KEYPAIR does not match RR_EXPECTED_GOVERNANCE");
     // initialize_config requires the program's current upgrade authority as co-signer.
     assert.ok(programEvidence.programData, "ProtocolConfig can only be initialized for an upgradeable program");
@@ -291,6 +300,23 @@ async function main() {
       programEvidence.upgradeAuthority,
       "RR_UPGRADE_AUTHORITY_KEYPAIR is not the program's current upgrade authority",
     );
+
+    // initialize_config charges the config rent to governance, normally an
+    // unfunded cold key; top up exactly the shortfall from the provider wallet.
+    const configRent = await connection.getMinimumBalanceForRentExemption(program.account.protocolConfigState.size);
+    const governanceBalance = await connection.getBalance(governance.publicKey, "confirmed");
+    if (governanceBalance < configRent) {
+      await send(
+        "fund governance for ProtocolConfig rent",
+        new Transaction().add(
+          SystemProgram.transfer({
+            fromPubkey: wallet.publicKey,
+            toPubkey: governance.publicKey,
+            lamports: configRent - governanceBalance,
+          }),
+        ),
+      );
+    }
 
     // Fresh six-decimal legacy SPL test mint; the provider wallet is mint authority, no freeze authority.
     const mintKeypair = Keypair.generate();
