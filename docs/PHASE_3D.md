@@ -141,21 +141,29 @@ After the local-validator gate is green:
 
 Devnet proof is a deployment/integration milestone, not a smart-contract security audit.
 
-Status: **prepared; blocked on owner action. Not deployed.** Prepared so far:
+Status: **prepared; hard gates 6 and 7 BLOCKED on owner action. Not deployed.** The owner must generate the keys; no private key may exist in CI or an agent runtime. Prepared and rehearsed end to end on a local validator:
 
-- **Initialization front-running is closed.** `initialize_config` now requires the program's current upgrade authority as co-signer, verified against this program's ProgramData. The adversarial matrix proves front-running attempts are rejected before the authorized initialization (`CFG-04` to `CFG-08`).
-- The devnet lifecycle (`tests/e2e/devnet-lifecycle.mjs`) runs with the maximum 16 participants. It cross-checks the agreement hash, allocations, and commitments against the TypeScript reference, verifies the deployed bytes, and refuses mainnet and testnet. It initializes ProtocolConfig with separate governance and upgrade-authority signatures, topping up the unfunded governance key with exactly the config rent.
-- CI rehearses that lifecycle on a fresh local validator ("Local validator devnet-lifecycle rehearsal") with the same key separation.
-- The Anchor build job publishes the deployable `royaltyrail-sbf-<commit>` artifact with SHA-256 hashes.
-- `scripts/devnet/` contains iPhone-friendly GitHub Codespaces scripts: setup, key generation, deploy, and lifecycle. They were rehearsed end to end on a local validator.
-- `docs/DEPLOYMENT_DEVNET_V1.md` contains the Codespaces runbook, key-role separation and custody risks, measured 16-participant compute, and unresolved risks.
+- **Initialization front-running is closed.** `initialize_config` requires the program's current upgrade authority as co-signer, verified against this program's ProgramData (`CFG-04` to `CFG-08`).
+- **Owner-custodied signing model.** Every key is generated and used only in the owner's Codespace. Each step reads only the keys it needs: lifecycle runs read only the deployer, and the governance key is read only during initialization. Deployment and initialization require typed owner authorization. Key-using scripts refuse agent and CI shells on devnet.
+- **Verified backups.** `generate-keys.sh` shows each lasting key's seed phrase only on the terminal's alternate screen and verifies the paper backup by re-entry (`solana-keygen pubkey ASK`; `prompt://` derives a different key). It refuses to overwrite keys and outputs only public keys.
+- **Supply chain.**
+  - The Solana CLI is installed from the Agave release archive verified against a pinned SHA-256.
+  - E2E client libraries are installed from an integrity-locked lockfile (`tests/e2e/package-lock.json`) with install scripts disabled, in CI and in the Codespace.
+- **Gate 6 automation.**
+  - CI verifies one program ID across `declare_id!`, `Anchor.toml`, the IDL, the binary's embedded bytes, and the recorded authorities.
+  - It writes a deployment manifest into the artifact.
+  - Once the manifest is frozen, CI requires every later build of the same sources to reproduce its hashes.
+- **Gate 7 automation.**
+  - `deploy.sh`, `init-config.sh`, and `run-lifecycle.sh` (16 participants, twice) validate the genesis hash, the frozen manifest, and the artifact before signing.
+  - `tests/e2e/devnet-verify.mjs` independently verifies everything from fresh `finalized` RPC reads, recomputing the agreement hash, allocations, and commitments with the TypeScript reference.
+- The adversarial harness tolerates web3.js's two ways of reporting a landed failure, which removes a latent race-dependent flake.
 
-Remaining, in order:
+Remaining, in order (`DEPLOYMENT_DEVNET_V1.md` has the exact commands and acceptance criteria):
 
-1. In a Codespace, the owner generates the program, deployer, upgrade-authority, governance, and guardian keys (devnet only) and shares only their public keys.
-2. The program ID is synced and committed, and CI builds the deployable artifact.
-3. The owner deploys that artifact and runs the devnet lifecycle with the provided scripts.
-4. The evidence is independently verified on devnet and recorded.
+1. The owner runs `generate-keys.sh` in a Codespace and pushes the three public identity files.
+2. Claude freezes the CI manifest; a second CI build must reproduce it, with all six jobs green (Gate 6).
+3. The owner fetches the frozen artifact, deploys, initializes, and runs the lifecycle, then pushes the public evidence.
+4. Claude verifies the deployment against devnet and records it (Gate 7).
 
 Hard-gate items 6 and 7 are not yet met.
 
