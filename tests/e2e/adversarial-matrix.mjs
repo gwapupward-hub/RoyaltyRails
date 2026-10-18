@@ -244,10 +244,17 @@ class Harness {
       `harness: signature ${signature} was already submitted`,
     );
     this.seenSignatures.add(signature);
-    await this.connection.confirmTransaction(
-      { signature, blockhash, lastValidBlockHeight },
-      "confirmed",
-    );
+    try {
+      await this.connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        "confirmed",
+      );
+    } catch (error) {
+      // web3.js resolves with a landed failure when the websocket notification
+      // arrives first, but rejects with the raw TransactionError when its status
+      // poll sees it first. Either way the landed result is inspected below.
+      if (!(error && typeof error === "object" && "InstructionError" in error)) throw error;
+    }
 
     let result = null;
     for (let attempt = 0; attempt < 40 && !result; attempt += 1) {
