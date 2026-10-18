@@ -292,6 +292,8 @@ Compromised guardian can cause temporary DoS; this operational trust must be dis
 
 Upgradeable program authority can replace bytecode and bypass application-level guarantees.
 
+The upgrade authority also authorizes the one-time ProtocolConfig initialization: `initialize_config` requires its co-signature, checked against this program's ProgramData. Initialization fixes permanent governance and the settlement mint. This closes the first-caller race in which anyone could initialize a freshly deployed program and claim governance. It also means the initial governance choice sits inside the upgrade-authority trust boundary. The local-validator adversarial matrix proves that front-running attempts are rejected (`CFG-04` to `CFG-08`).
+
 Before meaningful mainnet value: no single hot-wallet upgrade authority, hardened multisig/governance, normal upgrade delay/timelock, ProgramData monitoring, reproducible/verifiable builds, emergency process, and long-term immutability criterion.
 
 Do not market “non-custodial/no admin withdrawal” without disclosing current upgradeability status.

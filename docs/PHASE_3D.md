@@ -125,7 +125,7 @@ The on-chain harness must attempt and reject at least:
 
 Each rejection must also prove that the failed transaction left SPL balances and protocol state unchanged.
 
-Status: **passing.** `tests/e2e/adversarial-matrix.mjs` (Anchor.toml script `test-adversarial`) lands 63 invalid transactions on a fresh validator in the CI job "Local validator adversarial matrix". Every one is rejected with its expected error code, and every tracked protocol, SPL token, and mint account is byte-identical before and after. Every item above is covered. Two caveats: the inbox and payout mint/authority substitutions are rejected by the canonical-address check, which precedes the field checks. Inbox insolvency cannot be induced by an external caller; its on-chain attack paths are rejected and its guard is unit-tested. No program code changed and no defect was found. Full matrix, rollback method, coverage classification, limitations, and reproduction steps: [`PHASE_3D3_ADVERSARIAL_EVIDENCE.md`](PHASE_3D3_ADVERSARIAL_EVIDENCE.md).
+Status: **passing.** `tests/e2e/adversarial-matrix.mjs` (Anchor.toml script `test-adversarial`) lands 68 invalid transactions on a fresh validator in the CI job "Local validator adversarial matrix", including five attempts to front-run configuration initialization. Every one is rejected with its expected error code, and every tracked protocol, SPL token, and mint account is byte-identical before and after. Every item above is covered. Two caveats: the inbox and payout mint/authority substitutions are rejected by the canonical-address check, which precedes the field checks. Inbox insolvency cannot be induced by an external caller; its on-chain attack paths are rejected and its guard is unit-tested. Stage 3D.3 changed no program code, and its original matrix found no defect. The configuration-initialization race was identified afterwards and fixed in Stage 3D.4. Full matrix, rollback method, coverage classification, limitations, and reproduction steps: [`PHASE_3D3_ADVERSARIAL_EVIDENCE.md`](PHASE_3D3_ADVERSARIAL_EVIDENCE.md).
 
 ## Stage 3D.4 — Devnet readiness
 
@@ -143,16 +143,18 @@ Devnet proof is a deployment/integration milestone, not a smart-contract securit
 
 Status: **prepared; blocked on owner action. Not deployed.** Prepared so far:
 
-- The devnet lifecycle (`tests/e2e/devnet-lifecycle.mjs`) runs with the maximum 16 participants. It cross-checks the agreement hash, allocations, and commitments against the TypeScript reference, verifies the deployed bytes, and refuses mainnet and testnet.
-- CI rehearses that lifecycle on a fresh local validator ("Local validator devnet-lifecycle rehearsal").
+- **Initialization front-running is closed.** `initialize_config` now requires the program's current upgrade authority as co-signer, verified against this program's ProgramData. The adversarial matrix proves front-running attempts are rejected before the authorized initialization (`CFG-04` to `CFG-08`).
+- The devnet lifecycle (`tests/e2e/devnet-lifecycle.mjs`) runs with the maximum 16 participants. It cross-checks the agreement hash, allocations, and commitments against the TypeScript reference, verifies the deployed bytes, and refuses mainnet and testnet. It initializes ProtocolConfig with separate governance and upgrade-authority signatures, topping up the unfunded governance key with exactly the config rent.
+- CI rehearses that lifecycle on a fresh local validator ("Local validator devnet-lifecycle rehearsal") with the same key separation.
 - The Anchor build job publishes the deployable `royaltyrail-sbf-<commit>` artifact with SHA-256 hashes.
-- `docs/DEPLOYMENT_DEVNET_V1.md` contains the owner runbook, key-role separation, measured 16-participant compute, and unresolved risks.
+- `scripts/devnet/` contains iPhone-friendly GitHub Codespaces scripts: setup, key generation, deploy, and lifecycle. They were rehearsed end to end on a local validator.
+- `docs/DEPLOYMENT_DEVNET_V1.md` contains the Codespaces runbook, key-role separation and custody risks, measured 16-participant compute, and unresolved risks.
 
 Remaining, in order:
 
-1. The owner generates the program, deployer, upgrade-authority, governance, and guardian keys and shares only their public keys.
+1. In a Codespace, the owner generates the program, deployer, upgrade-authority, governance, and guardian keys (devnet only) and shares only their public keys.
 2. The program ID is synced and committed, and CI builds the deployable artifact.
-3. The owner deploys that artifact and runs the devnet lifecycle.
+3. The owner deploys that artifact and runs the devnet lifecycle with the provided scripts.
 4. The evidence is independently verified on devnet and recorded.
 
 Hard-gate items 6 and 7 are not yet met.
