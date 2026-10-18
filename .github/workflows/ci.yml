@@ -36,6 +36,11 @@ jobs:
       - name: Verify Phase 3E identity against frozen manifest (keyless)
         run: node scripts/phase3e/verify-identity.mjs
 
+      - name: Syntax-check keyless Phase 3E RPC and metadata PDA tools
+        run: |
+          node --check scripts/phase3e/devnet-preflight.mjs
+          node --check scripts/phase3e/verify-pdas.mjs
+
   rust-parity:
     name: Rust parity
     runs-on: ubuntu-latest
