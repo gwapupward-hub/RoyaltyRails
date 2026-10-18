@@ -48,6 +48,15 @@ The project is **not audited or approved for real-customer funds**. Source-to-bi
 - The public metadata record may be displayed by explorers that support the PMP security seed; appearance of the official protocol name in all explorers cannot be guaranteed.
 - On-chain publication requires separate **explicit** authorization and signer preflight.
 
+## Phase 3E preparation evidence (verified locally; not on-chain)
+
+- Recovered the precise frozen SBF and Anchor IDL from GitHub Actions run `39092819552`, artifact ID `12123238615`. Their byte lengths and SHA-256 digests, and the frozen `MANIFEST.json` digest, matched the documented Phase 3D records. See [IDL provenance](evidence/phase-3e/idl-provenance.json).
+- Prepared [keyless identity / artifact verification](../scripts/phase3e/verify-identity.mjs) and [PMP PDA verification](../scripts/phase3e/verify-pdas.mjs), now wired into the repository CI lanes. The Phase 3E branch's checks must still finish green.
+- Canonical PMP PDA derivation (accounts not yet queried in this record): `idl` = `6Au73HiMX852zhgyTuYNkYDQHZWiCb6rxZ4EsVyyc2p3`, `security` = `6yKDZVfqNwoDDBkSUBG2t2U6aApcNmqC8MtYGuPYDSxb`.
+- Added a read-only finalized-RPC [publication preflight](../scripts/phase3e/devnet-preflight.mjs); no successful live invocation is claimed yet.
+- The [controlled publication plan](PHASE_3E_PUBLICATION_PLAN.md) records required CLI provenance, isolated Node >=24 compatibility, account/rent review and exact owner authorization.
+- **Current status: preparation in progress; no canonical PMP account creation or on-chain publication.**
+
 ## Stage B — Keyless validation and preflight
 
 1. Verify Solana genesis `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`, program ID, ProgramData upgrade authority, frozen deployed byte hash, config, and both Stage 3D lifecycle evidence files.
