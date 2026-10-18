@@ -141,6 +141,22 @@ After the local-validator gate is green:
 
 Devnet proof is a deployment/integration milestone, not a smart-contract security audit.
 
+Status: **prepared; blocked on owner action. Not deployed.** Prepared so far:
+
+- The devnet lifecycle (`tests/e2e/devnet-lifecycle.mjs`) runs with the maximum 16 participants. It cross-checks the agreement hash, allocations, and commitments against the TypeScript reference, verifies the deployed bytes, and refuses mainnet and testnet.
+- CI rehearses that lifecycle on a fresh local validator ("Local validator devnet-lifecycle rehearsal").
+- The Anchor build job publishes the deployable `royaltyrail-sbf-<commit>` artifact with SHA-256 hashes.
+- `docs/DEPLOYMENT_DEVNET_V1.md` contains the owner runbook, key-role separation, measured 16-participant compute, and unresolved risks.
+
+Remaining, in order:
+
+1. The owner generates the program, deployer, upgrade-authority, governance, and guardian keys and shares only their public keys.
+2. The program ID is synced and committed, and CI builds the deployable artifact.
+3. The owner deploys that artifact and runs the devnet lifecycle.
+4. The evidence is independently verified on devnet and recorded.
+
+Hard-gate items 6 and 7 are not yet met.
+
 ## Explicit non-goals
 
 Phase 3D does not include:
