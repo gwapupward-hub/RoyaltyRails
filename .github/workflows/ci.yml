@@ -97,6 +97,32 @@ jobs:
           grep -q 'allocate_inbox' target/idl/royaltyrail.json
           grep -q 'claim_participant' target/idl/royaltyrail.json
 
+      # The deployable artifact: devnet deployments use these exact bytes, and the
+      # devnet lifecycle compares on-chain ProgramData against them.
+      - name: Record build hashes and source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build-artifact
+          cp target/deploy/royaltyrail.so target/idl/royaltyrail.json build-artifact/
+          git -c safe.directory='*' rev-parse HEAD > build-artifact/SOURCE_COMMIT
+          {
+            anchor --version
+            solana --version
+            rustc --version
+            echo "declare_id: $(grep -o 'declare_id!("[^"]*")' programs/royaltyrail/src/lib.rs)"
+          } > build-artifact/BUILD_INFO
+          (cd build-artifact && sha256sum royaltyrail.so royaltyrail.json > SHA256SUMS)
+          cat build-artifact/SOURCE_COMMIT build-artifact/BUILD_INFO build-artifact/SHA256SUMS
+          stat -c '%n %s bytes' build-artifact/royaltyrail.so
+
+      - name: Upload deployable program artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: royaltyrail-sbf-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build-artifact/
+          if-no-files-found: error
+
   localnet-e2e:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -111,6 +137,8 @@ jobs:
             script: test
           - name: Local validator adversarial matrix
             script: test-adversarial
+          - name: Local validator devnet-lifecycle rehearsal
+            script: test-devnet-rehearsal
     container:
       image: quay.io/ottersec/anchor:v1.2.1
       # Agave 4.1.2 asserts io_uring support at startup; Docker's default
@@ -135,6 +163,8 @@ jobs:
           test "$(node -p "require('./node_modules/@anchor-lang/core/package.json').version")" = "1.2.1"
           test "$(node -p "require('./node_modules/@solana/web3.js/package.json').version")" = "1.99.0"
           test "$(node -p "require('./node_modules/@solana/spl-token/package.json').version")" = "0.4.15"
+          # The devnet lifecycle cross-checks against the compiled TypeScript reference.
+          npm run build
 
       - name: Create disposable localnet wallet and program identity
         shell: bash
@@ -167,3 +197,11 @@ jobs:
             cat .anchor/program-logs/*.log 2>/dev/null || true
           fi
           exit "$status"
+
+      - name: Upload E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence-${{ matrix.script }}
+          path: target/e2e/
+          if-no-files-found: ignore
