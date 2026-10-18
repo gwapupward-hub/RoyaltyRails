@@ -38,9 +38,10 @@ assert.equal(pmpIdl.toBase58(), '6Au73HiMX852zhgyTuYNkYDQHZWiCb6rxZ4EsVyyc2p3');
 assert.equal(pmpSecurity.toBase58(), '6yKDZVfqNwoDDBkSUBG2t2U6aApcNmqC8MtYGuPYDSxb');
 
 const slot = await connection.getSlot('finalized');
-const [pInfo, dInfo, idlInfo, securityInfo] = await connection.getMultipleAccountsInfo(
-  [program, programData, pmpIdl, pmpSecurity], 'finalized',
+const [pInfo, dInfo, pmpProgramInfo, idlInfo, securityInfo] = await connection.getMultipleAccountsInfo(
+  [program, programData, metadataProgram, pmpIdl, pmpSecurity], 'finalized',
 );
+assert.ok(pmpProgramInfo?.executable, 'Program Metadata Program is missing or not executable on this cluster');
 assert.ok(pInfo?.executable, 'program does not exist or is not executable');
 assert.ok(pInfo.owner.equals(LOADER), 'wrong program owner');
 assert.equal(pInfo.data.readUInt32LE(0), 2, 'wrong program account type');
@@ -63,6 +64,8 @@ const record = {
   upgradeAuthority: expectedAuthority,
   programBinarySha256: binary.sha256,
   metadataProgramId: metadataProgram.toBase58(),
+  metadataProgramExecutable: pmpProgramInfo.executable,
+  metadataProgramOwner: pmpProgramInfo.owner.toBase58(),
   accounts: {
     idl: {
       pda: pmpIdl.toBase58(),
