@@ -1,0 +1,45 @@
+{
+  "schema": "royaltyrails-devnet-manifest-v1",
+  "cluster": "devnet",
+  "genesisHash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+  "sourceCommit": "20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e",
+  "buildInputs": [
+    "programs",
+    "crates",
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+    "Anchor.toml"
+  ],
+  "toolchain": {
+    "container": "quay.io/ottersec/anchor:v1.2.1",
+    "anchor": "anchor-cli 1.2.1",
+    "solana": "solana-cli 4.1.2 (src:182084b8; feat:c763ae0a, client:Agave)",
+    "rustc": "rustc 1.89.0 (29483883e 2025-08-04)"
+  },
+  "ci": {
+    "repository": "gwapupward-hub/RoyaltyRails",
+    "runId": "39092819552",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/gwapupward-hub/RoyaltyRails/actions/runs/39092819552",
+    "artifactName": "royaltyrail-sbf-20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e"
+  },
+  "artifacts": {
+    "royaltyrail.so": {
+      "sha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+      "bytes": 609376
+    },
+    "royaltyrail.json": {
+      "sha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+      "bytes": 78057
+    }
+  },
+  "authorities": {
+    "deployer": "Gpub3uSCyGZDpHGMeRmnw3a7cf1X2usW41ioLDaSgQMa",
+    "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+    "governance": "9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m",
+    "guardian": "9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp"
+  },
+  "deployable": true
+}

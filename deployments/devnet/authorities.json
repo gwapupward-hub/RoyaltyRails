@@ -1,0 +1,9 @@
+{
+  "cluster": "devnet",
+  "genesisHash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+  "deployer": "Gpub3uSCyGZDpHGMeRmnw3a7cf1X2usW41ioLDaSgQMa",
+  "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+  "governance": "9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m",
+  "guardian": "9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp"
+}

@@ -1,0 +1,17 @@
+{
+  "suite": "phase-3d.4-deployment",
+  "cluster": "devnet",
+  "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+  "programData": "2YGn5tQGmfQWfSGnFzxeKNxVaLzD43LJhme8jXqRcPZF",
+  "deploySlot": 512336328,
+  "deploySignature": "4B3m2MAozfJAxEaLXvzszvKBYqpynFs5K2fKFjUyFQXgkjx661uh4aHcnEmm7PNRLos6ZkQZAAZM3YY5LZPZYvxC",
+  "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+  "deployer": "Gpub3uSCyGZDpHGMeRmnw3a7cf1X2usW41ioLDaSgQMa",
+  "sourceCommit": "20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e",
+  "manifestSha256": "8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66",
+  "programSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+  "deployedProgramSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+  "idlSha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+  "programBytes": 609376
+}

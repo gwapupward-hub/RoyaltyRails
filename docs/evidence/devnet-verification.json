@@ -1,0 +1,197 @@
+{
+  "suite": "phase-3d.4-independent-verification",
+  "cluster": "devnet",
+  "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "rpcUrl": "https://api.devnet.solana.com",
+  "commitment": "finalized",
+  "verifiedAt": "2026-10-18T06:19:54.859Z",
+  "manifestSha256": "8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66",
+  "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+  "evidence": [
+    "devnet-deployment.json",
+    "devnet-config.json",
+    "devnet-lifecycle-20261018T055623Z-run1.json",
+    "devnet-lifecycle-20261018T055623Z-run2.json"
+  ],
+  "checks": [
+    {
+      "name": "cluster is the manifest's devnet (by genesis hash)",
+      "status": "PASS",
+      "detail": {
+        "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+        "rpc": "https://api.devnet.solana.com"
+      }
+    },
+    {
+      "name": "program account exists, is executable, and is owned by the upgradeable loader",
+      "status": "PASS",
+      "detail": {
+        "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+        "programData": "2YGn5tQGmfQWfSGnFzxeKNxVaLzD43LJhme8jXqRcPZF"
+      }
+    },
+    {
+      "name": "ProgramData upgrade authority is the manifest's upgrade authority",
+      "status": "PASS",
+      "detail": {
+        "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+        "lastDeploySlot": "512336328"
+      }
+    },
+    {
+      "name": "deployed program bytes are exactly the frozen build",
+      "status": "PASS",
+      "detail": {
+        "sha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+        "bytes": 609376,
+        "programDataCapacity": 609376
+      }
+    },
+    {
+      "name": "deployment transaction succeeded, paid by the deployer, signed by the program key and upgrade authority",
+      "status": "PASS",
+      "detail": {
+        "signature": "4B3m2MAozfJAxEaLXvzszvKBYqpynFs5K2fKFjUyFQXgkjx661uh4aHcnEmm7PNRLos6ZkQZAAZM3YY5LZPZYvxC"
+      }
+    },
+    {
+      "name": "ProtocolConfig holds the permanent governance, guardian, token program, and deployment ID",
+      "status": "PASS",
+      "detail": {
+        "config": "2mjq5rPDHCamoqFkDmh277Y44pf8nKfUyw9byJPK1Qtq",
+        "governance": "9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m",
+        "guardian": "9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp",
+        "settlementMint": "GcvqpGThY4ay9Ro7tfWwdSmKWYw8ZruZyvEwSdbnLUtZ",
+        "deploymentIdHex": "45e3af412cd0c50ce93ab0d0ca10ce3fb130bd9a2fb0de7b39ffaa9781cba9eb"
+      }
+    },
+    {
+      "name": "initialize_config was co-signed by governance and the upgrade authority",
+      "status": "PASS",
+      "detail": {
+        "signature": "V9iqdSszP8bvTbYu8r7wJLpgPQiNp64VUwFunY6EFieyr4wKCt76Lj935b4cLqb6jZqN2jDxYj5PmUBztKpHUQJ"
+      }
+    },
+    {
+      "name": "settlement test mint: six decimals, deployer mint authority, no freeze authority, supply fully accounted",
+      "status": "PASS",
+      "detail": {
+        "mint": "GcvqpGThY4ay9Ro7tfWwdSmKWYw8ZruZyvEwSdbnLUtZ",
+        "supply": "4222222"
+      }
+    },
+    {
+      "name": "the 16-participant lifecycle ran at least twice",
+      "status": "PASS",
+      "detail": [
+        "devnet-lifecycle-20261018T055623Z-run1.json",
+        "devnet-lifecycle-20261018T055623Z-run2.json"
+      ]
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run1: Work, pool, agreement, vault, and Royalty Inbox addresses are canonical",
+      "status": "PASS"
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run1: agreement hash recomputed from on-chain accounts matches, and all 16 participants approved",
+      "status": "PASS",
+      "detail": {
+        "agreementHashHex": "18071534659433ac27691449c2e75f6297a58fc082ca67c655d8425967529f8e"
+      }
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run1: every allocation and commitment recomputed from its transaction's event matches",
+      "status": "PASS",
+      "detail": [
+        {
+          "step": "fund_and_allocate #1",
+          "mode": 0,
+          "commitment": "6e2135100aca29caf99371a727484535fd5d496ede10ee7c0d57e5eb465ecda0"
+        },
+        {
+          "step": "allocate_inbox",
+          "mode": 1,
+          "commitment": "28e98af5dd61b8ed2cd480527f7e6a90cbc2314774f2407cfd96e141ca1aed9c"
+        },
+        {
+          "step": "fund_and_allocate #2",
+          "mode": 0,
+          "commitment": "7be13560bb87bf11ca657b099d29f5980c407ca37fc06bdeb3ede6b8d081fd05"
+        }
+      ]
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run1: final agreement state equals the reference engine; every participant fully claimed",
+      "status": "PASS",
+      "detail": {
+        "cumulativeGross": "2111111"
+      }
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run1: payout rotation, token conservation, and inbox solvency hold on-chain",
+      "status": "PASS",
+      "detail": {
+        "minted": "2111111",
+        "held": "2111111",
+        "royaltyInbox": "0"
+      }
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run1: all 62 recorded transactions are finalized, succeeded, and were paid by the deployer",
+      "status": "PASS"
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run2: Work, pool, agreement, vault, and Royalty Inbox addresses are canonical",
+      "status": "PASS"
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run2: agreement hash recomputed from on-chain accounts matches, and all 16 participants approved",
+      "status": "PASS",
+      "detail": {
+        "agreementHashHex": "cfdb7a6c27cbd051477267e6141d426c88e5616cd9f5530398ba610151e0232c"
+      }
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run2: every allocation and commitment recomputed from its transaction's event matches",
+      "status": "PASS",
+      "detail": [
+        {
+          "step": "fund_and_allocate #1",
+          "mode": 0,
+          "commitment": "84cca2259e861eb22e2091d124de56c61d805fd3ac3ec0a576b2a85b76391127"
+        },
+        {
+          "step": "allocate_inbox",
+          "mode": 1,
+          "commitment": "6a6fc6375fb3b5f48c656da719fdd6ef5c2f0982e15eeb7420bcd8b384871055"
+        },
+        {
+          "step": "fund_and_allocate #2",
+          "mode": 0,
+          "commitment": "cf5f67fc42696431c3dbbc66d17e01077bca469ad776b9a060ea44fa9e04399b"
+        }
+      ]
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run2: final agreement state equals the reference engine; every participant fully claimed",
+      "status": "PASS",
+      "detail": {
+        "cumulativeGross": "2111111"
+      }
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run2: payout rotation, token conservation, and inbox solvency hold on-chain",
+      "status": "PASS",
+      "detail": {
+        "minted": "2111111",
+        "held": "2111111",
+        "royaltyInbox": "0"
+      }
+    },
+    {
+      "name": "devnet-lifecycle-20261018T055623Z-run2: all 62 recorded transactions are finalized, succeeded, and were paid by the deployer",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}

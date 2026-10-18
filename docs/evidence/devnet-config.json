@@ -1,0 +1,63 @@
+{
+  "suite": "phase-3d.4-config",
+  "cluster": "devnet",
+  "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "generatedAt": "2026-10-18T05:55:42.316Z",
+  "program": {
+    "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+    "loader": "BPFLoaderUpgradeab1e11111111111111111111111",
+    "idlSha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+    "localProgramSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+    "programData": "2YGn5tQGmfQWfSGnFzxeKNxVaLzD43LJhme8jXqRcPZF",
+    "lastDeploySlot": "512336328",
+    "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+    "deployedProgramSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+    "deployedMatchesLocalBuild": true
+  },
+  "config": {
+    "address": "2mjq5rPDHCamoqFkDmh277Y44pf8nKfUyw9byJPK1Qtq",
+    "initializedThisRun": true,
+    "initializationSignature": "V9iqdSszP8bvTbYu8r7wJLpgPQiNp64VUwFunY6EFieyr4wKCt76Lj935b4cLqb6jZqN2jDxYj5PmUBztKpHUQJ",
+    "governance": "9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m",
+    "guardian": "9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp",
+    "settlementMint": "GcvqpGThY4ay9Ro7tfWwdSmKWYw8ZruZyvEwSdbnLUtZ",
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "deploymentIdHex": "45e3af412cd0c50ce93ab0d0ca10ce3fb130bd9a2fb0de7b39ffaa9781cba9eb"
+  },
+  "transactions": [
+    {
+      "label": "fund governance for ProtocolConfig rent",
+      "signature": "55GPZPVkPconPH7EbCem1GW1CgHaaF81vgTD5aS7YAKM4ntQLGZuJDaSRbRcELmxKT812p86ASoJCKTa87vLBS8J",
+      "slot": 512336920,
+      "computeUnits": 150,
+      "feeLamports": 5000,
+      "transactionBytes": 215,
+      "explorer": "https://explorer.solana.com/tx/55GPZPVkPconPH7EbCem1GW1CgHaaF81vgTD5aS7YAKM4ntQLGZuJDaSRbRcELmxKT812p86ASoJCKTa87vLBS8J?cluster=devnet"
+    },
+    {
+      "label": "create settlement test mint",
+      "signature": "4VhXuxGkmg5Xev1c38MocJPWZ5Y2cr6GxXV1y4HEJVf7mR2XRasZj27LLstJGZ8QXA3caqUT4yUDHbbs2cFn72U5",
+      "slot": 512336950,
+      "computeUnits": 352,
+      "feeLamports": 10000,
+      "transactionBytes": 390,
+      "explorer": "https://explorer.solana.com/tx/4VhXuxGkmg5Xev1c38MocJPWZ5Y2cr6GxXV1y4HEJVf7mR2XRasZj27LLstJGZ8QXA3caqUT4yUDHbbs2cFn72U5?cluster=devnet"
+    },
+    {
+      "label": "initialize ProtocolConfig",
+      "signature": "V9iqdSszP8bvTbYu8r7wJLpgPQiNp64VUwFunY6EFieyr4wKCt76Lj935b4cLqb6jZqN2jDxYj5PmUBztKpHUQJ",
+      "slot": 512336975,
+      "computeUnits": 11327,
+      "feeLamports": 15000,
+      "transactionBytes": 601,
+      "explorer": "https://explorer.solana.com/tx/V9iqdSszP8bvTbYu8r7wJLpgPQiNp64VUwFunY6EFieyr4wKCt76Lj935b4cLqb6jZqN2jDxYj5PmUBztKpHUQJ?cluster=devnet"
+    }
+  ],
+  "checks": [
+    "deployed program bytes equal the frozen build",
+    "ProgramData upgrade authority is the expected key and co-signed initialize_config",
+    "ProtocolConfig governance, guardian, and token program match the expected owner configuration",
+    "ProtocolConfig is unpaused; the settlement test mint has six decimals and the deployer as mint authority"
+  ],
+  "status": "PASS"
+}

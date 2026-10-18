@@ -127,6 +127,8 @@ reserved: [u8; 64]
 Rules:
 
 - exactly one config per deployment;
+- initialization requires the co-signature of the program's current upgrade authority, verified against this program's own ProgramData account. Governance also co-signs and pays. Initialization is therefore never first-caller-wins, and an immutable program (no upgrade authority) must initialize its config before it is finalized;
+- governance is fixed at initialization; v1 has no governance-rotation instruction;
 - non-zero immutable deployment ID;
 - immutable settlement mint/token program;
 - original SPL Token Program only;
