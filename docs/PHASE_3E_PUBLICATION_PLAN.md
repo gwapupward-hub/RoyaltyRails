@@ -26,6 +26,8 @@ Program Metadata Program: `ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S`. Canonic
 
 **Derived is not deployed:** PDA account existence and owner must be checked on fresh finalized RPC before publication.
 
+**Completed on 2026-10-18:** [Read-only GitHub Actions preflight](https://github.com/gwapupward-hub/RoyaltyRails/actions/runs/39110721630) passed against finalized Devnet slot `512372111`; both canonical accounts were absent. Program binary and authority matched the frozen manifest, genesis was correct, and no transactions were sent. Evidence: [`devnet-preflight-20261018.json`](evidence/phase-3e/devnet-preflight-20261018.json). Recheck immediately before publication, since this is a historical snapshot.
+
 ## Owner/operator keyless checks
 
 From a clean checkout of PR #10, without importing keypairs:
