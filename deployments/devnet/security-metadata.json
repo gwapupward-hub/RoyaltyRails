@@ -1,0 +1,14 @@
+{
+  "name": "RoyaltyRails Protocol",
+  "description": "A Solana protocol for participant-approved royalty and revenue-sharing agreements, deterministic revenue allocation, and independently claimable settlement payouts. Devnet testing only; not audited or mainnet-ready.",
+  "project_url": "https://github.com/gwapupward-hub/RoyaltyRails",
+  "contacts": [
+    "email:thagwapspot@gmail.com"
+  ],
+  "policy": "https://github.com/gwapupward-hub/RoyaltyRails/blob/main/SECURITY.md",
+  "preferred_languages": [
+    "en"
+  ],
+  "source_code": "https://github.com/gwapupward-hub/RoyaltyRails",
+  "source_revision": "20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e"
+}
