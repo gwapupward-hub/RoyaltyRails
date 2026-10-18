@@ -160,7 +160,7 @@ CI runs the matrix on a fresh validator in the `quay.io/ottersec/anchor:v1.2.1` 
 
 ```bash
 npm ci
-npm install --no-save --package-lock=false @anchor-lang/core@1.2.1 @solana/web3.js@1.99.0 @solana/spl-token@0.4.15
+npm ci --prefix tests/e2e --ignore-scripts
 solana-keygen new --no-bip39-passphrase --silent --force -o ~/.config/solana/id.json
 solana-keygen new --no-bip39-passphrase --silent --force -o target/deploy/royaltyrail-keypair.json
 anchor keys sync

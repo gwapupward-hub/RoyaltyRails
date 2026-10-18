@@ -1,0 +1,11 @@
+{
+  "name": "royaltyrail-e2e-clients",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pinned Solana client libraries for the local-validator and devnet E2E scripts. Install with: npm ci --prefix tests/e2e --ignore-scripts",
+  "dependencies": {
+    "@anchor-lang/core": "1.2.1",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.99.0"
+  }
+}

@@ -22,9 +22,9 @@ use state::{
     WORK_ACCOUNT_BYTES,
 };
 
-// Temporary compile-time development ID. Before local-validator/devnet deployment,
-// generate the program keypair and run `anchor keys sync`; never treat this address
-// as a production deployment ID.
+// Program ID. Until the owner freezes the devnet identity (deployments/devnet/,
+// scripts/devnet/generate-keys.sh) this is a temporary development ID. CI's
+// localnet lanes replace it with a throwaway key; it is never a mainnet ID.
 declare_id!("ErqjTNhQWyLCjJZpFg9jyGAgWJS7KYLN5kFUiNf3KYdH");
 
 const SPL_TOKEN_MINT_BYTES: usize = 82;

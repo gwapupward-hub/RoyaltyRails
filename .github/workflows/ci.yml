@@ -71,6 +71,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref_name }}
+          # Full history: the frozen devnet manifest is compared with its source commit.
+          fetch-depth: 0
 
       - name: Verify pinned Anchor and Solana CLIs
         shell: bash
@@ -97,6 +99,17 @@ jobs:
           grep -q 'allocate_inbox' target/idl/royaltyrail.json
           grep -q 'claim_participant' target/idl/royaltyrail.json
 
+      - name: Verify one program ID across declare_id!, IDL, binary, Anchor.toml, and devnet authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--so target/deploy/royaltyrail.so --idl target/idl/royaltyrail.json
+                --source programs/royaltyrail/src/lib.rs --anchor-toml Anchor.toml)
+          if [ -f deployments/devnet/authorities.json ]; then
+            args+=(--authorities deployments/devnet/authorities.json)
+          fi
+          node scripts/devnet/program-id.mjs check "${args[@]}"
+
       # The deployable artifact: devnet deployments use these exact bytes, and the
       # devnet lifecycle compares on-chain ProgramData against them.
       - name: Record build hashes and source commit
@@ -119,6 +132,22 @@ jobs:
           (cd build-artifact && sha256sum royaltyrail.so royaltyrail.json > SHA256SUMS)
           cat build-artifact/SOURCE_COMMIT build-artifact/BUILD_INFO build-artifact/SHA256SUMS
           stat -c '%n %s bytes' build-artifact/royaltyrail.so
+          RR_BUILD_CONTAINER=quay.io/ottersec/anchor:v1.2.1 node scripts/devnet/manifest.mjs create \
+            --artifact-dir build-artifact --out build-artifact/MANIFEST.json \
+            --authorities deployments/devnet/authorities.json
+
+      # Once a devnet manifest is frozen, every later build of the same program sources
+      # must reproduce its hashes exactly.
+      - name: Verify the frozen devnet manifest reproduces
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f deployments/devnet/manifest.json ]; then
+            node scripts/devnet/manifest.mjs verify-frozen \
+              --frozen deployments/devnet/manifest.json --artifact-dir build-artifact
+          else
+            echo "no frozen devnet manifest yet"
+          fi
 
       - name: Upload deployable program artifact
         uses: actions/upload-artifact@v4
@@ -160,13 +189,11 @@ jobs:
         run: |
           set -euo pipefail
           npm ci
-          npm install --no-save --package-lock=false \
-            @anchor-lang/core@1.2.1 \
-            @solana/web3.js@1.99.0 \
-            @solana/spl-token@0.4.15
-          test "$(node -p "require('./node_modules/@anchor-lang/core/package.json').version")" = "1.2.1"
-          test "$(node -p "require('./node_modules/@solana/web3.js/package.json').version")" = "1.99.0"
-          test "$(node -p "require('./node_modules/@solana/spl-token/package.json').version")" = "0.4.15"
+          # Integrity-locked client libraries, installed as in the owner's Codespace.
+          npm ci --prefix tests/e2e --ignore-scripts
+          test "$(node -p "require('./tests/e2e/node_modules/@anchor-lang/core/package.json').version")" = "1.2.1"
+          test "$(node -p "require('./tests/e2e/node_modules/@solana/web3.js/package.json').version")" = "1.99.0"
+          test "$(node -p "require('./tests/e2e/node_modules/@solana/spl-token/package.json').version")" = "0.4.15"
           # The devnet lifecycle cross-checks against the compiled TypeScript reference.
           npm run build
 
