@@ -1,6 +1,6 @@
 # RoyaltyRail Devnet Deployment V1
 
-Status: **identity frozen; not deployed.** The owner published the five public devnet addresses in commit `20ccae9`, and the deployment manifest is frozen. Every technical Gate 6 criterion is met, including reproducibility in two later CI builds; Gate 6 awaits only the owner's custody attestation. Gate 7 is blocked on the owner's deploy, initialization, and lifecycle runs. Nothing has been deployed to any cluster.
+Status: **devnet deployed and independently verified.** Phase 3D hard gates 6 (permanent devnet identity) and 7 (devnet deployment evidence) are complete for this devnet deployment. No mainnet operation was performed. The five private keys remain outside the repository and CI.
 
 This document is the deployment runbook and, once completed, the deployment record. Devnet proof is a deployment and integration milestone. It is not a smart-contract security audit, and devnet is not mainnet.
 
@@ -10,8 +10,8 @@ The runbook below still applies from step 5 onward, run on that machine instead 
 
 | Gate | Status | Blocked on |
 |---|---|---|
-| 6. Permanent devnet identity frozen securely | technical criteria met; PASS pending attestation | owner attestation that the five keys were generated in the owner-controlled environment with the three backups verified by re-entry |
-| 7. Devnet deployment and end-to-end smoke evidence | BLOCKED | Gate 6, then the owner's deploy, initialization, and lifecycle runs |
+| 6. Permanent devnet identity frozen securely | PASS | frozen public identity commit `20ccae9`; manifest commit `97e3b76`; six CI jobs green |
+| 7. Devnet deployment and end-to-end smoke evidence | PASS | finalized deployment, initialization, two lifecycle runs, and 21/21 independent checks |
 
 ## Deployment record
 
@@ -23,12 +23,12 @@ The runbook below still applies from step 5 onward, run on that machine instead 
 | Source commit / CI run that built the artifact | `20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e` / [run 39092819552](https://github.com/gwapupward-hub/RoyaltyRails/actions/runs/39092819552) (all six jobs green), artifact `royaltyrail-sbf-20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e` |
 | Program binary / IDL SHA-256 | `ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a` (609,376 bytes) / `07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa` (78,057 bytes) |
 | Reproduced by later CI builds | yes: byte-identical hashes from independent CI builds of `97e3b76` ([run 39094215260](https://github.com/gwapupward-hub/RoyaltyRails/actions/runs/39094215260)) and `3e704c6` ([run 39094398777](https://github.com/gwapupward-hub/RoyaltyRails/actions/runs/39094398777)); all six jobs green on both |
-| Deployment transaction, slot, ProgramData | pending: `docs/evidence/devnet-deployment.json` |
+| Deployment transaction, slot, ProgramData | `docs/evidence/devnet-deployment.json`; signature `4B3m2MAozfJAxEaLXvzszvKBYqpynFs5K2fKFjUyFQXgkjx661uh4aHcnEmm7PNRLos6ZkQZAAZM3YY5LZPZYvxC`, slot `512336328`, ProgramData `2YGn5tQGmfQWfSGnFzxeKNxVaLzD43LJhme8jXqRcPZF` |
 | Deployer / upgrade authority | `Gpub3uSCyGZDpHGMeRmnw3a7cf1X2usW41ioLDaSgQMa` / `CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg` |
 | Governance / guardian | `9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m` (permanent) / `9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp` |
-| ProtocolConfig, deployment ID, settlement test mint | pending: `docs/evidence/devnet-config.json` |
-| Lifecycle runs (16 participants, twice) | pending: `docs/evidence/devnet-lifecycle-*.json` |
-| Independent verification | pending: `docs/evidence/devnet-verification.json` |
+| ProtocolConfig, deployment ID, settlement test mint | `docs/evidence/devnet-config.json`; config `2mjq5rPDHCamoqFkDmh277Y44pf8nKfUyw9byJPK1Qtq`; mint `GcvqpGThY4ay9Ro7tfWwdSmKWYw8ZruZyvEwSdbnLUtZ` |
+| Lifecycle runs (16 participants, twice) | `docs/evidence/devnet-lifecycle-20261018T055623Z-run1.json` and `-run2.json`; both PASS |
+| Independent verification | `docs/evidence/devnet-verification.json`; 21/21 checks PASS at finalized commitment |
 
 ## Signing model
 

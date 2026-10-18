@@ -54,26 +54,13 @@ The placeholders must be replaced with the five public addresses. No private-key
 
 ## Gate 6 readiness
 
-**Status: BLOCKED — owner action required.** The branch contains the consistency checks, pinned build/manifest workflow, and public-only authority preparation. Gate 6 cannot pass until the owner:
-
-- generates all five devnet identities in the owner-controlled environment;
-- verifies the three critical paper backups by re-entry;
-- publishes only `deployments/devnet/authorities.json` plus the synchronized public program-ID files;
-- obtains a clean pinned CI build, freezes `deployments/devnet/manifest.json`, and gets the reproducibility and all required CI lanes green.
-
-No Gate 6 identity was frozen by this task.
+**Status: PASS.** The owner confirmed secure backup of all five devnet-only identities. Public identity commit `20ccae9`, frozen-manifest commit `97e3b76`, CI run `39092819552`, and post-freeze reproducibility CI run `39094215260` are recorded. All six required CI jobs passed, and the frozen manifest SHA-256 is `8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66`.
 
 ## Gate 7 readiness
 
-**Status: NOT READY / NOT STARTED.** The deployment and initialization scripts are prepared but no devnet operation was run. Gate 7 still requires owner authorization and signatures for:
+**Status: PASS.** The owner approved Stage 4. The frozen artifact was deployed to devnet, finalized-chain verification confirmed the expected upgrade authority and byte-identical program, ProtocolConfig was initialized with governance plus upgrade-authority signatures, and the deployer-only 16-participant lifecycle passed twice. The independent keyless verifier passed 21/21 finalized-RPC checks. Public evidence is under `docs/evidence/`.
 
-1. deploying the frozen artifact with `deploy.sh`;
-2. initializing ProtocolConfig with governance plus upgrade-authority signatures via `init-config.sh`;
-3. running the deployer-only lifecycle twice;
-4. publishing public evidence; and
-5. independent finalized-RPC verification and green CI.
-
-This task deliberately stopped before all of those irreversible or authority-signing actions.
+PR #9 was not merged. No mainnet operation was performed.
 
 ## Blockers and owner decisions
 

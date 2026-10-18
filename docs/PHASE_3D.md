@@ -141,7 +141,7 @@ After the local-validator gate is green:
 
 Devnet proof is a deployment/integration milestone, not a smart-contract security audit.
 
-Status: **identity frozen (owner commit `20ccae9`, program `Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB`); manifest frozen; manifest reproduced by two later CI builds; Gate 6 PASS pending only the owner's custody attestation; Gate 7 BLOCKED on owner deployment. Not deployed.** No private key may exist in CI or an agent runtime. Prepared and rehearsed end to end on a local validator:
+Status: **complete for the recorded devnet deployment; hard gates 6 and 7 PASS.** The five private keys remain outside the repository, CI, and agent runtime. Prepared, deployed, and independently verified:
 
 - **Initialization front-running is closed.** `initialize_config` requires the program's current upgrade authority as co-signer, verified against this program's ProgramData (`CFG-04` to `CFG-08`).
 - **Owner-custodied signing model.** Every key is generated and used only in the owner's Codespace. Each step reads only the keys it needs: lifecycle runs read only the deployer, and the governance key is read only during initialization. Deployment and initialization require typed owner authorization. Key-using scripts refuse agent and CI shells on devnet.
@@ -158,14 +158,14 @@ Status: **identity frozen (owner commit `20ccae9`, program `Eo6eWYymSrZ8eJMaSwcb
   - `tests/e2e/devnet-verify.mjs` independently verifies everything from fresh `finalized` RPC reads, recomputing the agreement hash, allocations, and commitments with the TypeScript reference.
 - The adversarial harness tolerates web3.js's two ways of reporting a landed failure, which removes a latent race-dependent flake.
 
-Remaining, in order (`DEPLOYMENT_DEVNET_V1.md` has the exact commands and acceptance criteria):
+Completed in order (`DEPLOYMENT_DEVNET_V1.md` contains the public record):
 
-1. ~~The owner publishes the five public addresses~~: done in `20ccae9` (owner-controlled machine; `prepare-authorities.sh`).
-2. ~~Freeze the CI manifest; later CI builds reproduce it with all six jobs green~~: done (runs 39094215260, 39094398777). The owner attests custody (Gate 6).
-3. The owner fetches the frozen artifact, deploys, initializes, and runs the lifecycle, then pushes the public evidence.
-4. Claude verifies the deployment against devnet and records it (Gate 7).
+1. Five devnet identities were generated and backed up under the approved devnet-only custody exception; only public addresses were committed.
+2. The CI manifest was frozen and reproduced by later CI runs, with all six jobs green (Gate 6).
+3. The frozen artifact was deployed, ProtocolConfig initialized with governance and upgrade-authority signatures, and the deployer-only lifecycle passed twice.
+4. The independent finalized-RPC verifier passed 21/21 checks and public evidence was recorded (Gate 7).
 
-Hard-gate items 6 and 7 are not yet met.
+Hard-gate items 6 and 7 are met for this devnet deployment. PR #9 remains unmerged.
 
 ## Explicit non-goals
 

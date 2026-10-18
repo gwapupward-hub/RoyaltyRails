@@ -1,0 +1,812 @@
+{
+  "suite": "phase-3d.4-lifecycle",
+  "cluster": "devnet",
+  "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "generatedAt": "2026-10-18T06:07:36.373Z",
+  "program": {
+    "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+    "loader": "BPFLoaderUpgradeab1e11111111111111111111111",
+    "idlSha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+    "localProgramSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+    "programData": "2YGn5tQGmfQWfSGnFzxeKNxVaLzD43LJhme8jXqRcPZF",
+    "lastDeploySlot": "512336328",
+    "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+    "deployedProgramSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+    "deployedMatchesLocalBuild": true
+  },
+  "config": {
+    "address": "2mjq5rPDHCamoqFkDmh277Y44pf8nKfUyw9byJPK1Qtq",
+    "initializedThisRun": false,
+    "initializationSignature": null,
+    "governance": "9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m",
+    "guardian": "9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp",
+    "settlementMint": "GcvqpGThY4ay9Ro7tfWwdSmKWYw8ZruZyvEwSdbnLUtZ",
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "deploymentIdHex": "45e3af412cd0c50ce93ab0d0ca10ce3fb130bd9a2fb0de7b39ffaa9781cba9eb"
+  },
+  "run": {
+    "feePayer": "Gpub3uSCyGZDpHGMeRmnw3a7cf1X2usW41ioLDaSgQMa",
+    "funder": "ACP5mFdrbHff4xC61K9xwQxouJ5JGJdnVaYkqLgUsnzq",
+    "funderTokenAccount": "2fx15RzaABfniMQLewZ34rXpdjBohC38XtWpoZoY2N6D",
+    "rotatedPayoutWallet": "5XJQfGKsvpVFZMKyhZ7AGNbyPXnbUQ1yFJkMFaoX8Hcn",
+    "minted": "2111111",
+    "work": "9ryKxgnEf5uZKBASBwww2QrXZNKUtQJMTEj9BjxH14yA",
+    "revenuePool": "6g74VZTSjk1Geafo696S3PAcFZPPuDrARVHHE6RaqhAT",
+    "agreement": "ACUmevRX6gfeTWFEujpk8wVw4XenAj1dZrDH1CAnTZBt",
+    "agreementHashHex": "18071534659433ac27691449c2e75f6297a58fc082ca67c655d8425967529f8e",
+    "vaultAuthority": "93UFHo9pKUuFEeXUqxzcLNgXWhYD12fEkh8pEtJXmXpx",
+    "royaltyInbox": "GTvBedtuVrThX1oNxK9TZWqXJYjmicnCVz6nquKBs9vK",
+    "participants": [
+      {
+        "authority": "hAV79j1DMyLEaW2qLoiCpS6D5NK6bwUbuo7ofcj1dEv",
+        "shareUnits": 12345678,
+        "payoutDestination": [
+          "GMvLNNfqodfqafFk8gHWEtkoNu5oDs7xhwGjR76Jc7CU",
+          "23WzViqr4GbBFiJ873dNp96ZCwe6fy5t9czTB5NhzBeo"
+        ],
+        "claimed": "260631"
+      },
+      {
+        "authority": "29u7o9Lc2BUmfT2Yu3F37DVnnp5TxiJ9XNRxWefrPg1i",
+        "shareUnits": 9876543,
+        "payoutDestination": "CkrTzNBw3YvTQzHBE5N6aaJHkxusNJ8txbFK8wHFdnGH",
+        "claimed": "208505"
+      },
+      {
+        "authority": "3TBSfPpqXLmxDDn19Bi8xeW2BQtSVFREW1LidrXGU9sR",
+        "shareUnits": 8765432,
+        "payoutDestination": "3ngyqQYZ8CmUPcsfBJctR29osntn2g1VGwwUPsnnyYTs",
+        "claimed": "185048"
+      },
+      {
+        "authority": "5EB3DXVn5bP9MzmzSppF6JFA6fV2L7eWfP9Nz86NaNeh",
+        "shareUnits": 7654321,
+        "payoutDestination": "6ZyyT822zzLW6m93bQMcdtyUZWoQEtmTdnxmKKvJQ3jK",
+        "claimed": "161591"
+      },
+      {
+        "authority": "5ZPSqZSXSNYxotrvfTcagjkS5T3Q6jKxquAUDHHn6dFm",
+        "shareUnits": 6543210,
+        "payoutDestination": "5AydAvA7NzvFsp854jodmTTnTVEGyArtW4d4Em19XEzx",
+        "claimed": "138134"
+      },
+      {
+        "authority": "5jg2KzXtFGhKjedbkKSFJcGVa7NaaSaazqeCH1dRoojs",
+        "shareUnits": 5432109,
+        "payoutDestination": "2vqfbnzJZqq1EKDCyiWD97wCJGz711Xum6KPGEw3FjFC",
+        "claimed": "114678"
+      },
+      {
+        "authority": "5u2JRtHVxc3Eov7fReJ9ZQF5fF7iKGpFxkrVHG1D2EuV",
+        "shareUnits": 4321098,
+        "payoutDestination": "9wLrLSbWQrADzaGtrBj5YkRDCLi3UsEJrmafmkLGFmT4",
+        "claimed": "91223"
+      },
+      {
+        "authority": "6mAKYY5JcfPcWveguh69V6s1wKnRK5U5Y8ma35T4KChq",
+        "shareUnits": 3210987,
+        "payoutDestination": "BCSs6h6ddAuzvJzQrYQhNvbZQD4jD7NHeyyaer28f1J1",
+        "claimed": "67788"
+      },
+      {
+        "authority": "7ooYyot6NS2rdCekQGzygwugmEbaHbwy3gEh7GuZB5Nv",
+        "shareUnits": 2109876,
+        "payoutDestination": "8PRRhaFZxsozpKFkFAG7FBrurJjHdgtbdoH4B9syNexs",
+        "claimed": "44542"
+      },
+      {
+        "authority": "93v6wvpioG9aHhGomyHRruEwESUdBuGHH2VNeYEn3zBc",
+        "shareUnits": 1098765,
+        "payoutDestination": "RRYqBTnkUcUqwJwgbBrpqxL3ZeHyh5DE7LRfNwDeMMe",
+        "claimed": "23196"
+      },
+      {
+        "authority": "9y4d8xVQEu9CXw8hL1gKkwVrn1fSwKSL4SuKT15WDLMp",
+        "shareUnits": 987654,
+        "payoutDestination": "H6HhUsHoHhW8miRQDyip7jdhMF5wwMaf7mbg68wBXnQk",
+        "claimed": "20850"
+      },
+      {
+        "authority": "ARM4RcE3aiujbbZ6EZPBNRstvRAQs8oCbedVW5PQd6W2",
+        "shareUnits": 876543,
+        "payoutDestination": "58a4QixKqoobf88nX79bWrP2LaEVNYNWdTRcbVawiEvd",
+        "claimed": "18505"
+      },
+      {
+        "authority": "BAaHWfkau3ggRKzCNfwqm14NPMWwh6Bvb8htot6afcD8",
+        "shareUnits": 765432,
+        "payoutDestination": "465uvoJQcGPyBfY6kZtSiujCRthxApG3btRxzLGvZkai",
+        "claimed": "16159"
+      },
+      {
+        "authority": "EK9mEWVvb2SYDNCQYZZwFd5gHH94gKCcco8s8jNiiWDm",
+        "shareUnits": 654321,
+        "payoutDestination": "3Ubbf5jv4839EBtWbSGpVYx9qWDNCG9AiidLD5z13ev5",
+        "claimed": "13813"
+      },
+      {
+        "authority": "Gg5jXXqMKGv1cQ4bDP8LnDFikTM4F4Dq2QykWqxtzo7H",
+        "shareUnits": 543210,
+        "payoutDestination": "8fatKuTwdzuz92GYR6fmNk8dWkaZwjr4kanq314xG9dR",
+        "claimed": "11468"
+      },
+      {
+        "authority": "H3vR36TpNHMjAM4zBE6C7Pw87QJPrgtBaJz9XgAt3Skf",
+        "shareUnits": 34814821,
+        "payoutDestination": "ARkkqv76hr5zGhP5CY2utEZomm8nJKxMXvWS3ffCyQyU",
+        "claimed": "734980"
+      }
+    ],
+    "allocations": [
+      {
+        "step": "fund_and_allocate #1",
+        "amount": "1000003",
+        "paymentReferenceHex": "a18acd6e5c02ce217d9046a96602a47839c7c378bcd79754b5265a48e6a89950",
+        "allocations": [
+          "123457",
+          "98766",
+          "87655",
+          "76543",
+          "65432",
+          "54321",
+          "43211",
+          "32110",
+          "21099",
+          "10988",
+          "9877",
+          "8766",
+          "7654",
+          "6543",
+          "5432",
+          "348149"
+        ],
+        "commitment": "6e2135100aca29caf99371a727484535fd5d496ede10ee7c0d57e5eb465ecda0"
+      },
+      {
+        "step": "allocate_inbox",
+        "amount": "777777",
+        "paymentReferenceHex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "allocations": [
+          "96022",
+          "76817",
+          "68175",
+          "59534",
+          "50892",
+          "42250",
+          "33609",
+          "24974",
+          "16410",
+          "8546",
+          "7681",
+          "6817",
+          "5954",
+          "5089",
+          "4225",
+          "270782"
+        ],
+        "commitment": "28e98af5dd61b8ed2cd480527f7e6a90cbc2314774f2407cfd96e141ca1aed9c"
+      },
+      {
+        "step": "fund_and_allocate #2",
+        "amount": "333331",
+        "paymentReferenceHex": "5b09fbc6fbdf3702e3f720f4ae6d636bb0af7fc7ee754016cc5f7968ae77636b",
+        "allocations": [
+          "41152",
+          "32922",
+          "29218",
+          "25514",
+          "21810",
+          "18107",
+          "14403",
+          "10704",
+          "7033",
+          "3662",
+          "3292",
+          "2922",
+          "2551",
+          "2181",
+          "1811",
+          "116049"
+        ],
+        "commitment": "7be13560bb87bf11ca657b099d29f5980c407ca37fc06bdeb3ede6b8d081fd05"
+      }
+    ],
+    "final": {
+      "cumulativeGross": "2111111",
+      "directFundingNonce": "2",
+      "allocationSequence": "3",
+      "royaltyInboxBalance": "0"
+    }
+  },
+  "maxComputeUnitsByStep": {
+    "register Work": 11907,
+    "register RevenuePool": 11432,
+    "propose AgreementVersion v1 (16 participants)": 116490,
+    "approve participant": 16446,
+    "activate AgreementVersion v1": 17298,
+    "initialize Royalty Inbox": 41291,
+    "create token accounts 0-5": 88608,
+    "create token accounts 6-11": 85608,
+    "create token accounts 12-17": 85608,
+    "mint test settlement tokens to funder": 153,
+    "fund_and_allocate #1 (nonce 0)": 145440,
+    "external deposit to Royalty Inbox": 105,
+    "allocate_inbox": 141138,
+    "claim participant": 40863,
+    "participant 0 rotates payout wallet": 11510,
+    "fund_and_allocate #2 (nonce 1)": 145832
+  },
+  "maxTransactionBytes": 927,
+  "transactions": [
+    {
+      "label": "register Work",
+      "signature": "5Rh5VkQBjTLtUtFVVXMe25Gj9EhfnYDZ1LbvVhPac2QMHiGVdtH3t4eQQhnf89D2VkB9vgLeqkbHDBKPvENtqnEy",
+      "slot": 512337301,
+      "computeUnits": 11907,
+      "feeLamports": 5000,
+      "transactionBytes": 340,
+      "explorer": "https://explorer.solana.com/tx/5Rh5VkQBjTLtUtFVVXMe25Gj9EhfnYDZ1LbvVhPac2QMHiGVdtH3t4eQQhnf89D2VkB9vgLeqkbHDBKPvENtqnEy?cluster=devnet"
+    },
+    {
+      "label": "register RevenuePool",
+      "signature": "48SCLuFXdWi9HUKPDBTD1Kr26w8c3B4GWi1wtp2cgW8CWo5Ftg2W7uRBALYVHyndLK16zDC36EtVjzwwZU3zsoAk",
+      "slot": 512337356,
+      "computeUnits": 11432,
+      "feeLamports": 5000,
+      "transactionBytes": 343,
+      "explorer": "https://explorer.solana.com/tx/48SCLuFXdWi9HUKPDBTD1Kr26w8c3B4GWi1wtp2cgW8CWo5Ftg2W7uRBALYVHyndLK16zDC36EtVjzwwZU3zsoAk?cluster=devnet"
+    },
+    {
+      "label": "propose AgreementVersion v1 (16 participants)",
+      "signature": "ab3ryHLLm75uGGoz9zZv7RoNYG2f2v8z7bnE8TWSX7CoFqxrdJWADDFnvDsPtMAkd7NnHiN78izsy8xQQ9Q4cT9",
+      "slot": 512337409,
+      "computeUnits": 116490,
+      "feeLamports": 5000,
+      "transactionBytes": 927,
+      "explorer": "https://explorer.solana.com/tx/ab3ryHLLm75uGGoz9zZv7RoNYG2f2v8z7bnE8TWSX7CoFqxrdJWADDFnvDsPtMAkd7NnHiN78izsy8xQQ9Q4cT9?cluster=devnet"
+    },
+    {
+      "label": "approve participant 0",
+      "signature": "ESB8vcKP8jbDxJZQb8Nh1MKvxdfRS1zhvFE3Nc3HhCDdizjscq9vMSKXukk4fZ1ZvSauwVNXk4hc73ecZNoqWkz",
+      "slot": 512337480,
+      "computeUnits": 16356,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/ESB8vcKP8jbDxJZQb8Nh1MKvxdfRS1zhvFE3Nc3HhCDdizjscq9vMSKXukk4fZ1ZvSauwVNXk4hc73ecZNoqWkz?cluster=devnet"
+    },
+    {
+      "label": "approve participant 1",
+      "signature": "2grNvuas1JgGNUcoRcQejzcioNUunFGcJq1Z4iKwGmiENsem8aJQpxTYSfB1dynrohQ8M7JQHXPiaEdQhEbrt9ZT",
+      "slot": 512337543,
+      "computeUnits": 16362,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/2grNvuas1JgGNUcoRcQejzcioNUunFGcJq1Z4iKwGmiENsem8aJQpxTYSfB1dynrohQ8M7JQHXPiaEdQhEbrt9ZT?cluster=devnet"
+    },
+    {
+      "label": "approve participant 2",
+      "signature": "21DVvpYUhXENxFgSt5SusYaWRmwTYb6VmLkWRykF7hVFwCbpcYe5v6ZRuZYBcYQc8tv51HEEc1drVbCNh7qo8wgZ",
+      "slot": 512337599,
+      "computeUnits": 16368,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/21DVvpYUhXENxFgSt5SusYaWRmwTYb6VmLkWRykF7hVFwCbpcYe5v6ZRuZYBcYQc8tv51HEEc1drVbCNh7qo8wgZ?cluster=devnet"
+    },
+    {
+      "label": "approve participant 3",
+      "signature": "5x2pQvUYnMfg4ce5vDszY2ch9zZpd2HDrgd8R6hSXuA281HKJntY54jZsNAH3FsuJFoXeF26LdodNnBqHpcZ6eVP",
+      "slot": 512337647,
+      "computeUnits": 16374,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/5x2pQvUYnMfg4ce5vDszY2ch9zZpd2HDrgd8R6hSXuA281HKJntY54jZsNAH3FsuJFoXeF26LdodNnBqHpcZ6eVP?cluster=devnet"
+    },
+    {
+      "label": "approve participant 4",
+      "signature": "3t3Z8kMbvdVnhG38SU53ZFtvvY7j4zHKV2BBQy55JsLWTZTJqEnaev7xGZRTjWZa6LsXvBnGaHPWAr6Gr3kXXKK4",
+      "slot": 512337670,
+      "computeUnits": 16380,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/3t3Z8kMbvdVnhG38SU53ZFtvvY7j4zHKV2BBQy55JsLWTZTJqEnaev7xGZRTjWZa6LsXvBnGaHPWAr6Gr3kXXKK4?cluster=devnet"
+    },
+    {
+      "label": "approve participant 5",
+      "signature": "5FU4xgMbxoNWvUdSotK3eaTUk2151iw7PwzZRvCo7wByzLooxmrx6FRxJbwp4QEebSP4oLQutDTXdFF4i9CGHCfP",
+      "slot": 512337688,
+      "computeUnits": 16386,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/5FU4xgMbxoNWvUdSotK3eaTUk2151iw7PwzZRvCo7wByzLooxmrx6FRxJbwp4QEebSP4oLQutDTXdFF4i9CGHCfP?cluster=devnet"
+    },
+    {
+      "label": "approve participant 6",
+      "signature": "7u8M5rkdrTCkjPdPvSwXQZ2XJZBZAPx3RYYbdYcjbGEMRqUMM8fh6yoVcgaeQxuQTeA5KtkntSrcTL5yGphQcki",
+      "slot": 512337713,
+      "computeUnits": 16392,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/7u8M5rkdrTCkjPdPvSwXQZ2XJZBZAPx3RYYbdYcjbGEMRqUMM8fh6yoVcgaeQxuQTeA5KtkntSrcTL5yGphQcki?cluster=devnet"
+    },
+    {
+      "label": "approve participant 7",
+      "signature": "2fX3dUnL8dj1GGP6R5YnpWXcDiSKsssZzRt83wUL9wGP9bBNWedYcCr1sNpBKTW7Uu5BMcqHHLtFrbS359Hyvkd6",
+      "slot": 512337737,
+      "computeUnits": 16398,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/2fX3dUnL8dj1GGP6R5YnpWXcDiSKsssZzRt83wUL9wGP9bBNWedYcCr1sNpBKTW7Uu5BMcqHHLtFrbS359Hyvkd6?cluster=devnet"
+    },
+    {
+      "label": "approve participant 8",
+      "signature": "4JZDa51pKTvhNH615wb2ZpUzKrYm7ScWsxuzFjNU1nF9qYfxDH53VYPKiFcvgw8hp4C2FHfE9aKM9wN11Lf6EBfm",
+      "slot": 512337756,
+      "computeUnits": 16404,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/4JZDa51pKTvhNH615wb2ZpUzKrYm7ScWsxuzFjNU1nF9qYfxDH53VYPKiFcvgw8hp4C2FHfE9aKM9wN11Lf6EBfm?cluster=devnet"
+    },
+    {
+      "label": "approve participant 9",
+      "signature": "3LvioCLrhds9eeXTFCHC6jVpJanSgVS9UYi4fMavr18Hq4k75C8hwHibPmWQLzguwMmoQs72oadcWUTsamASuYbb",
+      "slot": 512337776,
+      "computeUnits": 16410,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/3LvioCLrhds9eeXTFCHC6jVpJanSgVS9UYi4fMavr18Hq4k75C8hwHibPmWQLzguwMmoQs72oadcWUTsamASuYbb?cluster=devnet"
+    },
+    {
+      "label": "approve participant 10",
+      "signature": "2iQTSEUJH83BkCnUQqAXMkDQKmVDNQwJfZ9qSceULhFrLrvptKQwYPy9nMvR8VWfxdMg5vxhBsBXjLgVXx4dsrLZ",
+      "slot": 512337801,
+      "computeUnits": 16416,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/2iQTSEUJH83BkCnUQqAXMkDQKmVDNQwJfZ9qSceULhFrLrvptKQwYPy9nMvR8VWfxdMg5vxhBsBXjLgVXx4dsrLZ?cluster=devnet"
+    },
+    {
+      "label": "approve participant 11",
+      "signature": "2gydDzWm7sdamqmABEMpJcJGRR6Wg1ggeEaLwyP3rYg4q1Bp2GCHtosM8NwhficyKp5Afg4bUESZm3pPP77N2apB",
+      "slot": 512337825,
+      "computeUnits": 16422,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/2gydDzWm7sdamqmABEMpJcJGRR6Wg1ggeEaLwyP3rYg4q1Bp2GCHtosM8NwhficyKp5Afg4bUESZm3pPP77N2apB?cluster=devnet"
+    },
+    {
+      "label": "approve participant 12",
+      "signature": "5F9f89fRppGhqWQUC6CDuGMgM7rbgjcw5jNyYLMWtJjyTwevuJqqcdJXrZSDSDecEp1FgkciSCkwJh7ERNaGwf2r",
+      "slot": 512337864,
+      "computeUnits": 16428,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/5F9f89fRppGhqWQUC6CDuGMgM7rbgjcw5jNyYLMWtJjyTwevuJqqcdJXrZSDSDecEp1FgkciSCkwJh7ERNaGwf2r?cluster=devnet"
+    },
+    {
+      "label": "approve participant 13",
+      "signature": "4pWtmaaaNNnDReaWQWQtY2HHhSV6w6Yhg9jYjeapUVNk2LYtgvHtxV6DRj5vx77ZvQoUpXWqLqAHCRgrqsU5Lmri",
+      "slot": 512337882,
+      "computeUnits": 16434,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/4pWtmaaaNNnDReaWQWQtY2HHhSV6w6Yhg9jYjeapUVNk2LYtgvHtxV6DRj5vx77ZvQoUpXWqLqAHCRgrqsU5Lmri?cluster=devnet"
+    },
+    {
+      "label": "approve participant 14",
+      "signature": "UH8wdJdtTXNGrwCnfxafLVaxMwAbvWxoQ3doSMpihG5HDf3v1bfwZfyCbG7drT9QokAUPpxSzhcT3EG4n8p7WNp",
+      "slot": 512337914,
+      "computeUnits": 16440,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/UH8wdJdtTXNGrwCnfxafLVaxMwAbvWxoQ3doSMpihG5HDf3v1bfwZfyCbG7drT9QokAUPpxSzhcT3EG4n8p7WNp?cluster=devnet"
+    },
+    {
+      "label": "approve participant 15",
+      "signature": "2ogzUhWfgf3AnfxxAT8H2YUMTACwMAPWHC3LDBwvdUwmykG831oR99wfptUq6CHusVBxo2JR5hrR7YbGHkuvbyFX",
+      "slot": 512337932,
+      "computeUnits": 16446,
+      "feeLamports": 10000,
+      "transactionBytes": 437,
+      "explorer": "https://explorer.solana.com/tx/2ogzUhWfgf3AnfxxAT8H2YUMTACwMAPWHC3LDBwvdUwmykG831oR99wfptUq6CHusVBxo2JR5hrR7YbGHkuvbyFX?cluster=devnet"
+    },
+    {
+      "label": "activate AgreementVersion v1",
+      "signature": "5mG3Mg2Peyy6emmW2byio19KXg1by3sxRcWtzXhHdJz5qtyiZo5SKNg9SS5uDNotWBBPX9k6iXi3xY8RhJ5bqSYU",
+      "slot": 512337951,
+      "computeUnits": 17298,
+      "feeLamports": 5000,
+      "transactionBytes": 276,
+      "explorer": "https://explorer.solana.com/tx/5mG3Mg2Peyy6emmW2byio19KXg1by3sxRcWtzXhHdJz5qtyiZo5SKNg9SS5uDNotWBBPX9k6iXi3xY8RhJ5bqSYU?cluster=devnet"
+    },
+    {
+      "label": "initialize Royalty Inbox",
+      "signature": "57jNtE68Hgsqy2zAB4ha86FCACtST76au4nh9aWDCTehqwQE9xGd88GnhGhgQSQjwQMVm1kwEdUKCG3dfQndJcs3",
+      "slot": 512337982,
+      "computeUnits": 41291,
+      "feeLamports": 5000,
+      "transactionBytes": 442,
+      "explorer": "https://explorer.solana.com/tx/57jNtE68Hgsqy2zAB4ha86FCACtST76au4nh9aWDCTehqwQE9xGd88GnhGhgQSQjwQMVm1kwEdUKCG3dfQndJcs3?cluster=devnet"
+    },
+    {
+      "label": "create token accounts 0-5",
+      "signature": "3gKkYuCBPnFj1RPPUs19g68nhj8QY7ifFz1LqjsSsoNgZhxCmps9oUpXaEpJNr6Mhn8rM8MN99ZDYvrqus4bfFWB",
+      "slot": 512338005,
+      "computeUnits": 88608,
+      "feeLamports": 5000,
+      "transactionBytes": 706,
+      "explorer": "https://explorer.solana.com/tx/3gKkYuCBPnFj1RPPUs19g68nhj8QY7ifFz1LqjsSsoNgZhxCmps9oUpXaEpJNr6Mhn8rM8MN99ZDYvrqus4bfFWB?cluster=devnet"
+    },
+    {
+      "label": "create token accounts 6-11",
+      "signature": "2vHmwBXSEc5tGjj5g5KNN2SMX9HKjEBS1R7NgWsjWvH8gigTCf4ZdxBhaAPoAFPTFuotUHne8pdmuUafj2rzrmMv",
+      "slot": 512338023,
+      "computeUnits": 85608,
+      "feeLamports": 5000,
+      "transactionBytes": 706,
+      "explorer": "https://explorer.solana.com/tx/2vHmwBXSEc5tGjj5g5KNN2SMX9HKjEBS1R7NgWsjWvH8gigTCf4ZdxBhaAPoAFPTFuotUHne8pdmuUafj2rzrmMv?cluster=devnet"
+    },
+    {
+      "label": "create token accounts 12-17",
+      "signature": "2ZYLJ7cwyMA7GyDp6KHAPekY2mJgXpvkBMWLf6nsNfRwkUtDX5gjgRZ1uD5yoCyti1M8V91P96Vo4dxsfgF3Xdaq",
+      "slot": 512338043,
+      "computeUnits": 85608,
+      "feeLamports": 5000,
+      "transactionBytes": 706,
+      "explorer": "https://explorer.solana.com/tx/2ZYLJ7cwyMA7GyDp6KHAPekY2mJgXpvkBMWLf6nsNfRwkUtDX5gjgRZ1uD5yoCyti1M8V91P96Vo4dxsfgF3Xdaq?cluster=devnet"
+    },
+    {
+      "label": "mint test settlement tokens to funder",
+      "signature": "5humzFAmtkAUNkditVVpNgZSfqw6mEt6GYQuqzre6gqZg7uQtKQdw7jVE3baPsauBhscrrphhK3LsWyv9e39V4nG",
+      "slot": 512338072,
+      "computeUnits": 153,
+      "feeLamports": 5000,
+      "transactionBytes": 246,
+      "explorer": "https://explorer.solana.com/tx/5humzFAmtkAUNkditVVpNgZSfqw6mEt6GYQuqzre6gqZg7uQtKQdw7jVE3baPsauBhscrrphhK3LsWyv9e39V4nG?cluster=devnet"
+    },
+    {
+      "label": "fund_and_allocate #1 (nonce 0)",
+      "signature": "3TEHPH8EmjZsQhntG9fVsHX8ZuDQdVkC6zqySoRZkuw21u7Gw3wV6fqMZs1bQkxtA3turCCxc58ZjJDYZy8Tv2ai",
+      "slot": 512338176,
+      "computeUnits": 145440,
+      "feeLamports": 10000,
+      "transactionBytes": 553,
+      "explorer": "https://explorer.solana.com/tx/3TEHPH8EmjZsQhntG9fVsHX8ZuDQdVkC6zqySoRZkuw21u7Gw3wV6fqMZs1bQkxtA3turCCxc58ZjJDYZy8Tv2ai?cluster=devnet"
+    },
+    {
+      "label": "external deposit to Royalty Inbox",
+      "signature": "5qvwzRKdywzTqrGEubTU4i4oJcVcSeAsE7qauZx7qgZiu7mQmfPbaj6s4mVKWcLaSzJadxrff6qXX8QHddLgtzb5",
+      "slot": 512338283,
+      "computeUnits": 105,
+      "feeLamports": 10000,
+      "transactionBytes": 375,
+      "explorer": "https://explorer.solana.com/tx/5qvwzRKdywzTqrGEubTU4i4oJcVcSeAsE7qauZx7qgZiu7mQmfPbaj6s4mVKWcLaSzJadxrff6qXX8QHddLgtzb5?cluster=devnet"
+    },
+    {
+      "label": "allocate_inbox",
+      "signature": "y5eJXu2FDKJuqKzdtDMgs3C3AUoQUwr4aioK2vjZHyfU611RioGiKLZZjEUDnYsrHHqr1ktNvgCcJZtjDty3qac",
+      "slot": 512338383,
+      "computeUnits": 141138,
+      "feeLamports": 5000,
+      "transactionBytes": 342,
+      "explorer": "https://explorer.solana.com/tx/y5eJXu2FDKJuqKzdtDMgs3C3AUoQUwr4aioK2vjZHyfU611RioGiKLZZjEUDnYsrHHqr1ktNvgCcJZtjDty3qac?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 0",
+      "signature": "3P9DmkD1vy2ehysQgwJ8EbrhNgsSk9yX2omvngit8XgYukEMyFQjZM99C5XGHiSR8RcehRRo5aKjigHU1DWEJ4Jp",
+      "slot": 512338494,
+      "computeUnits": 37863,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3P9DmkD1vy2ehysQgwJ8EbrhNgsSk9yX2omvngit8XgYukEMyFQjZM99C5XGHiSR8RcehRRo5aKjigHU1DWEJ4Jp?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 1",
+      "signature": "4MXuvxPF1VsxBdgNmTZMFieyaYhT92imw7Q7zMvU6FxRUREew6YocqymijdvJzhD1tGGGBXNVZAfK6Uxy6SShkiA",
+      "slot": 512338529,
+      "computeUnits": 37863,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/4MXuvxPF1VsxBdgNmTZMFieyaYhT92imw7Q7zMvU6FxRUREew6YocqymijdvJzhD1tGGGBXNVZAfK6Uxy6SShkiA?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 2",
+      "signature": "5ZQLTUa7krXYjT8cgCVSqpiTXf8HpbfU5EmbQHaez6BfwHQZuPuxzYYEqJSeKThWnWzVDFkD7zke8waDHrjcAbKJ",
+      "slot": 512338565,
+      "computeUnits": 37884,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/5ZQLTUa7krXYjT8cgCVSqpiTXf8HpbfU5EmbQHaez6BfwHQZuPuxzYYEqJSeKThWnWzVDFkD7zke8waDHrjcAbKJ?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 3",
+      "signature": "3KvMNcB2xpDVhRRHHMzu23nbVdfohh6s5hjzL6YcWS5qnw3NdtMoAGA9NhAnn4sYJyAcgkZpexjrQ118sRMkCqsH",
+      "slot": 512338600,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3KvMNcB2xpDVhRRHHMzu23nbVdfohh6s5hjzL6YcWS5qnw3NdtMoAGA9NhAnn4sYJyAcgkZpexjrQ118sRMkCqsH?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 4",
+      "signature": "33rhRxkSFAxukKxdwwjNVSeqmokU4tttRXvQNAp3kUqg8ZNQt1AvXyy1BBxBRhzD5DYNQYKEZDFvxybVCbAVnhEJ",
+      "slot": 512338633,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/33rhRxkSFAxukKxdwwjNVSeqmokU4tttRXvQNAp3kUqg8ZNQt1AvXyy1BBxBRhzD5DYNQYKEZDFvxybVCbAVnhEJ?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 5",
+      "signature": "vVZEsFQtAaD6SGybZaHGDRCnAbEbgd69zF5jHdL4Lkyncp7sDHc7NFHPX4e162dCjJDF5cKH9EP4m3ffU5ZoWxB",
+      "slot": 512338668,
+      "computeUnits": 40863,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/vVZEsFQtAaD6SGybZaHGDRCnAbEbgd69zF5jHdL4Lkyncp7sDHc7NFHPX4e162dCjJDF5cKH9EP4m3ffU5ZoWxB?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 6",
+      "signature": "3YsCP4MxK8amy7VrUcBdMD5T41nnXBS9DZvxDXv5j7ecY8YiQ4cUTcXLDwXxLunPD3EFHSMPWzZSts8XapGTGwbi",
+      "slot": 512338702,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3YsCP4MxK8amy7VrUcBdMD5T41nnXBS9DZvxDXv5j7ecY8YiQ4cUTcXLDwXxLunPD3EFHSMPWzZSts8XapGTGwbi?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 7",
+      "signature": "2t8gqaCHdsi99j11ajiAxBdEGimyUbBjeyrCZP52YRaXvVZngX7gcauECzg9rouN5DqvBFNNW5YcyPZnKS9GAUu",
+      "slot": 512338738,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/2t8gqaCHdsi99j11ajiAxBdEGimyUbBjeyrCZP52YRaXvVZngX7gcauECzg9rouN5DqvBFNNW5YcyPZnKS9GAUu?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 8",
+      "signature": "nVQnMVUuGmA2zHJdWK8ATrWfebgVhbHZp2z5PeiARddT39hx1HS7B2wQvrYywD1mgHCgUyJQRCeSWsB4KcSocGJ",
+      "slot": 512338773,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/nVQnMVUuGmA2zHJdWK8ATrWfebgVhbHZp2z5PeiARddT39hx1HS7B2wQvrYywD1mgHCgUyJQRCeSWsB4KcSocGJ?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 9",
+      "signature": "3V77N9BEttHL9UGRe2sfmVPCMEcvwE3mwXStP7srrn84UM8DeuvFvtdbd3xEG8GPJcFh2XRMhejjVKyviY96bYHt",
+      "slot": 512338808,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3V77N9BEttHL9UGRe2sfmVPCMEcvwE3mwXStP7srrn84UM8DeuvFvtdbd3xEG8GPJcFh2XRMhejjVKyviY96bYHt?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 10",
+      "signature": "3m7D2PnM5r69orVjY63u29kbE1dmuyrcUYUag3CJvUrVzjfGPYMkd8HesTokXEm94MaSDykizh2ZCiaBdvB1A7Ug",
+      "slot": 512338845,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3m7D2PnM5r69orVjY63u29kbE1dmuyrcUYUag3CJvUrVzjfGPYMkd8HesTokXEm94MaSDykizh2ZCiaBdvB1A7Ug?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 11",
+      "signature": "4jaHyXQkwJLvzxhw6mSsvoUykbQTwQrxqwU1wYJ4B9qPJAFpKLHiTgpkABKb8qh2a4Zd9ZRXtfMFXTddCReoSKh2",
+      "slot": 512338881,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/4jaHyXQkwJLvzxhw6mSsvoUykbQTwQrxqwU1wYJ4B9qPJAFpKLHiTgpkABKb8qh2a4Zd9ZRXtfMFXTddCReoSKh2?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 12",
+      "signature": "4HmgbocmEqSyQCdbgrBDYxh3BFy7rXuoJsTZypD41i2QFfu62VKDNZ3zsm7zARvmhSDp6CwNX7qhh5A81q6zNZGn",
+      "slot": 512338920,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/4HmgbocmEqSyQCdbgrBDYxh3BFy7rXuoJsTZypD41i2QFfu62VKDNZ3zsm7zARvmhSDp6CwNX7qhh5A81q6zNZGn?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 13",
+      "signature": "5u3CQQwCqWtwrGTXEnckiktWxjmv9THWEpLQKYLgmKnH1ZsNVhCuLhUPUS7WiWYBzJSVwwcdoZc6UPXRJUtrcnzd",
+      "slot": 512338956,
+      "computeUnits": 39363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/5u3CQQwCqWtwrGTXEnckiktWxjmv9THWEpLQKYLgmKnH1ZsNVhCuLhUPUS7WiWYBzJSVwwcdoZc6UPXRJUtrcnzd?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 14",
+      "signature": "63EPFbMFfUB9LEFFtckctmLb2VGUAqQzHUnL4rmAurkYm52BkF9A89JuHp3PqBth4j6PLKokoKErsm8a69oeKXVH",
+      "slot": 512338993,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/63EPFbMFfUB9LEFFtckctmLb2VGUAqQzHUnL4rmAurkYm52BkF9A89JuHp3PqBth4j6PLKokoKErsm8a69oeKXVH?cluster=devnet"
+    },
+    {
+      "label": "round 1: claim participant 15",
+      "signature": "2FtBzVuBQgJ7ZGdex7MY54EHFyMcHKZZiGzh3ukG41CHsLiCKZXGWoymsUJqxu2id3uNHWJdHySAbHZaZYgAwR3L",
+      "slot": 512339030,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/2FtBzVuBQgJ7ZGdex7MY54EHFyMcHKZZiGzh3ukG41CHsLiCKZXGWoymsUJqxu2id3uNHWJdHySAbHZaZYgAwR3L?cluster=devnet"
+    },
+    {
+      "label": "participant 0 rotates payout wallet",
+      "signature": "4rcsekXnrgdaB1w94MBFEK5XCPsNPfn5i6D7EP5sH2asbqWNNmJ3KXdgvocAQ1XEs21mea5TXyKtBG2sFJs2KdMN",
+      "slot": 512339180,
+      "computeUnits": 11510,
+      "feeLamports": 10000,
+      "transactionBytes": 339,
+      "explorer": "https://explorer.solana.com/tx/4rcsekXnrgdaB1w94MBFEK5XCPsNPfn5i6D7EP5sH2asbqWNNmJ3KXdgvocAQ1XEs21mea5TXyKtBG2sFJs2KdMN?cluster=devnet"
+    },
+    {
+      "label": "fund_and_allocate #2 (nonce 1)",
+      "signature": "VatFqQ93qjYeyKSLP5j8zhGBVKDXVkLeNpnFhFg1Ffi9rLAmd5rcq8x3LZzr2EqnDJwfz5ax1LsC74tx9pReFXX",
+      "slot": 512339211,
+      "computeUnits": 145832,
+      "feeLamports": 10000,
+      "transactionBytes": 553,
+      "explorer": "https://explorer.solana.com/tx/VatFqQ93qjYeyKSLP5j8zhGBVKDXVkLeNpnFhFg1Ffi9rLAmd5rcq8x3LZzr2EqnDJwfz5ax1LsC74tx9pReFXX?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 0",
+      "signature": "3gr9aXenrVjdmsuAvjyEyj1MnPUUsHfaiGNY6uoePf29seLBZShExhZZN7CusM2scU1j2arF5DJBpxacGgbZgA1r",
+      "slot": 512339331,
+      "computeUnits": 37863,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3gr9aXenrVjdmsuAvjyEyj1MnPUUsHfaiGNY6uoePf29seLBZShExhZZN7CusM2scU1j2arF5DJBpxacGgbZgA1r?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 1",
+      "signature": "6o18DZqCMNHE8989LHztwvH63qJjEYm2JLpHawAdJCh3bRCfD42aHKTqii2KZFFghjYQyXY1dNcAaAkXMJQcHFR",
+      "slot": 512339367,
+      "computeUnits": 37863,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/6o18DZqCMNHE8989LHztwvH63qJjEYm2JLpHawAdJCh3bRCfD42aHKTqii2KZFFghjYQyXY1dNcAaAkXMJQcHFR?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 2",
+      "signature": "2D8aX7wAecSQEaGtkZ16iNNFWNqLbfzKMVgtZQHtn2zn7V2mxiVngbogPpFAd8K5SamnmQbCjsbWCGHoPyXsQgTh",
+      "slot": 512339404,
+      "computeUnits": 37884,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/2D8aX7wAecSQEaGtkZ16iNNFWNqLbfzKMVgtZQHtn2zn7V2mxiVngbogPpFAd8K5SamnmQbCjsbWCGHoPyXsQgTh?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 3",
+      "signature": "5JUwMcXdugcYp6YZKUg5ZKQsYFmE629iZJNhxJTqURBkSxi53EHgLXe5FadJUxUK65SA8Drqx9M6GusrBv8YBT28",
+      "slot": 512339440,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/5JUwMcXdugcYp6YZKUg5ZKQsYFmE629iZJNhxJTqURBkSxi53EHgLXe5FadJUxUK65SA8Drqx9M6GusrBv8YBT28?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 4",
+      "signature": "3r6S1EPZQN9pNHMs3EnqmPqDGvpZH9NtackvdkJqFfFycxoqGXQLZQ6KJ3CJEnXzihD5JBDDGeM8doPakEoKmUWg",
+      "slot": 512339477,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3r6S1EPZQN9pNHMs3EnqmPqDGvpZH9NtackvdkJqFfFycxoqGXQLZQ6KJ3CJEnXzihD5JBDDGeM8doPakEoKmUWg?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 5",
+      "signature": "3tAUAds4zjxPV4axACbh3REF59P5w5VpkUKUzDdR6EQQqE24VSXXqnKrUNt2ddqirzPtxXpjuQmSkZmXZbXikzoD",
+      "slot": 512339515,
+      "computeUnits": 40863,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3tAUAds4zjxPV4axACbh3REF59P5w5VpkUKUzDdR6EQQqE24VSXXqnKrUNt2ddqirzPtxXpjuQmSkZmXZbXikzoD?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 6",
+      "signature": "5xNR8WwiuRaayLVDCab9gq84fY3EF4D25e4VbT19qYraPVqKwzdnZRCAtRYyBpYoVZikNPRp58jtn41pAhVxFo5G",
+      "slot": 512339553,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/5xNR8WwiuRaayLVDCab9gq84fY3EF4D25e4VbT19qYraPVqKwzdnZRCAtRYyBpYoVZikNPRp58jtn41pAhVxFo5G?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 7",
+      "signature": "3Gmxga1s7FbZnckbBrmTqHB2NUVLjgzneg4LgzLZTrne52Lowucr7iSSRNMHrqbagdJEw72NswpsNUoGtEdd113P",
+      "slot": 512339604,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3Gmxga1s7FbZnckbBrmTqHB2NUVLjgzneg4LgzLZTrne52Lowucr7iSSRNMHrqbagdJEw72NswpsNUoGtEdd113P?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 8",
+      "signature": "59etnW6H5fChSboSPTRkGE3TJqzGR2E6t5S2FhtsujHGiiGhN7B5F7zhdabfe3MxgE1BMfBCZvcTaCPEStzj1Voq",
+      "slot": 512339640,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/59etnW6H5fChSboSPTRkGE3TJqzGR2E6t5S2FhtsujHGiiGhN7B5F7zhdabfe3MxgE1BMfBCZvcTaCPEStzj1Voq?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 9",
+      "signature": "5rHFwcKLxSV5NTnfn55S6C6wjCLL9HxpSaSN5kNxcY5vkL8VHiLPFAw1SmGrSNECwGv5Gs7Au389X28aEGVKAexL",
+      "slot": 512339674,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/5rHFwcKLxSV5NTnfn55S6C6wjCLL9HxpSaSN5kNxcY5vkL8VHiLPFAw1SmGrSNECwGv5Gs7Au389X28aEGVKAexL?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 10",
+      "signature": "2CM4WXmmYJxHN9QWm7HGAta6exfVnXGJ8WLryczRN7c24Vtb6jvyhsgrMf6uSmDLc5thR4eUrbDPTYDSBkEQzruk",
+      "slot": 512339711,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/2CM4WXmmYJxHN9QWm7HGAta6exfVnXGJ8WLryczRN7c24Vtb6jvyhsgrMf6uSmDLc5thR4eUrbDPTYDSBkEQzruk?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 11",
+      "signature": "3To6DZDfaDkhuJxJ2c6Sw1rbtaj2Xp7oWoRymDMakT4XoEoZC8feTiqLn2QyJSvbXNpJCPDuKrvSd9TkUheQK5tE",
+      "slot": 512339741,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3To6DZDfaDkhuJxJ2c6Sw1rbtaj2Xp7oWoRymDMakT4XoEoZC8feTiqLn2QyJSvbXNpJCPDuKrvSd9TkUheQK5tE?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 12",
+      "signature": "4nH3u1WPqKkPUn9VgFzBRpWFBw4ER4MEN5da34eyYAFJJUBS1uo9jDNsCiu84VqUiPoGqD2YVzq4t5MdBxe18NY",
+      "slot": 512339776,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/4nH3u1WPqKkPUn9VgFzBRpWFBw4ER4MEN5da34eyYAFJJUBS1uo9jDNsCiu84VqUiPoGqD2YVzq4t5MdBxe18NY?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 13",
+      "signature": "54Tsr3F8kt7LGsHn2PhbRnFyQ53Vjpzu2eLSbrcnG1ex4ucCSPoWMp1PHLJ2xAUKHTXKbjMHHZXts9qYuiyZDDAq",
+      "slot": 512339811,
+      "computeUnits": 39363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/54Tsr3F8kt7LGsHn2PhbRnFyQ53Vjpzu2eLSbrcnG1ex4ucCSPoWMp1PHLJ2xAUKHTXKbjMHHZXts9qYuiyZDDAq?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 14",
+      "signature": "14kC49fZkLJ8m5YcBt1A57Fz6mSmNKMQL5s5bC1GUjtW4tdRXJSopj1Pds8gK3rFwoUvLByX5V51tBH3zofBfjy",
+      "slot": 512339847,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/14kC49fZkLJ8m5YcBt1A57Fz6mSmNKMQL5s5bC1GUjtW4tdRXJSopj1Pds8gK3rFwoUvLByX5V51tBH3zofBfjy?cluster=devnet"
+    },
+    {
+      "label": "round 2: claim participant 15",
+      "signature": "3aQmCUnRxNUnvdV9pkdtJD85spiYLmvvGckRad2rF1CqpgzTypy3m1pZHQFR7Q2vSL7QiQajLtPpByA9MyBagRnN",
+      "slot": 512339883,
+      "computeUnits": 36363,
+      "feeLamports": 5000,
+      "transactionBytes": 409,
+      "explorer": "https://explorer.solana.com/tx/3aQmCUnRxNUnvdV9pkdtJD85spiYLmvvGckRad2rF1CqpgzTypy3m1pZHQFR7Q2vSL7QiQajLtPpByA9MyBagRnN?cluster=devnet"
+    }
+  ],
+  "checks": [
+    "deployed program bytes equal the local build (when RR_PROGRAM_SO is present)",
+    "ProtocolConfig governance/guardian/token program match the expected owner configuration",
+    "on-chain agreement hash equals the TypeScript reference encoding",
+    "every allocation equals the TypeScript reference allocator, including rounding",
+    "every allocation commitment equals the TypeScript reference encoding",
+    "direct-funding nonce advanced only on direct funding; allocation sequence on every allocation",
+    "each claim moved exactly the remaining entitlement and touched no other participant",
+    "post-rotation claims reached only the new canonical ATA",
+    "settlement tokens conserved and Royalty Inbox solvent at every checkpoint"
+  ],
+  "status": "PASS"
+}

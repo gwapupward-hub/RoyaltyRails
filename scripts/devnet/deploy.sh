@@ -56,7 +56,7 @@ output="$(solana program deploy "$ARTIFACT_DIR/royaltyrail.so" \
   --commitment confirmed \
   --use-rpc \
   --max-sign-attempts 50 2>&1 | tee /dev/tty)"
-SIGNATURE="$(grep -oE 'Signature: [1-9A-HJ-NP-Za-km-z]+' <<<"$output" | awk '{print $2}' || true)"
+SIGNATURE="$(sed -n 's/.*Signature: \([^[:space:]]*\).*/\1/p' <<<"$output" | head -1 || true)"
 [ -n "$SIGNATURE" ] || refuse "no deployment signature in the CLI output"
 
 show="$(solana program show "$PROGRAM_ID" --url "$RPC_URL")"
