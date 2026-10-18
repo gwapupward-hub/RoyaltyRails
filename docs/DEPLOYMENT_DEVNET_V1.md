@@ -1,12 +1,16 @@
 # RoyaltyRail Devnet Deployment V1
 
-Status: **prepared, not deployed.** Phase 3D hard gates 6 (permanent devnet identity) and 7 (devnet deployment evidence) are **BLOCKED on owner action**: the owner must generate the keys. Every value in the deployment record below is pending. Nothing here has been deployed to any cluster.
+Status: **identity frozen; not deployed.** The owner published the five public devnet addresses in commit `20ccae9`, and the deployment manifest is frozen. Gate 6 awaits the second CI build's reproducibility check and the owner's custody attestation. Gate 7 is blocked on the owner's deploy, initialization, and lifecycle runs. Nothing has been deployed to any cluster.
 
-This document is the deployment runbook and, once completed, the deployment record. It assumes the owner works only from an iPhone, using GitHub Codespaces in Safari. Devnet proof is a deployment and integration milestone. It is not a smart-contract security audit, and devnet is not mainnet.
+This document is the deployment runbook and, once completed, the deployment record. Devnet proof is a deployment and integration milestone. It is not a smart-contract security audit, and devnet is not mainnet.
+
+**Owner custody decision (commit `20ccae9`, [`PHASE_3D4_OWNER_CUSTODY_READINESS.md`](PHASE_3D4_OWNER_CUSTODY_READINESS.md)):** the keys are held on an owner-controlled machine operated from the iPhone over SSH, not in a GitHub Codespace. The public addresses were recorded with `scripts/devnet/prepare-authorities.sh`, which handles public data only.
+
+The runbook below still applies from step 5 onward, run on that machine instead of a Codespace. The owner scripts are tested on Linux x86_64. On macOS, `sha256sum` must be available (for example from Homebrew `coreutils`), or use a Linux VM.
 
 | Gate | Status | Blocked on |
 |---|---|---|
-| 6. Permanent devnet identity frozen securely | BLOCKED | owner runs `generate-keys.sh` and pushes the three public files |
+| 6. Permanent devnet identity frozen securely | technical checks done; PASS pending | the second CI build reproducing the frozen manifest, and owner attestation that the five keys were generated in the owner-controlled environment with the three backups verified by re-entry |
 | 7. Devnet deployment and end-to-end smoke evidence | BLOCKED | Gate 6, then the owner's deploy, initialization, and lifecycle runs |
 
 ## Deployment record
@@ -14,21 +18,21 @@ This document is the deployment runbook and, once completed, the deployment reco
 | Field | Value |
 |---|---|
 | Cluster | devnet (genesis `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`) |
-| Program ID | pending: `deployments/devnet/authorities.json` |
-| Frozen manifest | pending: `deployments/devnet/manifest.json` |
-| Source commit / CI run that built the artifact | pending: manifest `sourceCommit`, `ci.runUrl` |
-| Program binary / IDL SHA-256 | pending: manifest `artifacts` |
+| Program ID | `Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB` (no devnet account before deployment: checked at finalized commitment) |
+| Frozen manifest | [`deployments/devnet/manifest.json`](../deployments/devnet/manifest.json), byte-identical to the CI `MANIFEST.json`, SHA-256 `8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66` |
+| Source commit / CI run that built the artifact | `20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e` / [run 39092819552](https://github.com/gwapupward-hub/RoyaltyRails/actions/runs/39092819552) (all six jobs green), artifact `royaltyrail-sbf-20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e` |
+| Program binary / IDL SHA-256 | `ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a` (609,376 bytes) / `07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa` (78,057 bytes) |
 | Reproduced by a second CI build | pending: "Verify the frozen devnet manifest reproduces" |
 | Deployment transaction, slot, ProgramData | pending: `docs/evidence/devnet-deployment.json` |
-| Deployer / upgrade authority | pending: manifest `authorities` |
-| Governance / guardian | pending: manifest `authorities` |
+| Deployer / upgrade authority | `Gpub3uSCyGZDpHGMeRmnw3a7cf1X2usW41ioLDaSgQMa` / `CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg` |
+| Governance / guardian | `9bJDtawHuNnJh1fUYNuxnvjDihWgEHuJovuFcT1nDJ9m` (permanent) / `9Kfq3bPSNy71PKUqQMRaQ82BEv8BFUbN15J54HQzujPp` |
 | ProtocolConfig, deployment ID, settlement test mint | pending: `docs/evidence/devnet-config.json` |
 | Lifecycle runs (16 participants, twice) | pending: `docs/evidence/devnet-lifecycle-*.json` |
 | Independent verification | pending: `docs/evidence/devnet-verification.json` |
 
 ## Signing model
 
-Claude and GitHub Actions never hold, receive, or see a private key or seed phrase. Every private key is generated and used only in the owner's own Codespace terminal. Each owner script reads only the keys its step needs:
+Claude and GitHub Actions never hold, receive, or see a private key or seed phrase. Every private key is generated and used only in the owner's own terminal, on the owner-controlled machine chosen in the custody decision above. Each owner script reads only the keys its step needs:
 
 | Step (who runs it) | Program key | Deployer | Upgrade authority | Governance | Guardian |
 |---|---|---|---|---|---|
