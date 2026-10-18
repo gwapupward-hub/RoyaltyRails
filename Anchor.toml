@@ -16,6 +16,9 @@ wallet = "~/.config/solana/id.json"
 
 [test]
 startup_wait = 90000
+# Load the program as upgradeable with the provider wallet as upgrade authority,
+# which initialize_config requires as a co-signer.
+upgradeable = true
 
 [scripts]
 test = "node tests/e2e/positive-lifecycle.mjs"

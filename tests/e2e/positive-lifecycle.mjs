@@ -30,6 +30,7 @@ const WORK_SEED = Buffer.from("work");
 const POOL_SEED = Buffer.from("pool");
 const AGREEMENT_SEED = Buffer.from("agreement");
 const VAULT_SEED = Buffer.from("vault");
+const BPF_LOADER_UPGRADEABLE = new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111");
 
 function fixedBytes(value) {
   return Array.from(Buffer.alloc(32, value));
@@ -244,6 +245,10 @@ async function main() {
     .accounts({
       config: pdasV1.config,
       governanceAuthority: governance.publicKey,
+      // The test validator loads the program with the provider wallet as upgrade authority.
+      upgradeAuthority: governance.publicKey,
+      program: programId,
+      programData: PublicKey.findProgramAddressSync([programId.toBuffer()], BPF_LOADER_UPGRADEABLE)[0],
       settlementMint: mint,
       tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,

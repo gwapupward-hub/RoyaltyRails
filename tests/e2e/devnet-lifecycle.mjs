@@ -20,6 +20,8 @@
 //   RR_EXPECTED_GOVERNANCE               required on devnet; governance pubkey to initialize or verify
 //   RR_EXPECTED_GUARDIAN                 required on devnet; guardian pubkey to initialize or verify
 //   RR_GOVERNANCE_KEYPAIR                governance keypair path; only read if ProtocolConfig is absent
+//   RR_UPGRADE_AUTHORITY_KEYPAIR         upgrade-authority keypair path; only read if ProtocolConfig is
+//                                        absent (initialize_config requires its co-signature)
 //   RR_IDL_PATH                          default target/idl/royaltyrail.json
 //   RR_PROGRAM_SO                        default target/deploy/royaltyrail.so (deployed bytes are compared)
 //   RR_EVIDENCE_PATH                     default target/e2e/<cluster>-lifecycle-<timestamp>.json
@@ -278,6 +280,17 @@ async function main() {
     assert.ok(governancePath, "ProtocolConfig is absent: RR_GOVERNANCE_KEYPAIR is required to initialize it");
     const governance = loadKeypair(governancePath);
     assert.ok(governance.publicKey.equals(expectedGovernance), "RR_GOVERNANCE_KEYPAIR does not match RR_EXPECTED_GOVERNANCE");
+    // initialize_config requires the program's current upgrade authority as co-signer.
+    assert.ok(programEvidence.programData, "ProtocolConfig can only be initialized for an upgradeable program");
+    const upgradeAuthorityPath =
+      process.env.RR_UPGRADE_AUTHORITY_KEYPAIR ?? (onDevnet ? null : process.env.ANCHOR_WALLET);
+    assert.ok(upgradeAuthorityPath, "ProtocolConfig is absent: RR_UPGRADE_AUTHORITY_KEYPAIR is required to initialize it");
+    const upgradeAuthority = loadKeypair(upgradeAuthorityPath);
+    assert.equal(
+      upgradeAuthority.publicKey.toBase58(),
+      programEvidence.upgradeAuthority,
+      "RR_UPGRADE_AUTHORITY_KEYPAIR is not the program's current upgrade authority",
+    );
 
     // Fresh six-decimal legacy SPL test mint; the provider wallet is mint authority, no freeze authority.
     const mintKeypair = Keypair.generate();
@@ -304,23 +317,27 @@ async function main() {
         .accountsStrict({
           config,
           governanceAuthority: governance.publicKey,
+          upgradeAuthority: upgradeAuthority.publicKey,
+          program: programId,
+          programData: new PublicKey(programEvidence.programData),
           settlementMint: mintKeypair.publicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
         .transaction(),
-      [governance],
+      [governance, upgradeAuthority],
     );
     assert.equal(events(logs, "ProtocolInitialized").length, 1, "missing ProtocolInitialized event");
     configInitialization = record.signature;
     configState = await program.account.protocolConfigState.fetch(config, "confirmed");
   }
 
-  // Whoever calls initialize_config first becomes governance; verify it was us.
+  // initialize_config requires the upgrade authority, but still verify the stored
+  // governance is the expected owner key before using this deployment.
   assert.ok(
     configState.governanceAuthority.equals(expectedGovernance),
     `ProtocolConfig governance is ${configState.governanceAuthority.toBase58()}, not the expected owner key: ` +
-      "this deployment was initialized by someone else and must not be used",
+      "this deployment was initialized with a different governance key and must not be used",
   );
   assert.ok(configState.guardianAuthority.equals(expectedGuardian), "unexpected guardian authority");
   assert.ok(configState.tokenProgram.equals(TOKEN_PROGRAM_ID), "config must use the original SPL Token Program");

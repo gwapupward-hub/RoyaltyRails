@@ -10,7 +10,10 @@
 //   4. the only balance change is the fee paid by the transaction fee payer.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import anchor from "@anchor-lang/core";
 import {
@@ -47,6 +50,7 @@ const POOL_SEED = Buffer.from("pool");
 const AGREEMENT_SEED = Buffer.from("agreement");
 const VAULT_SEED = Buffer.from("vault");
 const U64_MAX = (1n << 64n) - 1n;
+const BPF_LOADER_UPGRADEABLE = new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111");
 
 // Anchor framework error numbers (@anchor-lang/core 1.2.1 LangErrorCode).
 const FRAMEWORK_ERRORS = {
@@ -107,6 +111,45 @@ function derivePdas(programId, origin, workId, poolId, version) {
     programId,
   );
   return { config, work, revenuePool, agreement, vaultAuthority };
+}
+
+function programDataAddress(programId) {
+  return PublicKey.findProgramAddressSync([programId.toBuffer()], BPF_LOADER_UPGRADEABLE)[0];
+}
+
+// Deploys a real upgradeable program whose upgrade authority is the attacker, so
+// the attacker holds a genuine ProgramData account to substitute. The throwaway
+// localnet keys are written to a private temporary directory and deleted.
+function deployAttackerProgram(rpcUrl, attacker) {
+  const dir = mkdtempSync(join(tmpdir(), "rr-attacker-"));
+  try {
+    const attackerPath = join(dir, "attacker.json");
+    const programPath = join(dir, "program.json");
+    const programKeypair = Keypair.generate();
+    writeFileSync(attackerPath, JSON.stringify(Array.from(attacker.secretKey)), { mode: 0o600 });
+    writeFileSync(programPath, JSON.stringify(Array.from(programKeypair.secretKey)), { mode: 0o600 });
+    execFileSync(
+      "solana",
+      [
+        "program", "deploy", "target/deploy/royaltyrail.so",
+        "--url", rpcUrl,
+        "--keypair", attackerPath,
+        "--program-id", programPath,
+        "--upgrade-authority", attackerPath,
+        "--commitment", "confirmed",
+        "--use-rpc",
+      ],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
+    return programKeypair.publicKey;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function upgradeAuthorityOf(programDataInfo) {
+  const data = programDataInfo.data;
+  return data[12] === 1 ? new PublicKey(data.subarray(13, 45)) : null;
 }
 
 function canonicalAta(mint, owner, allowOwnerOffCurve) {
@@ -374,7 +417,7 @@ async function main() {
   const attacker = Keypair.generate();
   const rotatedWallet = Keypair.generate();
 
-  for (const [keypair, sol] of [[relayer, 20], [guardian, 2], [p0, 2], [p1, 2], [funder, 2], [victim, 2], [attacker, 2]]) {
+  for (const [keypair, sol] of [[relayer, 20], [guardian, 2], [p0, 2], [p1, 2], [funder, 2], [victim, 2], [attacker, 12]]) {
     const signature = await connection.requestAirdrop(keypair.publicKey, sol * LAMPORTS_PER_SOL);
     await connection.confirmTransaction(signature, "confirmed");
   }
@@ -422,6 +465,9 @@ async function main() {
   const inboxV2 = canonicalAta(mint, v2.vaultAuthority, true);
 
   // Every account whose bytes a failed transaction must not change.
+  const programData = programDataAddress(programId);
+  h.track("program", programId);
+  h.track("programData", programData);
   h.track("config", v1.config);
   h.track("work", v1.work);
   h.track("revenuePool", v1.revenuePool);
@@ -555,15 +601,20 @@ async function main() {
       })
       .transaction();
   }
-  function initConfigTx(settlementMint, tokenProgram) {
+  function initConfigTx(settlementMint, tokenProgram, overrides = {}) {
     return methods
       .initializeConfig(fixedBytes(0x71), guardian.publicKey)
       .accountsStrict({
         config: v1.config,
         governanceAuthority: governance.publicKey,
+        // The test validator loads the program with the provider wallet as upgrade authority.
+        upgradeAuthority: governance.publicKey,
+        program: programId,
+        programData,
         settlementMint,
         tokenProgram,
         systemProgram: SystemProgram.programId,
+        ...overrides,
       })
       .transaction();
   }
@@ -582,6 +633,86 @@ async function main() {
   const rejectCase = (id, category, threat) => ({ id, category, threat });
 
   // ================================================== Config initialization
+  console.log("Config initialization authorization (attacker front-running)");
+  const programDataInfo = await connection.getAccountInfo(programData, "confirmed");
+  assert.ok(
+    upgradeAuthorityOf(programDataInfo)?.equals(governance.publicKey),
+    "harness: the program must be loaded with the provider wallet as upgrade authority",
+  );
+  const attackerProgram = deployAttackerProgram(process.env.ANCHOR_PROVIDER_URL, attacker);
+  const attackerProgramData = programDataAddress(attackerProgram);
+  assert.ok(
+    upgradeAuthorityOf(await connection.getAccountInfo(attackerProgramData, "confirmed"))?.equals(attacker.publicKey),
+    "harness: the attacker must control its own upgradeable program",
+  );
+  h.track("attackerProgramData", attackerProgramData);
+  // Every attempt below lands on-chain before the authorized initialization.
+  assert.equal(await connection.getAccountInfo(v1.config, "confirmed"), null);
+  await h.expectRejection(
+    rejectCase("CFG-04", "D", "attacker front-runs initialize_config signing as governance and upgrade authority"),
+    () => initConfigTx(mint, TOKEN_PROGRAM_ID, { governanceAuthority: attacker.publicKey, upgradeAuthority: attacker.publicKey }),
+    [attacker],
+    { error: "UnauthorizedConfigInitializer", account: "program_data" },
+  );
+  await h.expectRejection(
+    rejectCase("CFG-05", "D", "attacker substitutes the ProgramData of an upgradeable program it controls"),
+    () =>
+      initConfigTx(mint, TOKEN_PROGRAM_ID, {
+        governanceAuthority: attacker.publicKey,
+        upgradeAuthority: attacker.publicKey,
+        programData: attackerProgramData,
+      }),
+    [attacker],
+    { error: "InvalidProgramData", account: "program" },
+  );
+  await h.expectRejection(
+    rejectCase("CFG-06", "D", "attacker substitutes its own program account and ProgramData"),
+    () =>
+      initConfigTx(mint, TOKEN_PROGRAM_ID, {
+        governanceAuthority: attacker.publicKey,
+        upgradeAuthority: attacker.publicKey,
+        program: attackerProgram,
+        programData: attackerProgramData,
+      }),
+    [attacker],
+    { error: "InvalidProgramId", account: "program" },
+  );
+  await h.expectRejection(
+    rejectCase("CFG-07", "D", "attacker passes a non-loader account as ProgramData"),
+    () =>
+      initConfigTx(mint, TOKEN_PROGRAM_ID, {
+        governanceAuthority: attacker.publicKey,
+        upgradeAuthority: attacker.publicKey,
+        programData: mint,
+      }),
+    [attacker],
+    { error: "AccountOwnedByWrongProgram", account: "program_data" },
+  );
+  await h.expectRejection(
+    rejectCase("CFG-08", "D", "attacker names the real upgrade authority without its signature"),
+    async () => {
+      const ix = await methods
+        .initializeConfig(fixedBytes(0x71), guardian.publicKey)
+        .accountsStrict({
+          config: v1.config,
+          governanceAuthority: attacker.publicKey,
+          upgradeAuthority: governance.publicKey,
+          program: programId,
+          programData,
+          settlementMint: mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+      ix.keys = ix.keys.map((meta) =>
+        meta.pubkey.equals(governance.publicKey) ? { ...meta, isSigner: false } : meta,
+      );
+      return new Transaction().add(ix);
+    },
+    [attacker],
+    { error: "AccountNotSigner", account: "upgrade_authority" },
+  );
+
   console.log("Config initialization guards");
   await h.expectRejection(
     rejectCase("CFG-01", "A", "ProtocolConfig bound to Token-2022 program and mint"),
@@ -602,6 +733,12 @@ async function main() {
     { error: "InvalidSettlementMintDecimals" },
   );
   await h.expectSuccess("initialize config", await initConfigTx(mint, TOKEN_PROGRAM_ID), [governance]);
+  const initializedConfig = await program.account.protocolConfigState.fetch(v1.config, "confirmed");
+  assert.ok(
+    initializedConfig.governanceAuthority.equals(governance.publicKey),
+    "the authorized initializer, not a front-running attacker, must hold governance",
+  );
+  h.record("INIT-AUTH-01", "D", "after rejected front-running attempts, the upgrade-authority-approved initializer holds governance", "config created once; governance = authorized key");
 
   // ===================================================== Agreement fixture
   await h.expectSuccess(
