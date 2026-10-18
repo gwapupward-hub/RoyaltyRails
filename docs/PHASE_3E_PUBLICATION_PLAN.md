@@ -12,6 +12,7 @@
 - Source: `20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e`.
 - Artifact: GitHub Actions run `39092819552` / artifact ID `12123238615`, name `royaltyrail-sbf-20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e`. The exact retrieved IDL, SBF and manifest hashes matched the frozen record; see [IDL provenance](evidence/phase-3e/idl-provenance.json).
 - Security contact: `email:thagwapspot@gmail.com`. Actual email delivery is not independently verified.
+- Draft security JSON: `deployments/devnet/security-metadata.json`, **689 UTF-8 bytes**, SHA-256 `1d5d8bb28d9da630a86763caafd142cf5916ca787b097db9272356fba8e849fb`. See [payload provenance](evidence/phase-3e/security-payload.json). This is not an on-chain publication hash.
 - Policy URL: https://github.com/gwapupward-hub/RoyaltyRails/blob/07c7f90c648ae27a170b7961d54d1dbd58a9df6f/SECURITY.md (immutable commit permalink; works before PR merge).
 
 ## Canonical metadata accounts
