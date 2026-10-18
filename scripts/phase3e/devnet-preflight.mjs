@@ -6,7 +6,10 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const requireE2e = createRequire(new URL('../../tests/e2e/package.json', import.meta.url));
-const { Connection, PublicKey, BPF_LOADER_UPGRADEABLE_PROGRAM_ID } = requireE2e('@solana/web3.js');
+const { Connection, PublicKey } = requireE2e('@solana/web3.js');
+// Pinned web3.js 1.99.0 does not export the loader constant; use the
+// canonical address already used by tests/e2e/devnet-verify.mjs.
+const LOADER = new PublicKey('BPFLoaderUpgradeab1e11111111111111111111111');
 
 const manifest = JSON.parse(readFileSync('deployments/devnet/manifest.json', 'utf8'));
 const evidence = JSON.parse(readFileSync('docs/evidence/devnet-deployment.json', 'utf8'));
@@ -20,7 +23,7 @@ const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const genesis = await connection.getGenesisHash();
 assert.equal(genesis, manifest.genesisHash, 'wrong Solana network or genesis hash');
 const [programData] = PublicKey.findProgramAddressSync(
-  [program.toBuffer()], BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
+  [program.toBuffer()], LOADER,
 );
 assert.equal(programData.toBase58(), evidence.programData, 'unexpected program-data address');
 
@@ -39,10 +42,10 @@ const [pInfo, dInfo, idlInfo, securityInfo] = await connection.getMultipleAccoun
   [program, programData, pmpIdl, pmpSecurity], 'finalized',
 );
 assert.ok(pInfo?.executable, 'program does not exist or is not executable');
-assert.ok(pInfo.owner.equals(BPF_LOADER_UPGRADEABLE_PROGRAM_ID), 'wrong program owner');
+assert.ok(pInfo.owner.equals(LOADER), 'wrong program owner');
 assert.equal(pInfo.data.readUInt32LE(0), 2, 'wrong program account type');
 assert.equal(new PublicKey(pInfo.data.subarray(4, 36)).toBase58(), programData.toBase58());
-assert.ok(dInfo?.owner.equals(BPF_LOADER_UPGRADEABLE_PROGRAM_ID), 'wrong program data owner');
+assert.ok(dInfo?.owner.equals(LOADER), 'wrong program data owner');
 assert.equal(dInfo.data.readUInt32LE(0), 3, 'wrong ProgramData account type');
 assert.equal(dInfo.data[12], 1, 'upgrade authority unavailable');
 assert.equal(new PublicKey(dInfo.data.subarray(13, 45)).toBase58(), expectedAuthority);
