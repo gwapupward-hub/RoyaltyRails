@@ -152,4 +152,8 @@ pub enum RoyaltyRailError {
     InvalidParticipantIndex,
     #[msg("current claim amount exceeds the SPL token u64 amount domain")]
     ClaimAmountExceedsTokenWidth,
+    #[msg("program_data is not this program's ProgramData account")]
+    InvalidProgramData,
+    #[msg("only the program's upgrade authority may authorize ProtocolConfig initialization")]
+    UnauthorizedConfigInitializer,
 }

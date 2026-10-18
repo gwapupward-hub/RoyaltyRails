@@ -101,6 +101,14 @@ fn require_governance(config: &ProtocolConfigState, authority: Pubkey) -> Result
     Ok(())
 }
 
+/// ProtocolConfig may only be initialized with the co-signature of the program's
+/// current upgrade authority, so nobody can front-run the deployer and claim
+/// permanent governance. Immutable programs (no authority) and the all-zero key
+/// are never accepted.
+fn is_config_initializer(upgrade_authority_address: Option<Pubkey>, signer: Pubkey) -> bool {
+    signer != Pubkey::default() && upgrade_authority_address == Some(signer)
+}
+
 fn require_work_manager(work: &WorkState, authority: Pubkey) -> Result<()> {
     require_schema_version(work.schema_version)?;
     require_keys_eq!(
@@ -530,6 +538,20 @@ pub struct InitializeConfig<'info> {
     pub config: Account<'info, ProtocolConfigState>,
     #[account(mut)]
     pub governance_authority: Signer<'info>,
+    // Anchor creates `init` accounts before evaluating these constraints; a
+    // failed check aborts the transaction, so no config account or governance
+    // state persists for an unauthorized initializer.
+    pub upgrade_authority: Signer<'info>,
+    #[account(
+        constraint = program.programdata_address()? == Some(program_data.key())
+            @ RoyaltyRailError::InvalidProgramData
+    )]
+    pub program: Program<'info, crate::program::Royaltyrail>,
+    #[account(
+        constraint = is_config_initializer(program_data.upgrade_authority_address, upgrade_authority.key())
+            @ RoyaltyRailError::UnauthorizedConfigInitializer
+    )]
+    pub program_data: Account<'info, ProgramData>,
     /// CHECK: owner, layout, decimals, and initialized flag are validated by initialize_config.
     pub settlement_mint: UncheckedAccount<'info>,
     /// CHECK: exact program ID and executable status are validated by initialize_config.
@@ -601,4 +623,26 @@ pub struct MutateRevenuePool<'info> {
     )]
     pub revenue_pool: Account<'info, RevenuePoolState>,
     pub authority: Signer<'info>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn key(value: u8) -> Pubkey {
+        Pubkey::new_from_array([value; 32])
+    }
+
+    #[test]
+    fn config_initializer_must_be_the_current_upgrade_authority() {
+        assert!(is_config_initializer(Some(key(7)), key(7)));
+        assert!(!is_config_initializer(Some(key(7)), key(8)));
+        // An immutable program has no authority that could ever approve initialization.
+        assert!(!is_config_initializer(None, key(7)));
+        // The all-zero key is never an initializer, even if recorded as the authority.
+        assert!(!is_config_initializer(
+            Some(Pubkey::default()),
+            Pubkey::default()
+        ));
+    }
 }
