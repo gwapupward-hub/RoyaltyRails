@@ -64,6 +64,16 @@ const u32Le = (value) => {
 };
 const json = (path) => JSON.parse(readFileSync(path, "utf8"));
 
+// The public devnet RPC rate-limits bursts of getTransaction calls. Back off and
+// retry every RPC request on HTTP 429 instead of failing a check on rate limiting.
+async function rateLimitedFetch(input, init) {
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(input, init);
+    if (response.status !== 429 || attempt === 8) return response;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(1000 * 2 ** attempt, 30_000)));
+  }
+}
+
 const results = [];
 async function check(name, fn) {
   try {
@@ -82,7 +92,11 @@ async function main() {
   assert.ok(manifest.deployable && manifest.authorities, `${MANIFEST_PATH} has no authorities`);
   const programId = new PublicKey(manifest.programId);
   const authority = Object.fromEntries(Object.entries(manifest.authorities).map(([key, value]) => [key, new PublicKey(value)]));
-  const connection = new Connection(RPC_URL, COMMITMENT);
+  const connection = new Connection(RPC_URL, {
+    commitment: COMMITMENT,
+    disableRetryOnRateLimit: true,
+    fetch: rateLimitedFetch,
+  });
 
   // ------------------------------------------------------------ cluster and inputs
   const genesis = await connection.getGenesisHash();
