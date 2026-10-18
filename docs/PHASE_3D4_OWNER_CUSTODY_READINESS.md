@@ -58,7 +58,7 @@ The placeholders must be replaced with the five public addresses. No private-key
 
 ## Gate 6 readiness
 
-**Status: identity criteria met; custody criteria NOT met.** Public identity commit `20ccae9`, frozen-manifest commit `97e3b76`, CI run `39092819552`, and post-freeze reproducibility CI run `39094215260` are recorded; all six required CI jobs passed; the frozen manifest SHA-256 is `8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66`. However, the five keys were generated and handled in an AI agent's environment (owner-approved devnet-only exception), and the owner reports that the critical backups were stored but not verified by re-entry.
+**Status: PASS for devnet by owner-accepted custody exception (2026-10-18).** Public identity commit `20ccae9`, frozen-manifest commit `97e3b76`, CI run `39092819552`, and post-freeze reproducibility CI run `39094215260` are recorded; all six required CI jobs passed; the frozen manifest SHA-256 is `8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66`. On 2026-10-18 the owner accepted this devnet-only custody exception as meeting Gate 6 for devnet. The custody criteria themselves remain unmet: the keys were generated and handled in an AI agent's environment, and the upgrade-authority, governance, and guardian backups were stored but not verified by re-entry.
 
 ## Gate 7 readiness
 
