@@ -8,7 +8,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-royaltyrail = "ErqjTNhQWyLCjJZpFg9jyGAgWJS7KYLN5kFUiNf3KYdH"
+royaltyrail = "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB"
+
+[programs.devnet]
+royaltyrail = "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB"
 
 [provider]
 cluster = "localnet"

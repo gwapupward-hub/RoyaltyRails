@@ -25,7 +25,7 @@ use state::{
 // Program ID. Until the owner freezes the devnet identity (deployments/devnet/,
 // scripts/devnet/generate-keys.sh) this is a temporary development ID. CI's
 // localnet lanes replace it with a throwaway key; it is never a mainnet ID.
-declare_id!("ErqjTNhQWyLCjJZpFg9jyGAgWJS7KYLN5kFUiNf3KYdH");
+declare_id!("Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB");
 
 const SPL_TOKEN_MINT_BYTES: usize = 82;
 const USDC_DECIMALS: u8 = 6;

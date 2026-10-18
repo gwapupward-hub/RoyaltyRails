@@ -112,6 +112,18 @@ function readManifest(path) {
   if (JSON.stringify(manifest.buildInputs) !== JSON.stringify(BUILD_INPUTS)) {
     throw new Error(`${path} lists different build inputs than this checkout`);
   }
+  if (manifest.deployable !== true || !manifest.authorities || typeof manifest.authorities !== "object") {
+    throw new Error(`${path} is not deployable (missing frozen authorities)`);
+  }
+  const authorityFields = ["deployer", "upgradeAuthority", "governance", "guardian"];
+  for (const field of authorityFields) {
+    assertPubkey(`${path} authorities/${field}`, manifest.authorities[field]);
+  }
+  const values = authorityFields.map((field) => manifest.authorities[field]);
+  if (new Set(values).size !== values.length) {
+    throw new Error(`${path}: deployer, upgrade authority, governance, and guardian must be distinct`);
+  }
+  assertPubkey(`${path} programId`, manifest.programId);
   return manifest;
 }
 
