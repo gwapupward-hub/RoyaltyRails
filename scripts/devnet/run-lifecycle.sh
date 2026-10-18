@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
-# Runs the 16-participant lifecycle against the deployed program. The first run
-# initializes ProtocolConfig, co-signed by the upgrade authority and governance.
-# Expected public keys are derived from the key files, so nothing is typed by hand.
+# OWNER-RUN. Runs the 16-participant lifecycle against the deployed program twice
+# (RR_RUNS to change), each run on a fresh Work, pool, and agreement. Reads only
+# the deployer key; expected identities come from the frozen manifest, and the
+# initialized ProtocolConfig must match them.
 set -euo pipefail
 
-KEY_DIR="${RR_KEY_DIR:-$HOME/royaltyrails-devnet}"
-RPC_URL="${RR_RPC_URL:-https://api.devnet.solana.com}"
-cd "$(git rev-parse --show-toplevel)"
-pubkey() { solana-keygen pubkey "$KEY_DIR/$1.json"; }
+source "$(dirname "$0")/common.sh"
+key_matches deployer authorities/deployer
+program_files_match
+runs="${RR_RUNS:-2}"
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 
-ANCHOR_PROVIDER_URL="$RPC_URL" \
-ANCHOR_WALLET="$KEY_DIR/deployer.json" \
-RR_EXPECTED_PROGRAM_ID="$(pubkey program-keypair)" \
-RR_EXPECTED_UPGRADE_AUTHORITY="$(pubkey upgrade-authority)" \
-RR_EXPECTED_GOVERNANCE="$(pubkey governance)" \
-RR_EXPECTED_GUARDIAN="$(pubkey guardian)" \
-RR_GOVERNANCE_KEYPAIR="$KEY_DIR/governance.json" \
-RR_UPGRADE_AUTHORITY_KEYPAIR="$KEY_DIR/upgrade-authority.json" \
-RR_EVIDENCE_PATH="${RR_EVIDENCE_PATH:-docs/evidence/devnet-lifecycle-$(date -u +%Y%m%dT%H%M%SZ).json}" \
-node tests/e2e/devnet-lifecycle.mjs
+for run in $(seq 1 "$runs"); do
+  echo "=== lifecycle run $run/$runs"
+  ANCHOR_PROVIDER_URL="$RPC_URL" \
+  ANCHOR_WALLET="$KEY_DIR/deployer.json" \
+  RR_EXPECTED_PROGRAM_ID="$(manifest programId)" \
+  RR_EXPECTED_UPGRADE_AUTHORITY="$(manifest authorities/upgradeAuthority)" \
+  RR_EXPECTED_GOVERNANCE="$(manifest authorities/governance)" \
+  RR_EXPECTED_GUARDIAN="$(manifest authorities/guardian)" \
+  RR_IDL_PATH="$PROGRAM_DIR/royaltyrail.json" \
+  RR_PROGRAM_SO="$PROGRAM_DIR/royaltyrail.so" \
+  RR_EVIDENCE_PATH="docs/evidence/$CLUSTER-lifecycle-$stamp-run$run.json" \
+  node tests/e2e/devnet-lifecycle.mjs
+done
+echo "Lifecycle passed $runs times. Commit and push docs/evidence/ (public files only)."

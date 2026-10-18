@@ -19,9 +19,12 @@
 //   RR_EXPECTED_UPGRADE_AUTHORITY        required on devnet; must equal the ProgramData authority
 //   RR_EXPECTED_GOVERNANCE               required on devnet; governance pubkey to initialize or verify
 //   RR_EXPECTED_GUARDIAN                 required on devnet; guardian pubkey to initialize or verify
-//   RR_GOVERNANCE_KEYPAIR                governance keypair path; signs only if ProtocolConfig is absent
+//   RR_GOVERNANCE_KEYPAIR                governance keypair path; only read if ProtocolConfig is absent
 //   RR_UPGRADE_AUTHORITY_KEYPAIR         upgrade-authority keypair path; only read if ProtocolConfig is
 //                                        absent (initialize_config requires its co-signature)
+//   RR_INIT_ONLY=1                       initialize (or verify) ProtocolConfig, record it, and stop. On
+//                                        devnet this is the only mode that initializes; lifecycle runs
+//                                        require an existing config and never read the critical keys.
 //   RR_IDL_PATH                          default target/idl/royaltyrail.json
 //   RR_PROGRAM_SO                        default target/deploy/royaltyrail.so (deployed bytes are compared)
 //   RR_EVIDENCE_PATH                     default target/e2e/<cluster>-lifecycle-<timestamp>.json
@@ -222,6 +225,10 @@ async function main() {
           throw new Error(`${label} failed: ${JSON.stringify(confirmation.value.err)}`);
         }
       } catch (error) {
+        // web3.js can reject with the raw TransactionError of a landed failure.
+        if (error && typeof error === "object" && "InstructionError" in error) {
+          throw new Error(`${label} failed: ${JSON.stringify(error)}`);
+        }
         // Only an expired blockhash is retried, and only if the signature never landed.
         if (error?.name !== "TransactionExpiredBlockheightExceededError") throw error;
         const status = (await connection.getSignatureStatus(signature, { searchTransactionHistory: true })).value;
@@ -265,17 +272,16 @@ async function main() {
 
   // --------------------------------------------------------- ProtocolConfig
   const [config] = PublicKey.findProgramAddressSync([CONFIG_SEED], programId);
+  const initOnly = process.env.RR_INIT_ONLY === "1";
   // Localnet-only default governance: deterministic and publicly derivable, distinct
   // from the provider wallet (the upgrade authority), and initially unfunded, which
   // mirrors the devnet key separation. Defaults are never used on devnet.
-  const governanceKeypair = process.env.RR_GOVERNANCE_KEYPAIR
-    ? loadKeypair(process.env.RR_GOVERNANCE_KEYPAIR)
-    : onDevnet
-      ? null
-      : Keypair.fromSeed(createHash("sha256").update("royaltyrails-localnet-governance-v1").digest());
+  const localnetGovernance = () =>
+    Keypair.fromSeed(createHash("sha256").update("royaltyrails-localnet-governance-v1").digest());
   const expectedGovernance = onDevnet
     ? requiredPubkey("RR_EXPECTED_GOVERNANCE")
-    : optionalPubkey("RR_EXPECTED_GOVERNANCE") ?? governanceKeypair.publicKey;
+    : optionalPubkey("RR_EXPECTED_GOVERNANCE") ??
+      (process.env.RR_GOVERNANCE_KEYPAIR ? loadKeypair(process.env.RR_GOVERNANCE_KEYPAIR) : localnetGovernance()).publicKey;
   // Localnet default guardian: a fixed, keyless public key distinct from governance.
   const expectedGuardian = onDevnet
     ? requiredPubkey("RR_EXPECTED_GUARDIAN")
@@ -286,8 +292,17 @@ async function main() {
   let configState = await program.account.protocolConfigState.fetchNullable(config, "confirmed");
   let configInitialization = null;
   if (!configState) {
-    assert.ok(governanceKeypair, "ProtocolConfig is absent: RR_GOVERNANCE_KEYPAIR is required to initialize it");
-    const governance = governanceKeypair;
+    assert.ok(
+      !onDevnet || initOnly,
+      "ProtocolConfig is not initialized on devnet: run scripts/devnet/init-config.sh first",
+    );
+    // The critical keys are read only here, when they sign.
+    const governance = process.env.RR_GOVERNANCE_KEYPAIR
+      ? loadKeypair(process.env.RR_GOVERNANCE_KEYPAIR)
+      : onDevnet
+        ? null
+        : localnetGovernance();
+    assert.ok(governance, "ProtocolConfig is absent: RR_GOVERNANCE_KEYPAIR is required to initialize it");
     assert.ok(governance.publicKey.equals(expectedGovernance), "RR_GOVERNANCE_KEYPAIR does not match RR_EXPECTED_GOVERNANCE");
     // initialize_config requires the program's current upgrade authority as co-signer.
     assert.ok(programEvidence.programData, "ProtocolConfig can only be initialized for an upgradeable program");
@@ -376,6 +391,42 @@ async function main() {
   assert.equal(mintInfo.decimals, USDC_DECIMALS);
   assert.ok(mintInfo.mintAuthority?.equals(wallet.publicKey), "provider wallet must be the test mint authority");
   const deploymentId = Uint8Array.from(configState.deploymentId);
+  const configEvidence = {
+    address: config.toBase58(),
+    initializedThisRun: configInitialization !== null,
+    initializationSignature: configInitialization,
+    governance: configState.governanceAuthority.toBase58(),
+    guardian: configState.guardianAuthority.toBase58(),
+    settlementMint: mint.toBase58(),
+    tokenProgram: configState.tokenProgram.toBase58(),
+    deploymentIdHex: Buffer.from(deploymentId).toString("hex"),
+  };
+
+  if (initOnly) {
+    const evidence = {
+      suite: "phase-3d.4-config",
+      cluster,
+      genesis,
+      generatedAt: new Date().toISOString(),
+      program: programEvidence,
+      config: configEvidence,
+      transactions,
+      checks: [
+        "deployed program bytes equal the frozen build",
+        "ProgramData upgrade authority is the expected key and co-signed initialize_config",
+        "ProtocolConfig governance, guardian, and token program match the expected owner configuration",
+        "ProtocolConfig is unpaused; the settlement test mint has six decimals and the deployer as mint authority",
+      ],
+      status: "PASS",
+    };
+    const evidencePath =
+      process.env.RR_EVIDENCE_PATH ?? `target/e2e/${cluster}-config-${evidence.generatedAt.replaceAll(":", "-")}.json`;
+    mkdirSync(dirname(evidencePath), { recursive: true });
+    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+    console.log(`evidence written to ${evidencePath}`);
+    console.log(JSON.stringify(evidence, null, 2));
+    return;
+  }
 
   // -------------------------------------------------- per-run test identities
   const funder = Keypair.generate();
@@ -645,6 +696,7 @@ async function main() {
   allocationEvidence.push({
     step: "fund_and_allocate #1",
     amount: DIRECT_FUNDING_1.toString(),
+    paymentReferenceHex: Buffer.from(reference1).toString("hex"),
     ...(await assertAllocation("fund #1", logs, DIRECT_FUNDING_1, spec.AllocationMode.DirectFunding, reference1)),
   });
   state = await agreementState();
@@ -671,6 +723,7 @@ async function main() {
   allocationEvidence.push({
     step: "allocate_inbox",
     amount: RAW_DEPOSIT_1.toString(),
+    paymentReferenceHex: "00".repeat(32),
     ...(await assertAllocation("inbox allocation", logs, RAW_DEPOSIT_1, spec.AllocationMode.Inbox, Array(32).fill(0))),
   });
   pendingInbox = 0n;
@@ -701,6 +754,7 @@ async function main() {
   allocationEvidence.push({
     step: "fund_and_allocate #2",
     amount: DIRECT_FUNDING_2.toString(),
+    paymentReferenceHex: Buffer.from(reference2).toString("hex"),
     ...(await assertAllocation("fund #2", logs, DIRECT_FUNDING_2, spec.AllocationMode.DirectFunding, reference2)),
   });
   await assertInvariants("after direct funding #2");
@@ -729,18 +783,13 @@ async function main() {
     genesis,
     generatedAt: new Date().toISOString(),
     program: programEvidence,
-    config: {
-      address: config.toBase58(),
-      initializedThisRun: configInitialization !== null,
-      initializationSignature: configInitialization,
-      governance: configState.governanceAuthority.toBase58(),
-      guardian: configState.guardianAuthority.toBase58(),
-      settlementMint: mint.toBase58(),
-      tokenProgram: configState.tokenProgram.toBase58(),
-      deploymentIdHex: Buffer.from(deploymentId).toString("hex"),
-    },
+    config: configEvidence,
     run: {
       feePayer: wallet.publicKey.toBase58(),
+      funder: funder.publicKey.toBase58(),
+      funderTokenAccount: funderAta.toBase58(),
+      rotatedPayoutWallet: rotatedWallet.publicKey.toBase58(),
+      minted: minted.toString(),
       work: work.toBase58(),
       revenuePool: revenuePool.toBase58(),
       agreement: agreement.toBase58(),

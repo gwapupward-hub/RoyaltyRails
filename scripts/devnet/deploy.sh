@@ -1,39 +1,29 @@
 #!/usr/bin/env bash
-# Deploys the CI-built RoyaltyRail artifact with the owner's devnet keys, then
-# verifies the on-chain upgrade authority and program bytes.
-# Usage: scripts/devnet/deploy.sh <downloaded artifact directory>
+# OWNER-RUN. Deploys the frozen, CI-built RoyaltyRail artifact with the owner's
+# devnet keys after explicit authorization, then verifies the on-chain program,
+# upgrade authority, and bytes. Reads only the program, deployer, and
+# upgrade-authority keys.
+# Usage: scripts/devnet/deploy.sh [artifact directory, default ./artifact from fetch-artifact.sh]
 set -euo pipefail
 
-ARTIFACT_DIR="${1:?usage: scripts/devnet/deploy.sh <artifact directory>}"
-KEY_DIR="${RR_KEY_DIR:-$HOME/royaltyrails-devnet}"
-RPC_URL="${RR_RPC_URL:-https://api.devnet.solana.com}"
-DEVNET_GENESIS=EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG
-fail() { echo "refusing: $*" >&2; exit 1; }
+ARTIFACT_DIR="$(realpath "${1:-artifact}")"
+[ -d "$ARTIFACT_DIR" ] || { echo "refusing: no artifact at $ARTIFACT_DIR; run scripts/devnet/fetch-artifact.sh" >&2; exit 1; }
+source "$(dirname "$0")/common.sh"
 
-cd "$(git rev-parse --show-toplevel)"
-genesis="$(solana genesis-hash --url "$RPC_URL")"
-case "$RPC_URL" in
-  http://127.0.0.1:*|http://localhost:*) echo "localnet rehearsal ($genesis)" ;;
-  *) [ "$genesis" = "$DEVNET_GENESIS" ] || fail "$RPC_URL is not devnet (genesis $genesis)" ;;
-esac
+PROGRAM_ID="$(manifest programId)"
+UPGRADE_AUTHORITY="$(manifest authorities/upgradeAuthority)"
+DEPLOYER="$(manifest authorities/deployer)"
+SOURCE_COMMIT="$(manifest sourceCommit)"
+key_matches program-keypair programId
+key_matches deployer authorities/deployer
+key_matches upgrade-authority authorities/upgradeAuthority
 
-for name in program-keypair deployer upgrade-authority; do
-  [ -f "$KEY_DIR/$name.json" ] || fail "missing $KEY_DIR/$name.json"
-done
-PROGRAM_ID="$(solana-keygen pubkey "$KEY_DIR/program-keypair.json")"
-UPGRADE_AUTHORITY="$(solana-keygen pubkey "$KEY_DIR/upgrade-authority.json")"
-DEPLOYER="$(solana-keygen pubkey "$KEY_DIR/deployer.json")"
-
-(cd "$ARTIFACT_DIR" && sha256sum -c SHA256SUMS) || fail "artifact checksums do not match"
-grep -qF "declare_id!(\"$PROGRAM_ID\")" "$ARTIFACT_DIR/BUILD_INFO" \
-  || fail "artifact was not built for program ID $PROGRAM_ID"
-SOURCE_COMMIT="$(cat "$ARTIFACT_DIR/SOURCE_COMMIT")"
-git cat-file -e "$SOURCE_COMMIT^{commit}" 2>/dev/null || fail "source commit $SOURCE_COMMIT is not in this checkout (git fetch)"
-# The checkout may be newer (docs/tests), but the program build inputs must be identical.
-git diff --quiet "$SOURCE_COMMIT" HEAD -- programs crates Cargo.toml Cargo.lock rust-toolchain.toml \
-  || fail "program sources differ from the artifact's source commit $SOURCE_COMMIT"
+(cd "$ARTIFACT_DIR" && sha256sum -c --quiet SHA256SUMS) || refuse "artifact files do not match its SHA256SUMS"
+node scripts/devnet/manifest.mjs check-artifact --manifest "$MANIFEST" --artifact-dir "$ARTIFACT_DIR"
+node scripts/devnet/program-id.mjs check --so "$ARTIFACT_DIR/royaltyrail.so" \
+  --idl "$ARTIFACT_DIR/royaltyrail.json" --expect "$PROGRAM_ID" >/dev/null
 if solana program show "$PROGRAM_ID" --url "$RPC_URL" >/dev/null 2>&1; then
-  fail "$PROGRAM_ID is already deployed; upgrades are a separate, deliberate step"
+  refuse "$PROGRAM_ID is already deployed on $CLUSTER; upgrades are a separate, deliberate step"
 fi
 
 SO_BYTES=$(wc -c < "$ARTIFACT_DIR/royaltyrail.so")
@@ -41,10 +31,23 @@ SO_BYTES=$(wc -c < "$ARTIFACT_DIR/royaltyrail.so")
 rent=$(solana rent "$((SO_BYTES + 45))" --lamports --url "$RPC_URL" | grep -oE '[0-9]+' | head -1)
 needed=$((rent * 2 + 50000000))
 have=$(solana balance "$DEPLOYER" --lamports --url "$RPC_URL" | grep -oE '[0-9]+' | head -1)
-[ "$have" -ge "$needed" ] || fail "deployer $DEPLOYER has $have lamports; needs at least $needed"
+[ "$have" -ge "$needed" ] || refuse "deployer $DEPLOYER has $have lamports; needs at least $needed"
 
-echo "Deploying $PROGRAM_ID (upgrade authority $UPGRADE_AUTHORITY, deployer $DEPLOYER)"
-solana program deploy "$ARTIFACT_DIR/royaltyrail.so" \
+cat <<EOF
+
+Ready to deploy RoyaltyRail to $CLUSTER (genesis $GENESIS):
+  program ID          $PROGRAM_ID
+  upgrade authority   $UPGRADE_AUTHORITY
+  deployer            $DEPLOYER (balance $have lamports)
+  source commit       $SOURCE_COMMIT
+  royaltyrail.so      $(manifest artifacts/royaltyrail.so/sha256) ($SO_BYTES bytes)
+  frozen manifest     $MANIFEST ($(sha256sum "$MANIFEST" | cut -c1-64))
+EOF
+authorize "DEPLOY ${PROGRAM_ID: -4}"
+
+# Output is shown and captured, never written to a file: a failed deploy prints the
+# temporary buffer's recovery phrase.
+output="$(solana program deploy "$ARTIFACT_DIR/royaltyrail.so" \
   --url "$RPC_URL" \
   --program-id "$KEY_DIR/program-keypair.json" \
   --upgrade-authority "$KEY_DIR/upgrade-authority.json" \
@@ -52,31 +55,44 @@ solana program deploy "$ARTIFACT_DIR/royaltyrail.so" \
   --fee-payer "$KEY_DIR/deployer.json" \
   --commitment confirmed \
   --use-rpc \
-  --max-sign-attempts 50 | tee /tmp/royaltyrail-deploy.txt
-SIGNATURE="$(grep -oE 'Signature: [1-9A-HJ-NP-Za-km-z]+' /tmp/royaltyrail-deploy.txt | awk '{print $2}' || true)"
+  --max-sign-attempts 50 2>&1 | tee /dev/tty)"
+SIGNATURE="$(grep -oE 'Signature: [1-9A-HJ-NP-Za-km-z]+' <<<"$output" | awk '{print $2}' || true)"
+[ -n "$SIGNATURE" ] || refuse "no deployment signature in the CLI output"
 
 show="$(solana program show "$PROGRAM_ID" --url "$RPC_URL")"
 echo "$show"
-echo "$show" | grep -qE "Authority: $UPGRADE_AUTHORITY\$" || fail "on-chain upgrade authority is not $UPGRADE_AUTHORITY"
-solana program dump "$PROGRAM_ID" /tmp/royaltyrail-deployed.so --url "$RPC_URL" >/dev/null
-deployed_sha="$(head -c "$SO_BYTES" /tmp/royaltyrail-deployed.so | sha256sum | awk '{print $1}')"
-artifact_sha="$(sha256sum "$ARTIFACT_DIR/royaltyrail.so" | awk '{print $1}')"
-[ "$deployed_sha" = "$artifact_sha" ] || fail "deployed bytes ($deployed_sha) differ from the artifact ($artifact_sha)"
+grep -qE "^Authority: $UPGRADE_AUTHORITY\$" <<<"$show" || refuse "on-chain upgrade authority is not $UPGRADE_AUTHORITY"
+PROGRAM_DATA="$(awk '/^ProgramData Address:/ {print $3}' <<<"$show")"
+DEPLOY_SLOT="$(awk '/^Last Deployed In Slot:/ {print $5}' <<<"$show")"
+dump="$(mktemp)"
+solana program dump "$PROGRAM_ID" "$dump" --url "$RPC_URL" >/dev/null
+deployed_sha="$(head -c "$SO_BYTES" "$dump" | sha256sum | cut -c1-64)"
+tail_nonzero="$(tail -c +"$((SO_BYTES + 1))" "$dump" | tr -d '\0' | wc -c)"
+rm -f "$dump"
+artifact_sha="$(manifest artifacts/royaltyrail.so/sha256)"
+[ "$deployed_sha" = "$artifact_sha" ] && [ "$tail_nonzero" = 0 ] \
+  || refuse "deployed bytes ($deployed_sha) differ from the frozen artifact ($artifact_sha)"
 
-mkdir -p target/deploy target/idl docs/evidence
-cp "$ARTIFACT_DIR/royaltyrail.so" target/deploy/royaltyrail.so
-cp "$ARTIFACT_DIR/royaltyrail.json" target/idl/royaltyrail.json
-cat > docs/evidence/devnet-deployment.json <<JSON
+mkdir -p "$PROGRAM_DIR" docs/evidence
+cp "$ARTIFACT_DIR/royaltyrail.so" "$ARTIFACT_DIR/royaltyrail.json" "$PROGRAM_DIR/"
+cat > "docs/evidence/$CLUSTER-deployment.json" <<JSON
 {
+  "suite": "phase-3d.4-deployment",
+  "cluster": "$CLUSTER",
+  "genesis": "$GENESIS",
   "programId": "$PROGRAM_ID",
-  "genesis": "$genesis",
+  "programData": "$PROGRAM_DATA",
+  "deploySlot": $DEPLOY_SLOT,
   "deploySignature": "$SIGNATURE",
   "upgradeAuthority": "$UPGRADE_AUTHORITY",
   "deployer": "$DEPLOYER",
   "sourceCommit": "$SOURCE_COMMIT",
+  "manifestSha256": "$(sha256sum "$MANIFEST" | cut -c1-64)",
   "programSha256": "$artifact_sha",
-  "idlSha256": "$(sha256sum "$ARTIFACT_DIR/royaltyrail.json" | awk '{print $1}')",
+  "deployedProgramSha256": "$deployed_sha",
+  "idlSha256": "$(manifest artifacts/royaltyrail.json/sha256)",
   "programBytes": $SO_BYTES
 }
 JSON
-echo "Deployed and verified. Public record: docs/evidence/devnet-deployment.json"
+echo "Deployed and verified. Public record: docs/evidence/$CLUSTER-deployment.json"
+echo "Next: bash scripts/devnet/init-config.sh"
