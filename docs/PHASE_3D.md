@@ -141,7 +141,7 @@ After the local-validator gate is green:
 
 Devnet proof is a deployment/integration milestone, not a smart-contract security audit.
 
-Status: **identity frozen (owner commit `20ccae9`, program `Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB`); manifest frozen; Gate 6 PASS pending the second CI build's reproducibility check and owner custody attestation; Gate 7 BLOCKED on owner deployment. Not deployed.** No private key may exist in CI or an agent runtime. Prepared and rehearsed end to end on a local validator:
+Status: **identity frozen (owner commit `20ccae9`, program `Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB`); manifest frozen; manifest reproduced by two later CI builds; Gate 6 PASS pending only the owner's custody attestation; Gate 7 BLOCKED on owner deployment. Not deployed.** No private key may exist in CI or an agent runtime. Prepared and rehearsed end to end on a local validator:
 
 - **Initialization front-running is closed.** `initialize_config` requires the program's current upgrade authority as co-signer, verified against this program's ProgramData (`CFG-04` to `CFG-08`).
 - **Owner-custodied signing model.** Every key is generated and used only in the owner's Codespace. Each step reads only the keys it needs: lifecycle runs read only the deployer, and the governance key is read only during initialization. Deployment and initialization require typed owner authorization. Key-using scripts refuse agent and CI shells on devnet.
@@ -161,7 +161,7 @@ Status: **identity frozen (owner commit `20ccae9`, program `Eo6eWYymSrZ8eJMaSwcb
 Remaining, in order (`DEPLOYMENT_DEVNET_V1.md` has the exact commands and acceptance criteria):
 
 1. ~~The owner publishes the five public addresses~~: done in `20ccae9` (owner-controlled machine; `prepare-authorities.sh`).
-2. ~~Claude freezes the CI manifest~~: done. A second CI build must reproduce it with all six jobs green, and the owner attests custody (Gate 6).
+2. ~~Freeze the CI manifest; later CI builds reproduce it with all six jobs green~~: done (runs 39094215260, 39094398777). The owner attests custody (Gate 6).
 3. The owner fetches the frozen artifact, deploys, initializes, and runs the lifecycle, then pushes the public evidence.
 4. Claude verifies the deployment against devnet and records it (Gate 7).
 
