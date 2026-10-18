@@ -31,7 +31,7 @@ assert.equal(identity.frozenBuildSourceCommit, manifest.sourceCommit);
 assert.equal(identity.frozenProgramSha256, manifest.artifacts['royaltyrail.so'].sha256);
 assert.equal(identity.frozenIdlSha256, manifest.artifacts['royaltyrail.json'].sha256);
 assert.equal(identity.securityContact, mail);
-assert.equal(identity.securityPolicyUrl, 'https://github.com/gwapupward-hub/RoyaltyRails/blob/main/SECURITY.md');
+assert.equal(identity.securityPolicyUrl, 'https://github.com/gwapupward-hub/RoyaltyRails/blob/07c7f90c648ae27a170b7961d54d1dbd58a9df6f/SECURITY.md');
 assert.match(identity.securityContactStatus, /owner_designated/);
 assert.deepEqual(identity.publication, {
   pmpIdl: 'not_published',
