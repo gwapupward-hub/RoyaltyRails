@@ -35,10 +35,18 @@ The project is **not audited or approved for real-customer funds**. Source-to-bi
 
 1. Confirm current main, PR #9 merge, frozen manifest, on-chain byte hash and upgrade authority with finalized RPC.
 2. Record the official identity and canonical links, using public values only.
-3. Produce a valid `security` metadata JSON conforming to the then-pinned Solana Program Metadata package schema. **Do not invent contacts, security policy, logo URL, release version, or auditors.**
-4. Request a verified private security-reporting contact and the owner's preferred policy URL. Do not publish a `security` record until the contact and policy are confirmed.
+3. **Draft created:** [`deployments/devnet/security-metadata.json`](../deployments/devnet/security-metadata.json), using the documented Solana Program Metadata `security` fields (`name`, `description`, `project_url`, `contacts`, `policy`, `preferred_languages`, `source_code`, and the frozen source `source_revision`). Validate using a pinned compatible CLI before proposing publication. **Do not invent logo URL, release version, auditors, audit status, or verified-build status.**
+4. **Owner contact provided:** `thagwapspot@gmail.com` (owner-designated, not independently email-delivery verified). The repository draft disclosure policy is [`SECURITY.md`](../SECURITY.md), and the canonical publication payload is [`security-metadata.json`](../deployments/devnet/security-metadata.json). The policy URL points to `main` and must resolve after this PR is merged. Owner must review the public policy/content before publication. Do not publish the `security` record until payload, contacts and policy URL are rechecked and the owner authorizes the transaction.
 5. Obtain the exact frozen Anchor IDL from the Phase 3D CI artifact, verify its SHA-256 `07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa`, confirm its embedded address, and validate the intended PMP IDL representation. Store a public, canonical, versioned IDL if it can be safely reproduced from the frozen source.
 6. Pin CLI/dependencies (no unpinned `npx @latest` for production signing). Review CLI behavior, payer, upgrade-authority inputs, network URL, metadata PDA derivations, rent, and current Solana program-metadata implementation.
+
+## Security contact and disclosure status
+
+- Owner-designated reporting address: **thagwapspot@gmail.com**.
+- Public disclosure policy drafted in [`SECURITY.md`](../SECURITY.md); not merged to `main` or independently checked for delivery.
+- Proposed canonical PMP `security` JSON: [`deployments/devnet/security-metadata.json`](../deployments/devnet/security-metadata.json) (repository draft **only**, no on-chain upload).
+- The public metadata record may be displayed by explorers that support the PMP security seed; appearance of the official protocol name in all explorers cannot be guaranteed.
+- On-chain publication requires separate **explicit** authorization and signer preflight.
 
 ## Stage B — Keyless validation and preflight
 
@@ -59,7 +67,7 @@ Before any transaction, provide:
 
 ## Stage D — Publication and independent verification (only after owner approval)
 
-1. Publish the canonical PMP IDL and `security` records to **devnet**, using the correct upgrade authority and independently verified metadata payloads.
+1. Publish the canonical PMP IDL and `security` records to **devnet**, using the correct upgrade authority and independently verified metadata payloads. The official security contact is `email:thagwapspot@gmail.com`; the policy points to the merged repository's `SECURITY.md`.
 2. Save transaction signatures, slot, account addresses, file hashes, decoded content, publisher authority and independent finalized-RPC verification under `docs/evidence/phase-3e/`.
 3. Check `https://idl.solana.com` and other supported explorer views on **devnet**. Explorer label display is not guaranteed and is not required if the canonical records are discoverable and verified.
 4. Check program bytes and governance are unchanged. Record whether external source verification succeeded, failed, or was unavailable, without overstating it.
