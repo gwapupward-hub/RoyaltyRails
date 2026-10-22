@@ -1,0 +1,544 @@
+openapi: 3.1.0
+info:
+  title: SoundReceipt V1 API (proposed)
+  version: 0.1.0
+  description: |
+    Contract-first off-chain API for creator-video music license records.
+    This is a design specification, not a deployed HTTP service.
+    All workspace access MUST be authorized by the server; path IDs do not confer access.
+    Usage assessments are evidence-based administrative reviews, not legal clearance certificates.
+servers:
+  - url: https://soundreceipt.example.invalid
+    description: Placeholder only. No deployed server is implied.
+security:
+  - bearerAuth: []
+tags:
+  - name: Workspaces
+  - name: Tracks
+  - name: Licenses
+  - name: Evidence
+  - name: Videos
+  - name: Usage
+  - name: Packets
+  - name: Audit
+paths:
+  /api/v1/workspaces:
+    post:
+      tags: [Workspaces]
+      operationId: createWorkspace
+      summary: Create an owned workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name]
+              properties:
+                name: {type: string, minLength: 1, maxLength: 160}
+      responses:
+        '201':
+          description: Workspace created for authenticated principal
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Workspace'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/workspaces/{workspaceId}/tracks:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    get:
+      tags: [Tracks]
+      operationId: listTracks
+      summary: List searchable music tracks in workspace
+      parameters:
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Paginated workspace track list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Track'}}
+                  next_cursor: {type: [string, 'null']}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Tracks]
+      operationId: createTrack
+      summary: Record music track metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateTrack'}
+      responses:
+        '201':
+          description: Track created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Track'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/InvalidRequest'}
+  /api/v1/workspaces/{workspaceId}/licenses:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    post:
+      tags: [Licenses]
+      operationId: createLicense
+      summary: Record source and scope of a music license
+      description: Uploading or recording a license never independently verifies its authenticity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [track_id]
+              properties:
+                track_id: {$ref: '#/components/schemas/Uuid'}
+                issuer_party_id: {$ref: '#/components/schemas/Uuid'}
+                grantee_party_id: {$ref: '#/components/schemas/Uuid'}
+                reference: {type: string, maxLength: 240}
+                terms_url: {type: string, format: uri}
+                effective_at: {type: string, format: date}
+                expires_at: {type: string, format: date}
+                notes: {type: string}
+      responses:
+        '201':
+          description: Self-reported license record created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/License'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/InvalidRequest'}
+  /api/v1/workspaces/{workspaceId}/licenses/{licenseId}/grants:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+      - {name: licenseId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
+    post:
+      tags: [Licenses]
+      operationId: addLicenseGrant
+      summary: Capture explicitly recorded use permissions and restrictions
+      description: Omitted permission fields mean UNKNOWN; they must not be interpreted as allowed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateGrant'}
+      responses:
+        '201':
+          description: Recorded grant created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LicenseGrant'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/evidence/upload-intents:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    post:
+      tags: [Evidence]
+      operationId: createEvidenceUploadIntent
+      summary: Request private storage upload authorization
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [filename, mime_type, size_bytes, sha256_hex]
+              properties:
+                license_id: {$ref: '#/components/schemas/Uuid'}
+                filename: {type: string, minLength: 1, maxLength: 255}
+                mime_type: {type: string, enum: [application/pdf, image/jpeg, image/png]}
+                size_bytes: {type: integer, minimum: 1}
+                sha256_hex: {$ref: '#/components/schemas/Sha256'}
+      responses:
+        '201':
+          description: Short-lived upload URL for private quarantined object only
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [evidence_id, upload_url, expires_at]
+                properties:
+                  evidence_id: {$ref: '#/components/schemas/Uuid'}
+                  upload_url: {type: string, format: uri}
+                  expires_at: {type: string, format: date-time}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/evidence/{evidenceId}/complete:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+      - {name: evidenceId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
+    post:
+      tags: [Evidence]
+      operationId: completeEvidenceUpload
+      summary: Verify uploaded object's digest and queue malware scan
+      description: No download authorization is issued until scan state becomes CLEAN.
+      responses:
+        '202':
+          description: Evidence verification and scan accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [evidence_id, scan_state]
+                properties:
+                  evidence_id: {$ref: '#/components/schemas/Uuid'}
+                  scan_state: {type: string, enum: [PENDING]}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/videos:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    post:
+      tags: [Videos]
+      operationId: createVideo
+      summary: Record a creator video or content asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [title]
+              properties:
+                title: {type: string, minLength: 1}
+                campaign_id: {$ref: '#/components/schemas/Uuid'}
+                owner_label: {type: string}
+                asset_reference: {type: string}
+      responses:
+        '201':
+          description: Video created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Video'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/videos/{videoId}/track-uses:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+      - {name: videoId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
+    post:
+      tags: [Videos]
+      operationId: addTrackUse
+      summary: Record where a track appears in a video
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [track_id]
+              properties:
+                track_id: {$ref: '#/components/schemas/Uuid'}
+                license_id: {$ref: '#/components/schemas/Uuid'}
+                start_ms: {type: integer, minimum: 0}
+                end_ms: {type: integer, minimum: 0}
+                notes: {type: string}
+      responses:
+        '201':
+          description: Track use recorded, subsequent assessments must be reevaluated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, video_id, track_id]
+                properties:
+                  id: {$ref: '#/components/schemas/Uuid'}
+                  video_id: {$ref: '#/components/schemas/Uuid'}
+                  track_id: {$ref: '#/components/schemas/Uuid'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/usage-requests:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    post:
+      tags: [Usage]
+      operationId: createUsageRequest
+      summary: Describe planned publication, sponsorship, or advertising use
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateUsageRequest'}
+      responses:
+        '201':
+          description: Usage request created; no clearance decision implied
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UsageRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/usage-requests/{usageRequestId}/assess:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+      - {name: usageRequestId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
+    post:
+      tags: [Usage]
+      operationId: assessUsageRequest
+      summary: Record deterministic explainable assessment snapshot
+      description: |
+        Each evaluation creates a new immutable revision and captures evidence references
+        and rule-set version. A potentially permitted result is not a legal guarantee.
+      responses:
+        '201':
+          description: Usage assessment revision created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UsageAssessment'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/clearance-packets:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    post:
+      tags: [Packets]
+      operationId: createClearancePacket
+      summary: Queue immutable administrative rights packet PDF
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [assessment_ids]
+              properties:
+                assessment_ids:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: {$ref: '#/components/schemas/Uuid'}
+      responses:
+        '202':
+          description: Packet job queued; poll packet status
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PacketJob'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/clearance-packets/{packetId}:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+      - {name: packetId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
+    get:
+      tags: [Packets]
+      operationId: getClearancePacketStatus
+      summary: Get packet status and digest
+      description: Download URLs require a separately authorized short-lived download-intent.
+      responses:
+        '200':
+          description: Packet metadata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PacketJob'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/workspaces/{workspaceId}/audit-events:
+    parameters:
+      - {$ref: '#/components/parameters/WorkspaceId'}
+    get:
+      tags: [Audit]
+      operationId: listAuditEvents
+      summary: List append-only workspace activity
+      parameters:
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Workspace activity, subject to role-specific visibility
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/AuditEvent'}
+                  next_cursor: {type: [string, 'null']}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    WorkspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    Cursor:
+      name: cursor
+      in: query
+      schema: {type: string}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 128}
+  responses:
+    Unauthorized:
+      description: Authentication missing or invalid
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Forbidden:
+      description: Workspace access denied
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    InvalidRequest:
+      description: Invalid or inconsistent request
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Sha256:
+      type: string
+      pattern: '^[a-f0-9]{64}$'
+    Workspace:
+      type: object
+      required: [id, name, plan]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        plan: {type: string, enum: [FREE, CREATOR, TEAM]}
+    CreateTrack:
+      type: object
+      additionalProperties: false
+      required: [title, artist]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 500}
+        artist: {type: string, minLength: 1, maxLength: 500}
+        source_label: {type: string}
+        source_url: {type: string, format: uri}
+        isrc: {type: string}
+        iswc: {type: string}
+        notes: {type: string}
+    Track:
+      allOf:
+        - {$ref: '#/components/schemas/CreateTrack'}
+        - type: object
+          required: [id, workspace_id, created_at]
+          properties:
+            id: {$ref: '#/components/schemas/Uuid'}
+            workspace_id: {$ref: '#/components/schemas/Uuid'}
+            created_at: {type: string, format: date-time}
+    License:
+      type: object
+      required: [id, workspace_id, track_id, evidence_state]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        workspace_id: {$ref: '#/components/schemas/Uuid'}
+        track_id: {$ref: '#/components/schemas/Uuid'}
+        evidence_state: {type: string, enum: [SELF_REPORTED, DOCUMENT_ATTACHED, ISSUER_CONFIRMED]}
+        issuer_party_id: {$ref: '#/components/schemas/Uuid'}
+        grantee_party_id: {$ref: '#/components/schemas/Uuid'}
+        effective_at: {type: string, format: date}
+        expires_at: {type: string, format: date}
+    CreateGrant:
+      type: object
+      additionalProperties: false
+      required: [rights_category]
+      properties:
+        rights_category: {type: string, enum: [MASTER, COMPOSITION, BOTH_ASSERTED, UNKNOWN]}
+        allowed_use_types:
+          type: [array, 'null']
+          items: {type: string, enum: [ORGANIC, BRANDED, PAID_AD, OTHER]}
+        allowed_platforms:
+          type: [array, 'null']
+          items: {type: string}
+        allowed_territories:
+          type: [array, 'null']
+          items: {type: string}
+        paid_advertising_allowed: {type: [boolean, 'null']}
+        valid_from: {type: string, format: date}
+        valid_until: {type: string, format: date}
+        restrictions: {type: object}
+        recorded_basis: {type: string}
+    LicenseGrant:
+      allOf:
+        - {$ref: '#/components/schemas/CreateGrant'}
+        - type: object
+          required: [id, license_id]
+          properties:
+            id: {$ref: '#/components/schemas/Uuid'}
+            license_id: {$ref: '#/components/schemas/Uuid'}
+    Video:
+      type: object
+      required: [id, workspace_id, title]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        workspace_id: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        campaign_id: {$ref: '#/components/schemas/Uuid'}
+    CreateUsageRequest:
+      type: object
+      additionalProperties: false
+      required: [video_id, platform, use_type]
+      properties:
+        video_id: {$ref: '#/components/schemas/Uuid'}
+        campaign_id: {$ref: '#/components/schemas/Uuid'}
+        platform: {type: string}
+        use_type: {type: string, enum: [ORGANIC, BRANDED, PAID_AD, OTHER]}
+        territories:
+          type: [array, 'null']
+          items: {type: string}
+        planned_from: {type: string, format: date}
+        planned_until: {type: string, format: date}
+        purpose_notes: {type: string}
+    UsageRequest:
+      allOf:
+        - {$ref: '#/components/schemas/CreateUsageRequest'}
+        - type: object
+          required: [id, workspace_id]
+          properties:
+            id: {$ref: '#/components/schemas/Uuid'}
+            workspace_id: {$ref: '#/components/schemas/Uuid'}
+    UsageAssessment:
+      type: object
+      required: [id, usage_request_id, revision, assessment_state, evidence_state, stale, findings, rules_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        usage_request_id: {$ref: '#/components/schemas/Uuid'}
+        revision: {type: integer, minimum: 1}
+        assessment_state:
+          type: string
+          enum: [NOT_REVIEWED, INSUFFICIENT_EVIDENCE, CONFLICT_DETECTED, POTENTIALLY_PERMITTED, REQUIRES_SPECIALIST_REVIEW]
+        evidence_state: {type: string, enum: [SELF_REPORTED, DOCUMENT_ATTACHED, ISSUER_CONFIRMED]}
+        stale: {type: boolean}
+        findings: {type: array, items: {type: object}}
+        rules_version: {type: string}
+        evaluated_at: {type: string, format: date-time}
+    PacketJob:
+      type: object
+      required: [id, status]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        status: {type: string, enum: [QUEUED, GENERATING, READY, FAILED]}
+        sha256_hex: {$ref: '#/components/schemas/Sha256'}
+        generated_at: {type: string, format: date-time}
+    AuditEvent:
+      type: object
+      required: [id, actor_id, action, record_type, occurred_at]
+      properties:
+        id: {type: integer, format: int64}
+        actor_id: {$ref: '#/components/schemas/Uuid'}
+        action: {type: string}
+        record_type: {type: string}
+        record_id: {$ref: '#/components/schemas/Uuid'}
+        occurred_at: {type: string, format: date-time}
+    ApiError:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        request_id: {type: string}
