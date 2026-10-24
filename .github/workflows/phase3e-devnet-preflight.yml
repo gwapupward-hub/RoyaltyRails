@@ -1,0 +1,57 @@
+name: Phase 3E Devnet Metadata Preflight
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/phase3e-devnet-preflight.yml"
+      - "scripts/phase3e/**"
+      - "deployments/devnet/**"
+      - "docs/evidence/devnet-deployment.json"
+      - "tests/e2e/package.json"
+      - "tests/e2e/package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-devnet-preflight:
+    name: Devnet program and PMP accounts (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Install pinned Solana clients, without install scripts
+        run: npm ci --prefix tests/e2e --ignore-scripts
+
+      - name: Derive canonical PMP accounts
+        run: node scripts/phase3e/verify-pdas.mjs
+
+      - name: Query finalized devnet state without signers
+        shell: bash
+        env:
+          RR_RPC_URL: https://api.devnet.solana.com
+        run: |
+          set -euo pipefail
+          mkdir -p target/phase3e
+          node scripts/phase3e/devnet-preflight.mjs | tee target/phase3e/devnet-preflight.json
+          node -e 'const r=require("./target/phase3e/devnet-preflight.json"); if(r.publicationAuthorized || r.transactionsSubmitted!==0) process.exit(1);'
+
+      - name: Upload read-only RPC evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3e-read-only-devnet-preflight
+          path: target/phase3e/devnet-preflight.json
+          if-no-files-found: ignore
+          retention-days: 30

@@ -12,13 +12,13 @@ RoyaltyRails turns approved revenue-sharing agreements into deterministic revenu
 
 ## Status
 
-**Pre-mainnet / Phase 2 — Protocol Specification Hardening**
+**Devnet deployed / Phase 3E — Protocol Identity & Metadata (in progress).**
 
-Phase 1 is merged: the blockchain-independent TypeScript allocation engine is the canonical economic source of truth.
+Phase 3D was completed and merged in [PR #9](https://github.com/gwapupward-hub/RoyaltyRails/pull/9). The Solana devnet program has finalized deployment and two 16-participant E2E lifecycle runs with independently recorded on-chain verification evidence. See [Phase 3D](docs/PHASE_3D.md) and the [devnet deployment record](docs/DEPLOYMENT_DEVNET_V1.md).
 
-Phase 2 is undergoing a pre-merge security/architecture audit before Anchor implementation begins.
+The official public identity is **RoyaltyRails Protocol**, while the stable deployed technical name remains `royaltyrail`. [Phase 3E](docs/PHASE_3E.md) prepares public program metadata and an independently discoverable IDL; canonical on-chain publication is not yet complete.
 
-RoyaltyRails is not production-ready and must not be used to custody or settle real royalties.
+**Not audited or mainnet-ready.** Do not use this deployment to custody or settle real customer royalties.
 
 ## Hardened V1 direction
 
@@ -39,7 +39,7 @@ RoyaltyRails is not production-ready and must not be used to custody or settle r
 - Deterministic human-readable Agreement Manifest
 - No admin withdrawal or payout override path
 - Governance/guardian pause separation
-- 0% protocol settlement fee during initial rollout
+- 0% protocol settlement fee in the **currently deployed devnet v1**. The approved future Phase 3F design proposes **Basic 0.25%** and **Premium Security 1.00%** fees, which are **not yet implemented**.
 
 ## Why allocate then claim?
 
@@ -92,18 +92,18 @@ Canonical colors:
 
 ## Engineering sequence
 
-1. ✅ Reference Accounting / Allocation Engine
-2. **Protocol specification hardening — current**
-3. Anchor implementation
-4. SDK + indexer
-5. RoyaltyRails Studio
-6. Devnet adversarial testing
-7. Independent security + legal architecture review
-8. Controlled mainnet beta
+1. ✅ Reference allocation engine and protocol specification
+2. ✅ Anchor program and settlement execution
+3. ✅ Phase 3D — deterministic build, local validator, adversarial tests, devnet deployment
+4. **Phase 3E — protocol identity, metadata and public verification (current)**
+5. Phase 3F — on-chain two-tier protocol fee engine and treasury, including security verification
+6. Phase 4 — SDK, integrations and RoyaltyRails Studio
+7. Independent security audit and legal architecture review before mainnet
+8. Controlled mainnet beta, subject to separate approval
 
 ## Brand vs protocol naming
 
-The public-facing product brand is **RoyaltyRails**. Existing v1 package names, protocol identifiers, and technical references that use the singular **RoyaltyRail** remain unchanged during protocol hardening to avoid unnecessary compatibility churn. A dedicated naming migration can be performed later if those identifiers should also become plural.
+The public-facing product brand is **RoyaltyRails** and the official protocol name is **RoyaltyRails Protocol**. Existing deployed v1 package names, Anchor namespace and technical identifiers that use the singular **RoyaltyRail** / `royaltyrail` remain unchanged to preserve compatibility. The canonical public devnet identity is recorded in [`deployments/devnet/protocol-identity.json`](deployments/devnet/protocol-identity.json).
 
 ## Integration philosophy
 
@@ -137,6 +137,10 @@ RoyaltyRails does not claim confidential royalty splits in v1.
 ## Safety
 
 No contract, address, API or economic output in this repository should be treated as production settlement infrastructure until explicit security, legal, deployment and mainnet-readiness gates are complete.
+
+## Security reports
+
+Report vulnerabilities privately to **thagwapspot@gmail.com**. See the [RoyaltyRails security disclosure policy](SECURITY.md). The current deployment is devnet-only and has **not received an independent smart-contract security audit**. Never send private keys or recovery phrases in email.
 
 ## License
 

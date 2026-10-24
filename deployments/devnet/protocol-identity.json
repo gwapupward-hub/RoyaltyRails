@@ -1,0 +1,34 @@
+{
+  "schema": "royaltyrails-protocol-identity-v1",
+  "name": "RoyaltyRails Protocol",
+  "brand": "RoyaltyRails",
+  "technicalProgramName": "royaltyrail",
+  "description": "A Solana protocol for participant-approved royalty and revenue-sharing agreements, deterministic revenue allocation, and independently claimable settlement payouts.",
+  "projectUrl": "https://github.com/gwapupward-hub/RoyaltyRails",
+  "sourceCode": "https://github.com/gwapupward-hub/RoyaltyRails",
+  "network": "solana-devnet",
+  "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+  "upgradeAuthority": "CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg",
+  "frozenBuildSourceCommit": "20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e",
+  "frozenProgramSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+  "frozenIdlSha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+  "brandColors": {
+    "primary": "#DD1313",
+    "gold": "#D4AF37",
+    "orange": "#F08A24"
+  },
+  "status": "devnet-deployed-not-mainnet-audited",
+  "securityContact": "thagwapspot@gmail.com",
+  "publication": {
+    "pmpIdl": "not_published",
+    "pmpSecurity": "not_published",
+    "externalVerifiedBuild": "not_verified"
+  },
+  "economics": {
+    "onchainCurrent": "0% protocol settlement fee for current v1 deployed binary",
+    "futurePhase3F": "Basic 0.25% (25 bps); Premium Security 1.00% (100 bps), not implemented"
+  },
+  "securityPolicyUrl": "https://github.com/gwapupward-hub/RoyaltyRails/blob/07c7f90c648ae27a170b7961d54d1dbd58a9df6f/SECURITY.md",
+  "securityMetadataFile": "deployments/devnet/security-metadata.json",
+  "securityContactStatus": "owner_designated; receipt and public metadata publication not yet verified"
+}

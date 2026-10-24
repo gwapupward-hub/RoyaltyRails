@@ -33,6 +33,14 @@ jobs:
       - name: Typecheck, spec consistency, and tests
         run: npm run check
 
+      - name: Verify Phase 3E identity against frozen manifest (keyless)
+        run: node scripts/phase3e/verify-identity.mjs
+
+      - name: Syntax-check keyless Phase 3E RPC and metadata PDA tools
+        run: |
+          node --check scripts/phase3e/devnet-preflight.mjs
+          node --check scripts/phase3e/verify-pdas.mjs
+
   rust-parity:
     name: Rust parity
     runs-on: ubuntu-latest
@@ -149,6 +157,10 @@ jobs:
             echo "no frozen devnet manifest yet"
           fi
 
+      - name: Verify exact frozen Phase 3E IDL and SBF before uploading artifact
+        shell: bash
+        run: node scripts/phase3e/verify-identity.mjs --idl target/idl/royaltyrail.json --so target/deploy/royaltyrail.so
+
       - name: Upload deployable program artifact
         uses: actions/upload-artifact@v4
         with:
@@ -196,6 +208,10 @@ jobs:
           test "$(node -p "require('./tests/e2e/node_modules/@solana/spl-token/package.json').version")" = "0.4.15"
           # The devnet lifecycle cross-checks against the compiled TypeScript reference.
           npm run build
+
+      - name: Verify expected canonical PMP metadata addresses (keyless)
+        shell: bash
+        run: node scripts/phase3e/verify-pdas.mjs
 
       - name: Create disposable localnet wallet and program identity
         shell: bash

@@ -1,0 +1,20 @@
+{
+  "schema": "royaltyrails-phase3e-security-payload-v1",
+  "status": "DRAFT_NOT_PUBLISHED",
+  "relativeFile": "deployments/devnet/security-metadata.json",
+  "utf8Bytes": 689,
+  "sha256": "1d5d8bb28d9da630a86763caafd142cf5916ca787b097db9272356fba8e849fb",
+  "name": "RoyaltyRails Protocol",
+  "policyRevision": "07c7f90c648ae27a170b7961d54d1dbd58a9df6f",
+  "contact": "email:thagwapspot@gmail.com",
+  "metadataProgramId": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
+  "canonicalSeed": "security",
+  "canonicalPda": "6yKDZVfqNwoDDBkSUBG2t2U6aApcNmqC8MtYGuPYDSxb",
+  "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+  "notes": [
+    "Hash covers exact JSON bytes as committed, including final newline.",
+    "Security reporting address owner-designated; external delivery not independently verified.",
+    "No metadata transaction has been submitted; do not infer account existence.",
+    "A different JSON serialization or Codama conversion requires separate digest approval."
+  ]
+}

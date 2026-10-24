@@ -1,0 +1,53 @@
+{
+  "schema": "royaltyrails-phase3e-idl-provenance-v1",
+  "evidenceType": "local_offline_hash_validation_of_official_github_actions_artifact",
+  "result": "PASS",
+  "archivedGitHubActionsSource": {
+    "repository": "gwapupward-hub/RoyaltyRails",
+    "runId": 39092819552,
+    "artifactId": 12123238615,
+    "artifactName": "royaltyrail-sbf-20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e",
+    "sourceCommit": "20ccae92e5f9ca6f18f5669fca0b6ea16cc0341e",
+    "githubArtifactDigest": "sha256:d7887cabb7a51d4c3c82d0308a7e7f4b26b2ccd56ce4674c1f100a758b3aa569"
+  },
+  "artifactRecords": {
+    "royaltyrail.json": {
+      "sha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+      "bytes": 78057,
+      "idlFormat": "Anchor",
+      "embeddedProgramId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+      "embeddedTechnicalName": "royaltyrail",
+      "embeddedVersion": "0.1.0"
+    },
+    "royaltyrail.so": {
+      "sha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+      "bytes": 609376
+    },
+    "MANIFEST.json": {
+      "sha256": "8b1a287fc9a9e7823d33ca966465c73b63f64d92e14dcca5b5be7df7cb426b66",
+      "bytes": 1524
+    }
+  },
+  "programMetadataProgram": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
+  "canonicalPmpAccounts": {
+    "idl": {
+      "address": "6Au73HiMX852zhgyTuYNkYDQHZWiCb6rxZ4EsVyyc2p3",
+      "bump": 254
+    },
+    "security": {
+      "address": "6yKDZVfqNwoDDBkSUBG2t2U6aApcNmqC8MtYGuPYDSxb",
+      "bump": 255
+    },
+    "derivation": "PDA(program pubkey 32 bytes, UTF-8 seed zero-padded to 16 bytes) under Program Metadata Program"
+  },
+  "chainEvidenceStatus": "NOT_CHECKED_IN_THIS_RECORD",
+  "publicationStatus": "NOT_PUBLISHED_BY_PHASE_3E",
+  "codamaConversionStatus": "NOT_DONE",
+  "thirdPartyVerifiedBuildStatus": "NOT_VERIFIED",
+  "caveats": [
+    "The IDL has been verified off-chain against the frozen CI artifact but not yet published to canonical PMP.",
+    "PMP accounts have been deterministically derived, not queried here for existence.",
+    "The current native Solana Explorer primarily reads canonical Codama IDLs; IDL Explorer separately supports Anchor IDLs.",
+    "No signing, chain changes, third-party security audit, or Phase 3F fee activation has occurred."
+  ]
+}
