@@ -16,11 +16,13 @@ This package is intentionally isolated from RoyaltyRails' Rust/Anchor settlement
 
 - `db/migrations/0001_initial.sql`: PostgreSQL 15+ data structures, workspace-scoped foreign keys, integrity constraints, indexes, and **FORCE ROW LEVEL SECURITY without policies** (access intentionally fails closed).
 - `openapi.yaml`: proposed bearer-authenticated, workspace-scoped API surface and schema contracts; placeholder server URL is not live.
+- `tests/foundation.sql`: disposable PostgreSQL migration smoke/foreign-key/RLS denial assertions.
+- `redocly.yaml` and `.github/workflows/soundreceipt-foundation.yml`: independently lint the OpenAPI 3.1 contract and test the migration. These checks do not imply an executable or production-ready service.
 
 ## Required architecture decisions
 
 1. **Application runtime:** select service framework and deploy strategy before creating handlers. RoyaltyRails' root Node package is currently settlement/reference code, not a web service.
-2. **Identity trust boundary:** choose auth provider and map independently verified issuer + subject to `principals.external_subject`. The client must never be allowed to self-assert identity or workspace membership.
+2. **Identity trust boundary:** choose auth provider and map independently verified issuer + subject to the unique `principals.(auth_issuer, auth_subject)` pair. The client must never be allowed to self-assert identity or workspace membership.
 3. **Database permissions:** create distinct migrator and restricted application roles. Install reviewed RLS policies and test as the **actual application role** before any data access.
 4. **Storage:** private encrypted buckets, quarantine uploads, validate MIME/size and SHA-256 server-side, malware scan, signed URLs, and per-object download authorization.
 5. **Rights vocabulary:** confirm license scope/terms with a rights professional; record master and composition permissions separately when known.
@@ -29,13 +31,13 @@ This package is intentionally isolated from RoyaltyRails' Rust/Anchor settlement
 
 ## Database safety
 
-Migration `0001_initial.sql` enables and forces RLS on every SoundReceipt table **without creating an allow policy**. This is intentional. A non-privileged service must have no read or write access until a later authorization migration exists.
+Migration `0001_initial.sql` enables and forces RLS on every SoundReceipt table **without creating an allow policy**. Foundation CI checks this fail-closed state using a restricted role, but does not test future authenticated policies. This is intentional. A non-privileged service must have no read or write access until a later authorization migration exists.
 
 Migrations should run under a dedicated privileged migrator role in a disposable database first; application sessions must use a different least-privileged role. Do not run a long-lived API as a PostgreSQL superuser, object owner capable of disabling RLS, or a `BYPASSRLS` role.
 
 A future policy layer must test active membership, workspace ownership, role-specific actions, revoked membership, and tenant-scoped document access. Request-supplied workspace IDs and user IDs cannot be treated as authorization. If a custom session variable is used for claims, only a server that has verified the request's identity may set it, and database access must never be exposed to untrusted clients.
 
-**Still required before runtime:** PostgreSQL migration execution/smoke tests; app-role RLS policy tests; audit immutability and actor stamping; license/grant-change invalidation of dependent assessments; consistent revision snapshots for PDF packets; network/upload abuse controls; deletion/retention processes; backups/restores; idempotency enforcement; secure job orchestration.
+**Still required before runtime:** live app-role RLS policies and authenticated cross-tenant denial tests; audit immutability and actor stamping; license/grant-change invalidation of dependent assessments; consistent revision snapshots for PDF packets; network/upload abuse controls; deletion/retention processes; backups/restores; idempotency enforcement; secure job orchestration.
 
 ## Intended execution flow
 
@@ -63,11 +65,11 @@ Do not merge PR B as if it were a functioning MVP. Do not run the migration on p
 
 ## Acceptance criteria for this foundation review
 
-- [ ] Schema migration parses and applies on a disposable PostgreSQL 15+ instance.
+- [ ] Schema migration parses and applies on disposable PostgreSQL 15+ in CI.
 - [ ] No tenant-linked foreign key allows cross-workspace reference.
 - [ ] Unknown permissions remain NULL/unknown, never implied approved.
-- [ ] A nonprivileged application role with no policy has no access.
-- [ ] OpenAPI parses and all local `$ref` links resolve.
+- [ ] A nonprivileged application role with no policy has no read or insert access (CI foundation test); authenticated role policies remain a separate blocker.
+- [ ] OpenAPI 3.1 lint parses the contract and resolves local `$ref` links; request/response examples and route completeness remain follow-up work.
 - [ ] API IDs are authorized on every route; role matrix is defined for handler work.
 - [ ] No existing royalty allocation or on-chain program source is modified.
 - [ ] All remaining security gates are documented before application code begins.

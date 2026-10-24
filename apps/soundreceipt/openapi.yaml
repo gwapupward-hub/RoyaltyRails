@@ -423,14 +423,19 @@ components:
         iswc: {type: string}
         notes: {type: string}
     Track:
-      allOf:
-        - {$ref: '#/components/schemas/CreateTrack'}
-        - type: object
-          required: [id, workspace_id, created_at]
-          properties:
-            id: {$ref: '#/components/schemas/Uuid'}
-            workspace_id: {$ref: '#/components/schemas/Uuid'}
-            created_at: {type: string, format: date-time}
+      type: object
+      required: [id, workspace_id, created_at, title, artist]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        workspace_id: {$ref: '#/components/schemas/Uuid'}
+        created_at: {type: string, format: date-time}
+        title: {type: string, minLength: 1, maxLength: 500}
+        artist: {type: string, minLength: 1, maxLength: 500}
+        source_label: {type: string}
+        source_url: {type: string, format: uri}
+        isrc: {type: string}
+        iswc: {type: string}
+        notes: {type: string}
     License:
       type: object
       required: [id, workspace_id, track_id, evidence_state]
@@ -464,13 +469,26 @@ components:
         restrictions: {type: object}
         recorded_basis: {type: string}
     LicenseGrant:
-      allOf:
-        - {$ref: '#/components/schemas/CreateGrant'}
-        - type: object
-          required: [id, license_id]
-          properties:
-            id: {$ref: '#/components/schemas/Uuid'}
-            license_id: {$ref: '#/components/schemas/Uuid'}
+      type: object
+      required: [id, license_id, rights_category]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        license_id: {$ref: '#/components/schemas/Uuid'}
+        rights_category: {type: string, enum: [MASTER, COMPOSITION, BOTH_ASSERTED, UNKNOWN]}
+        allowed_use_types:
+          type: [array, 'null']
+          items: {type: string, enum: [ORGANIC, BRANDED, PAID_AD, OTHER]}
+        allowed_platforms:
+          type: [array, 'null']
+          items: {type: string}
+        allowed_territories:
+          type: [array, 'null']
+          items: {type: string}
+        paid_advertising_allowed: {type: [boolean, 'null']}
+        valid_from: {type: string, format: date}
+        valid_until: {type: string, format: date}
+        restrictions: {type: object}
+        recorded_basis: {type: string}
     Video:
       type: object
       required: [id, workspace_id, title]
@@ -495,13 +513,21 @@ components:
         planned_until: {type: string, format: date}
         purpose_notes: {type: string}
     UsageRequest:
-      allOf:
-        - {$ref: '#/components/schemas/CreateUsageRequest'}
-        - type: object
-          required: [id, workspace_id]
-          properties:
-            id: {$ref: '#/components/schemas/Uuid'}
-            workspace_id: {$ref: '#/components/schemas/Uuid'}
+      type: object
+      required: [id, workspace_id, video_id, platform, use_type]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        workspace_id: {$ref: '#/components/schemas/Uuid'}
+        video_id: {$ref: '#/components/schemas/Uuid'}
+        campaign_id: {$ref: '#/components/schemas/Uuid'}
+        platform: {type: string}
+        use_type: {type: string, enum: [ORGANIC, BRANDED, PAID_AD, OTHER]}
+        territories:
+          type: [array, 'null']
+          items: {type: string}
+        planned_from: {type: string, format: date}
+        planned_until: {type: string, format: date}
+        purpose_notes: {type: string}
     UsageAssessment:
       type: object
       required: [id, usage_request_id, revision, assessment_state, evidence_state, stale, findings, rules_version]

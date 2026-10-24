@@ -9,9 +9,13 @@ CREATE SCHEMA IF NOT EXISTS soundreceipt;
 
 CREATE TABLE soundreceipt.principals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_subject text NOT NULL UNIQUE,
+  -- Both values must come from a server-verified authentication token.
+  auth_issuer text NOT NULL,
+  auth_subject text NOT NULL,
+  UNIQUE (auth_issuer, auth_subject),
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT principal_subject_nonempty CHECK (length(trim(external_subject)) > 0)
+  CONSTRAINT principal_issuer_nonempty CHECK (length(trim(auth_issuer)) > 0),
+  CONSTRAINT principal_subject_nonempty CHECK (length(trim(auth_subject)) > 0)
 );
 
 CREATE TABLE soundreceipt.workspaces (
@@ -91,7 +95,8 @@ CREATE TABLE soundreceipt.licenses (
   UNIQUE (workspace_id, track_id, id),
   CONSTRAINT license_valid_dates CHECK (expires_at IS NULL OR effective_at IS NULL OR expires_at >= effective_at),
   CONSTRAINT confirmed_issuer_has_reference
-    CHECK (evidence_state <> 'ISSUER_CONFIRMED' OR issuer_verification_reference IS NOT NULL)
+    CHECK (evidence_state <> 'ISSUER_CONFIRMED' OR
+      (issuer_verification_reference IS NOT NULL AND length(trim(issuer_verification_reference)) > 0))
 );
 
 CREATE TABLE soundreceipt.license_grants (
