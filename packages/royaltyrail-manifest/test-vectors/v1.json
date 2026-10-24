@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "spec": "docs/AGREEMENT_MANIFEST_V1.md §2; RFC 8785 (JCS); RFC 7493 (I-JSON)",
+  "hash": "terms_hash = SHA-256(UTF-8(JCS(manifest)))",
+  "provenance": "Generated independently of the TypeScript implementation: RFC 8785 examples transcribed from the RFC; other canonical forms and all sha256 values computed with Python json/hashlib.",
+  "positive": [
+    {
+      "name": "rfc8785-3.2.4-primitive-types",
+      "description": "RFC 8785 §3.2.4 example: number, string, and literal serialization",
+      "input": "{\n  \"numbers\": [333333333.33333329, 1E30, 4.50, 2e-3, 0.000000000000000000000000001],\n  \"string\": \"\\u20ac$\\u000F\\u000aA'\\u0042\\u0022\\u005c\\\\\\\"\\/\",\n  \"literals\": [null, true, false]\n}",
+      "canonical": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}",
+      "sha256Hex": "2d5e01a318d0f0879ab568c4be289c8b1f64ef8921a53c6277d5e069978baacb",
+      "manifestRejects": "UNSAFE_INTEGER"
+    },
+    {
+      "name": "rfc8785-3.2.3-utf16-sorting",
+      "description": "RFC 8785 §3.2.3 example: keys sorted by UTF-16 code units",
+      "input": "{\n  \"\\u20ac\": \"Euro Sign\",\n  \"\\r\": \"Carriage Return\",\n  \"\\ufb33\": \"Hebrew Letter Dalet With Dagesh\",\n  \"1\": \"One\",\n  \"\\ud83d\\ude00\": \"Emoji: Grinning Face\",\n  \"\\u0080\": \"Control\",\n  \"\\u00f6\": \"Latin Small Letter O With Diaeresis\"\n}",
+      "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+      "sha256Hex": "5e321556d22018a9656991a9e94f77ec175fa193e52a2429d312f8419ec8b08c"
+    },
+    {
+      "name": "agreement-manifest-v1-section-4-example",
+      "description": "Illustrative manifest from docs/AGREEMENT_MANIFEST_V1.md §4, verbatim",
+      "input": "{\n  \"schema\": \"royaltyrail/agreement-manifest/v1\",\n  \"agreement\": {\n    \"version\": 1,\n    \"predecessorVersion\": 0,\n    \"title\": \"Money Neva Sleeps — Master Revenue Split\",\n    \"effectiveFrom\": \"2026-10-15\",\n    \"effectiveUntil\": null\n  },\n  \"work\": {\n    \"title\": \"Money Neva Sleeps\",\n    \"workType\": \"sound_recording\",\n    \"identifiers\": {\n      \"isrc\": null,\n      \"iswc\": null,\n      \"upc\": null,\n      \"proprietary\": []\n    }\n  },\n  \"revenuePool\": {\n    \"kind\": \"MASTER_RECEIPTS\",\n    \"basis\": \"REVENUE_PARTICIPATION\",\n    \"amountDefinition\": \"distributable amount actually deposited to RoyaltyRail\",\n    \"grossOrNet\": \"net\",\n    \"sourceDescription\": \"Distributor master receipts\",\n    \"currency\": \"USDC\",\n    \"negativeAdjustmentPolicy\": \"NET_BEFORE_DEPOSIT\"\n  },\n  \"participants\": [\n    {\n      \"participantAuthority\": \"<artist-solana-pubkey>\",\n      \"displayName\": \"Artist\",\n      \"roles\": [\"PRIMARY_ARTIST\", \"SONGWRITER\"],\n      \"shareUnits\": 95000000\n    },\n    {\n      \"participantAuthority\": \"<producer-solana-pubkey>\",\n      \"displayName\": \"Producer A\",\n      \"roles\": [\"PRODUCER\", \"SONGWRITER\"],\n      \"shareUnits\": 5000000\n    }\n  ],\n  \"terms\": {\n    \"protocolFeeBps\": 0,\n    \"amendmentPolicy\": \"UNANIMOUS_V1\",\n    \"payoutRoutingIsParticipantControlled\": true,\n    \"publicChainDisclosureAccepted\": true\n  },\n  \"documents\": [\n    {\n      \"mediaType\": \"application/pdf\",\n      \"sha256\": \"<hex-sha256>\",\n      \"label\": \"Executed split sheet\"\n    }\n  ],\n  \"notes\": null\n}\n",
+      "canonical": "{\"agreement\":{\"effectiveFrom\":\"2026-10-15\",\"effectiveUntil\":null,\"predecessorVersion\":0,\"title\":\"Money Neva Sleeps — Master Revenue Split\",\"version\":1},\"documents\":[{\"label\":\"Executed split sheet\",\"mediaType\":\"application/pdf\",\"sha256\":\"<hex-sha256>\"}],\"notes\":null,\"participants\":[{\"displayName\":\"Artist\",\"participantAuthority\":\"<artist-solana-pubkey>\",\"roles\":[\"PRIMARY_ARTIST\",\"SONGWRITER\"],\"shareUnits\":95000000},{\"displayName\":\"Producer A\",\"participantAuthority\":\"<producer-solana-pubkey>\",\"roles\":[\"PRODUCER\",\"SONGWRITER\"],\"shareUnits\":5000000}],\"revenuePool\":{\"amountDefinition\":\"distributable amount actually deposited to RoyaltyRail\",\"basis\":\"REVENUE_PARTICIPATION\",\"currency\":\"USDC\",\"grossOrNet\":\"net\",\"kind\":\"MASTER_RECEIPTS\",\"negativeAdjustmentPolicy\":\"NET_BEFORE_DEPOSIT\",\"sourceDescription\":\"Distributor master receipts\"},\"schema\":\"royaltyrail/agreement-manifest/v1\",\"terms\":{\"amendmentPolicy\":\"UNANIMOUS_V1\",\"payoutRoutingIsParticipantControlled\":true,\"protocolFeeBps\":0,\"publicChainDisclosureAccepted\":true},\"work\":{\"identifiers\":{\"isrc\":null,\"iswc\":null,\"proprietary\":[],\"upc\":null},\"title\":\"Money Neva Sleeps\",\"workType\":\"sound_recording\"}}",
+      "sha256Hex": "a4f72adc298045f2df8f5dae9a21872d5668f32990f6ac518022739c183b3ea2"
+    },
+    {
+      "name": "prototype-named-keys",
+      "description": "__proto__ and constructor are ordinary keys; nested sort; array order kept",
+      "input": "{\"constructor\":{\"b\":2,\"a\":[3,1]},\"__proto__\":1}",
+      "canonical": "{\"__proto__\":1,\"constructor\":{\"a\":[3,1],\"b\":2}}",
+      "sha256Hex": "02e7fa128217e71b1b42c72decdb2cffa2b62a12bd27945a30bddcda971b7b47"
+    },
+    {
+      "name": "insignificant-whitespace-and-escapes",
+      "description": "whitespace dropped, \\u and \\/ escapes resolved, numbers normalized",
+      "input": " \r\n\t{ \"b\" : \"\\u00e9\\/\" , \"a\":[ 1.50 , -2e0, 0.0 ] } ",
+      "canonical": "{\"a\":[1.5,-2,0],\"b\":\"é/\"}",
+      "sha256Hex": "a5b4e41af1a46f9563cfd00849abf76da93f6f896fce2d620c7c44e15456274f"
+    },
+    {
+      "name": "escaped-surrogate-pair",
+      "description": "a correctly paired surrogate escape is one code point and is emitted literally",
+      "input": "{\"e\":\"\\ud83d\\ude00\"}",
+      "canonical": "{\"e\":\"😀\"}",
+      "sha256Hex": "47a47202d021be06dcb0cf0f7f943a022eb9bb434ef039969ffaa344b9280dca"
+    },
+    {
+      "name": "safe-integer-bounds",
+      "description": "±(2^53 − 1) are the largest accepted integers",
+      "input": "{\"min\":-9007199254740991,\"max\":9007199254740991}",
+      "canonical": "{\"max\":9007199254740991,\"min\":-9007199254740991}",
+      "sha256Hex": "63546eb60913dcb1cdd5118f7bf4885beed344af930c8a9d5f38fad243fd4819"
+    },
+    {
+      "name": "big-amount-as-decimal-string",
+      "description": "u64 base-unit amounts are carried as decimal strings",
+      "input": "{\"amount\":\"18446744073709551615\"}",
+      "canonical": "{\"amount\":\"18446744073709551615\"}",
+      "sha256Hex": "194507413027f71a1416e0da5712fdc9bc355072cffccef6594278187b593099"
+    }
+  ],
+  "positiveNote": "sha256Hex is SHA-256 of the canonical UTF-8 bytes, i.e. the terms_hash. A vector with manifestRejects is valid RFC 8785 (checked with canonicalizeRfc8785) but is rejected by the stricter manifest rules with that code.",
+  "negative": [
+    {
+      "name": "invalid-byte",
+      "code": "INVALID_UTF8",
+      "inputHex": "7b2261223a22ff227d"
+    },
+    {
+      "name": "overlong-solidus",
+      "code": "INVALID_UTF8",
+      "inputHex": "7b2261223a22c0af227d"
+    },
+    {
+      "name": "utf8-encoded-surrogate",
+      "code": "INVALID_UTF8",
+      "inputHex": "7b2261223a22eda080227d"
+    },
+    {
+      "name": "truncated-sequence",
+      "code": "INVALID_UTF8",
+      "inputHex": "7b2261223a22e282227d"
+    },
+    {
+      "name": "leading-bom",
+      "code": "BYTE_ORDER_MARK",
+      "inputHex": "efbbbf7b7d"
+    },
+    {
+      "name": "trailing-comma",
+      "code": "SYNTAX",
+      "input": "{\"a\":1,}"
+    },
+    {
+      "name": "leading-zero",
+      "code": "SYNTAX",
+      "input": "{\"a\":01}"
+    },
+    {
+      "name": "single-quotes",
+      "code": "SYNTAX",
+      "input": "{'a':1}"
+    },
+    {
+      "name": "raw-newline-in-string",
+      "code": "SYNTAX",
+      "input": "{\"a\":\"x\ny\"}"
+    },
+    {
+      "name": "nan-literal",
+      "code": "SYNTAX",
+      "input": "{\"a\":NaN}"
+    },
+    {
+      "name": "infinity-literal",
+      "code": "SYNTAX",
+      "input": "{\"a\":Infinity}"
+    },
+    {
+      "name": "plus-sign",
+      "code": "SYNTAX",
+      "input": "{\"a\":+1}"
+    },
+    {
+      "name": "bare-fraction",
+      "code": "SYNTAX",
+      "input": "{\"a\":.5}"
+    },
+    {
+      "name": "dangling-point",
+      "code": "SYNTAX",
+      "input": "{\"a\":1.}"
+    },
+    {
+      "name": "invalid-escape",
+      "code": "SYNTAX",
+      "input": "{\"a\":\"\\x41\"}"
+    },
+    {
+      "name": "short-unicode-escape",
+      "code": "SYNTAX",
+      "input": "{\"a\":\"\\u12\"}"
+    },
+    {
+      "name": "two-documents",
+      "code": "SYNTAX",
+      "input": "{} {}"
+    },
+    {
+      "name": "empty-input",
+      "code": "SYNTAX",
+      "input": ""
+    },
+    {
+      "name": "duplicate-top-level",
+      "code": "DUPLICATE_KEY",
+      "input": "{\"a\":1,\"a\":2}"
+    },
+    {
+      "name": "duplicate-after-unescape",
+      "code": "DUPLICATE_KEY",
+      "input": "{\"a\":1,\"\\u0061\":2}"
+    },
+    {
+      "name": "duplicate-nested",
+      "code": "DUPLICATE_KEY",
+      "input": "{\"x\":[{\"k\":1,\"k\":1}]}"
+    },
+    {
+      "name": "lone-high-in-value",
+      "code": "LONE_SURROGATE",
+      "input": "{\"a\":\"\\ud800\"}"
+    },
+    {
+      "name": "lone-low-in-value",
+      "code": "LONE_SURROGATE",
+      "input": "{\"a\":\"\\udc00x\"}"
+    },
+    {
+      "name": "reversed-pair",
+      "code": "LONE_SURROGATE",
+      "input": "{\"a\":\"\\ude00\\ud83d\"}"
+    },
+    {
+      "name": "lone-high-in-key",
+      "code": "LONE_SURROGATE",
+      "input": "{\"\\ud800\":1}"
+    },
+    {
+      "name": "u-fffe",
+      "code": "NONCHARACTER",
+      "input": "{\"a\":\"\\ufffe\"}"
+    },
+    {
+      "name": "u-ffff-in-key",
+      "code": "NONCHARACTER",
+      "input": "{\"\\uffff\":1}"
+    },
+    {
+      "name": "u-fdd0",
+      "code": "NONCHARACTER",
+      "input": "{\"a\":\"\\ufdd0\"}"
+    },
+    {
+      "name": "raw-utf8-u-fdef",
+      "code": "NONCHARACTER",
+      "inputHex": "7b2261223a22efb7af227d"
+    },
+    {
+      "name": "u-1fffe",
+      "code": "NONCHARACTER",
+      "input": "{\"a\":\"\\ud83f\\udffe\"}"
+    },
+    {
+      "name": "u-10ffff",
+      "code": "NONCHARACTER",
+      "input": "{\"a\":\"\\udbff\\udfff\"}"
+    },
+    {
+      "name": "minus-zero",
+      "code": "NEGATIVE_ZERO",
+      "input": "{\"a\":-0}"
+    },
+    {
+      "name": "minus-zero-fraction",
+      "code": "NEGATIVE_ZERO",
+      "input": "{\"a\":-0.0}"
+    },
+    {
+      "name": "minus-zero-exponent",
+      "code": "NEGATIVE_ZERO",
+      "input": "{\"a\":-0e5}"
+    },
+    {
+      "name": "negative-underflow",
+      "code": "NEGATIVE_ZERO",
+      "input": "{\"a\":-1e-400}"
+    },
+    {
+      "name": "positive-overflow",
+      "code": "NON_FINITE_NUMBER",
+      "input": "{\"a\":1e400}"
+    },
+    {
+      "name": "negative-overflow",
+      "code": "NON_FINITE_NUMBER",
+      "input": "{\"a\":-1e400}"
+    },
+    {
+      "name": "two-pow-53",
+      "code": "UNSAFE_INTEGER",
+      "input": "{\"a\":9007199254740992}"
+    },
+    {
+      "name": "minus-two-pow-53",
+      "code": "UNSAFE_INTEGER",
+      "input": "{\"a\":-9007199254740992}"
+    },
+    {
+      "name": "exponent-integer",
+      "code": "UNSAFE_INTEGER",
+      "input": "{\"a\":1e16}"
+    },
+    {
+      "name": "u64-max-as-number",
+      "code": "UNSAFE_INTEGER",
+      "input": "{\"amount\":18446744073709551615}"
+    },
+    {
+      "name": "array",
+      "code": "NOT_AN_OBJECT",
+      "input": "[]"
+    },
+    {
+      "name": "string",
+      "code": "NOT_AN_OBJECT",
+      "input": "\"manifest\""
+    },
+    {
+      "name": "null",
+      "code": "NOT_AN_OBJECT",
+      "input": "null"
+    }
+  ],
+  "rfc8785AppendixBNumbers": {
+    "note": "Serializer-level only (serializeJcsNumber). Integers beyond ±(2^53 − 1) are valid JCS but rejected in manifests as UNSAFE_INTEGER.",
+    "vectors": [
+      {
+        "ieee754Hex": "0000000000000000",
+        "canonical": "0"
+      },
+      {
+        "ieee754Hex": "0000000000000001",
+        "canonical": "5e-324"
+      },
+      {
+        "ieee754Hex": "8000000000000001",
+        "canonical": "-5e-324"
+      },
+      {
+        "ieee754Hex": "7fefffffffffffff",
+        "canonical": "1.7976931348623157e+308"
+      },
+      {
+        "ieee754Hex": "ffefffffffffffff",
+        "canonical": "-1.7976931348623157e+308"
+      },
+      {
+        "ieee754Hex": "4340000000000000",
+        "canonical": "9007199254740992"
+      },
+      {
+        "ieee754Hex": "c340000000000000",
+        "canonical": "-9007199254740992"
+      },
+      {
+        "ieee754Hex": "4430000000000000",
+        "canonical": "295147905179352830000"
+      },
+      {
+        "ieee754Hex": "44b52d02c7e14af5",
+        "canonical": "9.999999999999997e+22"
+      },
+      {
+        "ieee754Hex": "44b52d02c7e14af6",
+        "canonical": "1e+23"
+      },
+      {
+        "ieee754Hex": "44b52d02c7e14af7",
+        "canonical": "1.0000000000000001e+23"
+      },
+      {
+        "ieee754Hex": "444b1ae4d6e2ef4e",
+        "canonical": "999999999999999700000"
+      },
+      {
+        "ieee754Hex": "444b1ae4d6e2ef4f",
+        "canonical": "999999999999999900000"
+      },
+      {
+        "ieee754Hex": "444b1ae4d6e2ef50",
+        "canonical": "1e+21"
+      },
+      {
+        "ieee754Hex": "3eb0c6f7a0b5ed8c",
+        "canonical": "9.999999999999997e-7"
+      },
+      {
+        "ieee754Hex": "3eb0c6f7a0b5ed8d",
+        "canonical": "0.000001"
+      },
+      {
+        "ieee754Hex": "41b3de4355555553",
+        "canonical": "333333333.3333332"
+      },
+      {
+        "ieee754Hex": "41b3de4355555554",
+        "canonical": "333333333.33333325"
+      },
+      {
+        "ieee754Hex": "41b3de4355555555",
+        "canonical": "333333333.3333333"
+      },
+      {
+        "ieee754Hex": "41b3de4355555556",
+        "canonical": "333333333.3333334"
+      },
+      {
+        "ieee754Hex": "41b3de4355555557",
+        "canonical": "333333333.33333343"
+      },
+      {
+        "ieee754Hex": "becbf647612f3696",
+        "canonical": "-0.0000033333333333333333"
+      },
+      {
+        "ieee754Hex": "43143ff3c1cb0959",
+        "canonical": "1424953923781206.2"
+      }
+    ],
+    "errors": [
+      "7fffffffffffffff",
+      "7ff0000000000000",
+      "fff0000000000000"
+    ]
+  }
+}
