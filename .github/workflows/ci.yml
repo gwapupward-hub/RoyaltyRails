@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -48,12 +48,12 @@ jobs:
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Install pinned Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable branch, 2026-10-24
         with:
           toolchain: 1.89.0
           components: rustfmt, clippy
@@ -72,11 +72,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     container:
-      image: quay.io/ottersec/anchor:v1.2.1
+      image: quay.io/ottersec/anchor:v1.2.1@sha256:23f988d1b817160b5514faa19bc50e77d41c4ff9aeccce94c9856696e20f8fed
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           # Full history: the frozen devnet manifest is compared with its source commit.
@@ -162,7 +162,7 @@ jobs:
         run: node scripts/phase3e/verify-identity.mjs --idl target/idl/royaltyrail.json --so target/deploy/royaltyrail.so
 
       - name: Upload deployable program artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: royaltyrail-sbf-${{ steps.build-info.outputs.commit }}
           path: build-artifact/
@@ -185,14 +185,14 @@ jobs:
           - name: Local validator devnet-lifecycle rehearsal
             script: test-devnet-rehearsal
     container:
-      image: quay.io/ottersec/anchor:v1.2.1
+      image: quay.io/ottersec/anchor:v1.2.1@sha256:23f988d1b817160b5514faa19bc50e77d41c4ff9aeccce94c9856696e20f8fed
       # Agave 4.1.2 asserts io_uring support at startup; Docker's default
       # seccomp profile blocks the io_uring syscalls inside job containers.
       options: --security-opt seccomp=unconfined
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload E2E evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-evidence-${{ matrix.script }}
           path: target/e2e/

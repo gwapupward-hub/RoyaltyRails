@@ -1,0 +1,35 @@
+# Dependabot opens PRs only; nothing merges automatically.
+# Any cargo PR touches Cargo.lock, a frozen-manifest build input: CI's
+# verify-frozen step will fail on it by design until the owner approves a
+# redeploy (see CONTRIBUTING.md, "The frozen-artifact rule").
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      # Toolchain-locked to the Anchor CLI 1.2.1 build container; upgrade deliberately, not via Dependabot.
+      - dependency-name: anchor-lang
+      - dependency-name: anchor-spl
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Integrity-locked E2E client; CI asserts exact @anchor-lang/core, @solana/web3.js
+  # and @solana/spl-token versions, so bumps to those need a matching CI change.
+  - package-ecosystem: npm
+    directory: /tests/e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

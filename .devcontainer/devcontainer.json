@@ -1,6 +1,6 @@
 {
   "name": "RoyaltyRails Devnet Development",
-  "image": "quay.io/ottersec/anchor:v1.2.1",
+  "image": "quay.io/ottersec/anchor:v1.2.1@sha256:23f988d1b817160b5514faa19bc50e77d41c4ff9aeccce94c9856696e20f8fed",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
