@@ -3,3 +3,9 @@ dist/
 target/
 .anchor/
 /artifact/
+.env*
+*keypair*.json
+id.json
+test-ledger/
+*.log
+.DS_Store

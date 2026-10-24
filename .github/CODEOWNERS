@@ -1,0 +1,18 @@
+# PLACEHOLDER: replace @OWNER with the real GitHub user or team before enabling
+# "Require review from Code Owners". GitHub ignores entries it cannot resolve.
+
+# Protocol program and core accounting (frozen devnet build inputs)
+/programs/            @OWNER
+/crates/              @OWNER
+/Cargo.toml           @OWNER
+/Cargo.lock           @OWNER
+/rust-toolchain.toml  @OWNER
+/Anchor.toml          @OWNER
+
+# Frozen deployment records and evidence
+/deployments/         @OWNER
+/docs/evidence/       @OWNER
+
+# CI, workflows, and repository policy
+/.github/             @OWNER
+/SECURITY.md          @OWNER
