@@ -378,7 +378,7 @@ Production royalties remain forbidden until Anchor unit/integration tests, local
 
 ### Governance, guardian, upgrade, and operational-risk gates
 
-Each item closes one of the unresolved risks in [`DEPLOYMENT_DEVNET_V1.md`](DEPLOYMENT_DEVNET_V1.md) ("Unresolved risks", items 1–10). All must be complete, or explicitly accepted in the mainnet sign-off with written rationale. None replaces another gate.
+Each item closes one of the unresolved risks in [`DEPLOYMENT_DEVNET_V1.md`](DEPLOYMENT_DEVNET_V1.md) ("Unresolved risks", items 1–10). All must be complete. None replaces another gate.
 
 - [ ] **(1) Token freeze authority.** The behavior of the settlement mint's freeze authority (inbox freeze, payout-ATA freeze) is exercised on a validator, and integrators disclose it. A frozen payout ATA blocks only that participant.
 - [ ] **(2) Deposits to non-settleable agreements.** SDK and integrations refuse to deposit to the inbox of an agreement that is not Active or Superseded. Deposits to a Proposed agreement that later activates are tested on-chain. The permanent lock of deposits to cancelled or rejected agreements is publicly disclosed.
