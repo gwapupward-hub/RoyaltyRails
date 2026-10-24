@@ -20,6 +20,15 @@ The official public identity is **RoyaltyRails Protocol**, while the stable depl
 
 **Not audited or mainnet-ready.** Do not use this deployment to custody or settle real customer royalties.
 
+## Scope of this repository
+
+This repository holds two things:
+
+- **The RoyaltyRails Protocol**: the Solana program (`programs/`), the core accounting crate (`crates/`), the TypeScript reference packages (`packages/`), the specifications (`docs/`, `spec/`), and the devnet deployment records (`deployments/`, `docs/evidence/`).
+- **SoundReceipt** (`apps/soundreceipt/`, [`docs/SOUNDRECEIPT_V1_PRD.md`](docs/SOUNDRECEIPT_V1_PRD.md)): a draft product built on the protocol. SoundReceipt is **non-production** and is **outside the protocol's security-audit scope**. Its presence here does not make it part of the protocol, and no protocol guarantee extends to it.
+
+See the [documentation index](docs/README.md) for every document and its status.
+
 ## Hardened V1 direction
 
 - Solana
