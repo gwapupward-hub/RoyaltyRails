@@ -22,6 +22,8 @@ Please include, where safe:
 
 This is an owner-designated email contact; email is not end-to-end encrypted. Please do not send sensitive secrets in email.
 
+Once the owner enables GitHub private vulnerability reporting for this repository, it will be the preferred channel ("Report a vulnerability" under the repository's Security tab); until then, use the email address above.
+
 ## Coordinated disclosure
 
 Please report vulnerabilities privately first, avoid targeting other users or infrastructure, and allow time to investigate and coordinate disclosure. The maintainers intend to acknowledge and triage valid reports, but **no guaranteed response or remediation time, bug bounty, safe-harbor contract, or audit certification** is currently offered.
