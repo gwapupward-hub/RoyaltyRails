@@ -142,10 +142,14 @@ function compareBuild(manifest, dir) {
 function verifyFrozen({ frozen, "artifact-dir": dir }) {
   const manifest = readManifest(frozen);
   if (!buildInputsUnchanged(manifest.sourceCommit)) {
-    throw new Error(
-      `program build inputs changed since the frozen manifest's commit ${manifest.sourceCommit}: ` +
-        "the frozen devnet manifest is stale and must be regenerated before any deployment",
+    // A build-input change is an upgrade candidate, not a failure: CI must still build and
+    // upload it so the owner can record its manifest. deploy.sh and upgrade.sh enforce the
+    // match at deploy time through check-artifact, which refuses any stale manifest.
+    console.log(
+      `::warning title=Upgrade candidate::program build inputs changed since the frozen manifest's commit ` +
+        `${manifest.sourceCommit}; record this build with a new manifest before deploying`,
     );
+    return;
   }
   const { problems, files } = compareBuild(manifest, dir);
   if (problems.length > 0) throw new Error(`build is not reproducible against the frozen manifest: ${problems.join("; ")}`);
