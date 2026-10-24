@@ -22,9 +22,9 @@ use state::{
     WORK_ACCOUNT_BYTES,
 };
 
-// Program ID. Until the owner freezes the devnet identity (deployments/devnet/,
-// scripts/devnet/generate-keys.sh) this is a temporary development ID. CI's
-// localnet lanes replace it with a throwaway key; it is never a mainnet ID.
+// Program ID: the deployed devnet program ID, frozen in deployments/devnet/
+// (manifest.json, protocol-identity.json). CI's localnet lanes substitute a
+// throwaway key via `anchor keys sync`; this is never a mainnet ID.
 declare_id!("Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB");
 
 const SPL_TOKEN_MINT_BYTES: usize = 82;
