@@ -374,6 +374,21 @@ Hash integrity is not content availability. Before beta, exact Agreement Manifes
 
 ## 33. Pre-mainnet gate
 
-Production royalties remain forbidden until Anchor unit/integration tests, local-validator adversarial suite, randomized state-machine/interleaving tests, TypeScript/Rust allocation parity, agreement/allocation hash parity, 1–16 participant tests, predecessor-consent tests, payout-rotation tests, inbox solvency/claim-isolation tests, direct-vs-inbox nonce separation tests, account-substitution tests, max-size/compute/transaction benchmarks, dependency/toolchain pinning, reproducible/verifiable builds, hardened governance/guardian/upgrade policy, monitoring/incident runbook, independent smart-contract audit, payments/fintech legal review, entertainment/royalty workflow legal review, and explicit mainnet sign-off are complete.
+Production royalties remain forbidden until Anchor unit/integration tests, local-validator adversarial suite, randomized state-machine/interleaving tests, TypeScript/Rust allocation parity, agreement/allocation hash parity, 1–16 participant tests, predecessor-consent tests, payout-rotation tests, inbox solvency/claim-isolation tests, direct-vs-inbox nonce separation tests, account-substitution tests, max-size/compute/transaction benchmarks, dependency/toolchain pinning, reproducible/verifiable builds, every governance/guardian/upgrade and operational-risk gate listed below, monitoring/incident runbook, independent smart-contract audit, payments/fintech legal review, entertainment/royalty workflow legal review, and explicit mainnet sign-off are complete.
+
+### Governance, guardian, upgrade, and operational-risk gates
+
+Each item closes one of the unresolved risks in [`DEPLOYMENT_DEVNET_V1.md`](DEPLOYMENT_DEVNET_V1.md) ("Unresolved risks", items 1–10). All must be complete, or explicitly accepted in the mainnet sign-off with written rationale. None replaces another gate.
+
+- [ ] **(1) Token freeze authority.** The behavior of the settlement mint's freeze authority (inbox freeze, payout-ATA freeze) is exercised on a validator, and integrators disclose it. A frozen payout ATA blocks only that participant.
+- [ ] **(2) Deposits to non-settleable agreements.** SDK and integrations refuse to deposit to the inbox of an agreement that is not Active or Superseded. Deposits to a Proposed agreement that later activates are tested on-chain. The permanent lock of deposits to cancelled or rejected agreements is publicly disclosed.
+- [ ] **(3) Compute headroom.** Allocation and claim compute is benchmarked at 16 participants for the exact mainnet candidate build, on the target runtime. Production clients request an explicit compute budget. Benchmarks are repeated for every program change.
+- [ ] **(4) Upgrade authority.** The upgrade authority is a hardened multisig with an upgrade timelock and ProgramData monitoring (§23), and never a single hot wallet. The long-term immutability criterion is documented.
+- [ ] **(5) Governance permanence.** Governance is an M-of-N multisig, and a recovery or rotation design is implemented and audited, or its absence is explicitly accepted (design options: `docs/GOVERNANCE_RECOVERY_V1.md`, proposed in PR #18). A guardian-pause runbook requires that governance be reachable to unpause.
+- [ ] **(6) Key custody.** A fresh, owner-custodied mainnet identity is generated and used only on owner-controlled hardware, with backups verified by re-entry. No key, including any devnet key, has ever been in an AI-agent or CI environment.
+- [ ] **(7) Dependency code beside keys.** Signing is isolated from third-party dependency code: a hardware or external signer, or a minimal audited signing path. No npm package runs in a process that holds a deployer, upgrade-authority, or governance key.
+- [ ] **(8) Build verification.** The deployed artifact is a `solana-verify` verifiable build from a digest-pinned container, reproduced independently outside the CI container.
+- [ ] **(9) Pre-deployment window.** The program keypair is owner-custodied from generation until deployment, and the time between identity commit and deployment is minimized and recorded.
+- [ ] **(10) Durable evidence.** Mainnet deployment evidence (signatures, hashes, verifier output) is recorded in the repository and in a durable public location independent of any single RPC provider.
 
 Green CI is not mainnet readiness.
