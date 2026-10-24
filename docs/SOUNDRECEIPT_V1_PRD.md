@@ -3,7 +3,7 @@
 **Product:** SoundReceipt by RoyaltyRails  
 **Status:** Proposed implementation specification (not implemented)  
 **Version:** 0.1 — 2026-10-22  
-**Primary repository:** `gwapupward-hub/RoyaltyRails` (integration target; deployment and folder placement TBD)  
+**Primary repository:** `gwapupward-hub/RoyaltyRails`; proposed isolated path `apps/soundreceipt` (independent service and credentials; hosting decision pending owner approval)  
 **Product decision:** v1 is limited to music-licensing records for creator videos and social-media distribution.
 
 ## 1. Product definition
@@ -72,7 +72,7 @@ Separate **evidence verification** from **usage suitability**:
 
 Never display a green “legally cleared” guarantee. `POTENTIALLY_PERMITTED` indicates that *recorded* terms appear consistent with the requested use, not that documents are authentic, rights are complete, or platform policies are satisfied. Any missing grant, unknown ownership, expired term, paid-ad prohibition, territory exclusion, or mismatch produces an actionable finding.
 
-A music-use request can require distinct authorizations relating to the sound recording and musical composition. The model must represent them separately when known and retain `UNKNOWN` when not known. Platform-provided music availability is not assumed transferable to branded posts or advertisements.
+A music-use request can require distinct authorizations relating to the sound recording and musical composition. Evaluate each interest separately. `BOTH_ASSERTED` is a statement recorded from the source, **not** independent verification of either interest or permission to proceed. The model must represent both interests separately when known and retain `UNKNOWN` when not known. Platform-provided music availability is not assumed transferable to branded posts or advertisements.
 
 ## 7. Data model (logical)
 
@@ -119,7 +119,7 @@ Use asynchronous jobs for scanning, packet generation and later attestation. Tra
 - **Editor:** add/edit track, evidence, video and campaign records; run assessments and exports.
 - **Viewer:** read authorized records and download only documents permitted by workspace policy; cannot mutate rights records.
 
-**Pricing hypothesis to validate:** Free $0 with 20 total track/video records and basic exports; Creator $12/month with unlimited logical records (subject to reasonable storage/abuse limits); Team $39/month with shared library, invited editors and audit filters. Specify storage and seat quotas before billing launch. Do not gate access to a creator's previously uploaded documents merely because a subscription lapses; provide retrieval/export policy.
+**Pricing hypothesis to validate (not approved for billing):** Free $0 with 20 total track/video records and basic exports; Creator $12/month with unlimited logical records (subject to reasonable storage/abuse limits); Team $39/month with shared library, invited editors and audit filters. Specify storage and seat quotas before billing launch. Do not gate access to a creator's previously uploaded documents merely because a subscription lapses; provide retrieval/export policy.
 
 ## 10. Security, privacy and reliability
 
@@ -181,6 +181,17 @@ Resource assumptions: one experienced full-stack engineer plus part-time design/
 
 **Metrics:** time to catalog first track, videos associated with a documented license, percentage of usage requests with unresolved gaps, time to produce packet, creator weekly active retention, pilot-to-paid conversion, support burden, and storage cost per workspace.
 
-**Decisions to close before sprint 1:** hosting stack and repository location; subscription seat/storage caps; whether Free includes PDF export and how many; supported territories and platform vocabulary; preferred link-sharing restrictions; legal reviewer for clearance terminology; pilot cohort and success thresholds.
+**Decisions to close before sprint 1:** actual hosting and authentication providers; whether Free includes PDF export and how many; supported territories and platform vocabulary; legal reviewer for clearance terminology; pilot success thresholds.
+
+### Proposed defaults for a restricted pilot (not owner-approved production settings)
+
+- Keep code at `apps/soundreceipt` in this repository, with its own off-chain deployment, PostgreSQL database, object storage and secrets. No signing key, settlement write API, or RPC dependency.
+- Prefer an established email-first authentication system with server-verified token issuer, audience and subject. Store a unique `(auth_issuer, auth_subject)` mapping; no self-asserted principal or workspace membership.
+- Trial cohort: five invite-only workspaces for 30 days; up to three seats and 250 MiB evidence storage per workspace; up to 20 MiB per document. Apply server-side enforcement and review actual costs/abuse before rollout.
+- Only authenticated workspace participants may access documents and generated packets in the initial pilot. External share links and payment collection are deferred.
+- Continue treating Free / Creator / Team prices as hypotheses until customer interviews and usage data exist. Do not block a user's retrieval of previously uploaded documents because billing has not launched.
+- A specialist music-rights review must approve the vocabulary and disclaimers before customer-facing rights assessments or packets are released. A user-provided document, verified file digest and confirmed rights grant are separate concepts.
+
+**Approval scope:** This PR may document these suggested defaults without authorizing procurement, deployment, billing, public document access, or legal clearance claims.
 
 **Recommended first pull request:** documentation-only `docs/SOUNDRECEIPT_V1_PRD.md`, then a separate database/API foundation PR after architecture approval. Do not merge any changes to the existing on-chain protocol for this feature.
