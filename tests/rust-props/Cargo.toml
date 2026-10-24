@@ -1,0 +1,18 @@
+# Property tests for royaltyrail-core, kept outside the main Cargo workspace on
+# purpose: the root Cargo.toml and Cargo.lock are frozen devnet build inputs
+# (deployments/devnet/manifest.json), so adding a dev-dependency there would
+# make scripts/devnet/manifest.mjs verify-frozen report the manifest as stale.
+# This crate has its own workspace and lockfile and never affects the SBF build.
+[package]
+name = "royaltyrail-core-proptests"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.89"
+publish = false
+
+[workspace]
+
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std"] }
+royaltyrail-core = { path = "../../crates/royaltyrail-core" }

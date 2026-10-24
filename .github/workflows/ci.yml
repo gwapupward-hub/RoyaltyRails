@@ -67,6 +67,13 @@ jobs:
       - name: Rust tests and parity vectors
         run: cargo test --workspace --all-targets --locked
 
+      # Separate workspace and lockfile: keeps proptest out of the frozen build inputs.
+      - name: royaltyrail-core property tests (tests/rust-props)
+        run: |
+          cargo fmt --manifest-path tests/rust-props/Cargo.toml --all -- --check
+          cargo clippy --manifest-path tests/rust-props/Cargo.toml --all-targets --locked -- -D warnings
+          cargo test --manifest-path tests/rust-props/Cargo.toml --locked
+
   anchor-build:
     name: Anchor SBF + IDL
     runs-on: ubuntu-latest
