@@ -1,0 +1,76 @@
+{
+  "schema": "royaltyrails-phase3e-local-rehearsal-v1",
+  "rehearsedAt": "2026-10-24",
+  "kind": "local-validator rehearsal of the canonical PMP idl and security publication flow",
+  "transactionsSubmittedToDevnet": 0,
+  "ownerKeysUsed": false,
+  "publicationAuthorized": false,
+  "toolchain": {
+    "solanaCli": "solana-cli 4.1.2 (src:182084b8; feat:c763ae0a, client:Agave)",
+    "solanaCliSource": "https://release.anza.xyz/v4.1.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 (no published checksum sidecar; matched by version string only)",
+    "node": "v24.22.1 (tarball verified against nodejs.org SHASUMS256.txt)",
+    "metadataCli": {
+      "package": "@solana-program/program-metadata",
+      "version": "0.11.0",
+      "install": "npm install --ignore-scripts into an isolated directory",
+      "lockedPackages": 54,
+      "packagesWithIntegrity": 54,
+      "npmAuditFindings": 0
+    }
+  },
+  "program": {
+    "programId": "Eo6eWYymSrZ8eJMaSwcbonrcXbbMCNQ5d2e2MVRJjiQB",
+    "sbfSha256": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a",
+    "sbfBytes": 609376,
+    "idlSha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+    "idlBytes": 78057,
+    "sourceArtifact": {
+      "ciRun": "40121323187",
+      "artifactName": "royaltyrail-sbf-186b04e9b49ddef4df0483d65fe39e6c5ed26409",
+      "sourceCommit": "186b04e9b49ddef4df0483d65fe39e6c5ed26409",
+      "note": "SBF hash equals the frozen devnet deployment's ProgramData hash"
+    },
+    "localLoading": "solana-test-validator --upgradeable-program with a throwaway upgrade authority",
+    "sbfShaAfterPublication": "ee79ccb220e4e2c5071c9ec23a08a685e005bfed2aba6687ea784a044454505a"
+  },
+  "metadataProgram": {
+    "programId": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
+    "source": "read-only dump from Solana devnet",
+    "dumpSha256": "879f5bf7653cda05305a013c2e05b2463abfcc0c8e9b823eef238a027b63c05e",
+    "dumpBytes": 47888,
+    "localLoading": "solana-test-validator --bpf-program"
+  },
+  "publication": {
+    "cliFlags": ["--priority-fees 0"],
+    "compression": "CLI default (zlib)",
+    "accounts": {
+      "idl": {
+        "pda": "6Au73HiMX852zhgyTuYNkYDQHZWiCb6rxZ4EsVyyc2p3",
+        "writeSucceeded": true,
+        "decodedSha256": "07bbfcef23e27cac32cbee5aed4fcd1aeb0c1e837ef9febf28f0472b670449fa",
+        "decodedBytes": 78057,
+        "matchesApprovedPayload": true
+      },
+      "security": {
+        "pda": "6yKDZVfqNwoDDBkSUBG2t2U6aApcNmqC8MtYGuPYDSxb",
+        "writeSucceeded": true,
+        "decodedSha256": "1d5d8bb28d9da630a86763caafd142cf5916ca787b097db9272356fba8e849fb",
+        "decodedBytes": 689,
+        "matchesApprovedPayload": true
+      }
+    },
+    "decodingNote": "program-metadata fetch prints the decoded content followed by a trailing newline. Hashes above exclude that newline; the content is byte-identical to the approved payload file."
+  },
+  "limitations": [
+    "Local validator, not devnet: no fees, rent or priority-fee estimate from the live network were tested.",
+    "The upgrade authority was a throwaway local key, not the devnet upgrade authority CEhT8a7FrvN7uGCZRruMKp6uzAMusaFQ4XPDRo5i6wSg.",
+    "The throwaway keys were deleted after the rehearsal.",
+    "Signing custody was not exercised."
+  ],
+  "notClaimed": [
+    "Solana Verified Builds status (Stage B.4 not performed)",
+    "Codama and PMP client compatibility (Stage A.5 not performed)",
+    "Explorer display of the metadata records",
+    "A finalized devnet preflight immediately before publication"
+  ]
+}
